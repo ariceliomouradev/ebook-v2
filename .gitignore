@@ -41,3 +41,6 @@ cypress/logs.txt
 cypress/fixtures/*.pdf
 cypress/fixtures/*.png
 cypress/fixtures/*.txt
+
+# Scripts de diagnóstico temporários (nunca versionar)
+diagnostico.php
