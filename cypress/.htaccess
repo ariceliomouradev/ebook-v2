@@ -1,0 +1,3 @@
+# A suíte de testes não é servida pela web: em produção esta pasta é apenas
+# código de desenvolvimento que veio junto no deploy.
+Require all denied

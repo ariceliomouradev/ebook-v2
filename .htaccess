@@ -1,4 +1,6 @@
-# Bloqueia acesso direto a arquivos sensíveis na raiz do projeto.
-<FilesMatch "^(\.env.*|\.git.*|\.gitignore|composer\.(json|lock)|.*\.sql|.*\.md)$">
+# Bloqueia acesso direto a arquivos sensíveis ou irrelevantes na raiz do projeto:
+# configuração, metadados do git, dumps SQL, documentação e os arquivos de
+# desenvolvimento do Node/Cypress (que não têm função nenhuma em produção).
+<FilesMatch "^(\.env.*|\.git.*|\.gitignore|\.gitattributes|composer\.(json|lock)|package(-lock)?\.json|cypress\.config\.js|.*\.sql|.*\.md)$">
     Require all denied
 </FilesMatch>

@@ -211,11 +211,20 @@ flowchart TD
 O projeto roda em qualquer hospedagem com Apache + PHP 8.2 + MySQL (compartilhada
 ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o `.env`.
 
-1. Suba os arquivos para a pasta pública (`public_html`, `www` ou equivalente) — **sem**
-   `node_modules/` e **sem** `cypress/`, que só servem para desenvolvimento.
+1. Coloque os arquivos na pasta pública do domínio (`public_html` ou a pasta do
+   subdomínio). Duas formas:
+   - **Deploy por Git** (recomendado quando o painel oferece, como o hPanel da
+     Hostinger ou o cPanel): aponte para este repositório e para a pasta do
+     domínio. Atualizar depois é um clique — não há build para rodar.
+   - **FTP/SFTP ou gerenciador de arquivos**: envie tudo, **menos** `node_modules/`
+     (não é usado em produção) e, se quiser, `cypress/`.
+
+   `node_modules/` nunca deve ir para o servidor. A pasta `cypress/` é inofensiva
+   (só arquivos de teste, e já vem bloqueada por `.htaccess`), então pode ficar.
 2. Crie o banco pelo painel da hospedagem (ou phpMyAdmin) e importe `database/schema.sql`.
-3. Crie o `.env` no servidor a partir do `.env.example`, com o usuário de banco da
-   hospedagem e:
+3. Crie o `.env` **direto no servidor** — ele nunca vem no repositório. Copie o
+   conteúdo do `.env.example` pelo gerenciador de arquivos e preencha com o usuário
+   de banco da hospedagem e:
    ```ini
    APP_ENV=production
    APP_DEBUG=false
