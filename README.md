@@ -162,14 +162,18 @@ flowchart TD
    APP_URL=http://localhost/meus_livros/
    ```
 
-4. **Crie o primeiro usuário administrador** diretamente no banco (não há tela de "primeiro acesso"):
+4. **Crie o primeiro usuário administrador** — não há tela de "primeiro acesso".
+   O utilitário abaixo aplica o hash bcrypt e monta o SQL pronto:
    ```bash
-   php -r "echo password_hash('SuaSenhaForte@123', PASSWORD_DEFAULT);"
+   php database/criar_admin.php
    ```
-   ```sql
-   INSERT INTO usuarios (nome, email, senha, perfil)
-   VALUES ('Seu Nome', 'seu@email.com', '<hash gerado acima>', 'admin');
+   Ele pergunta nome, e-mail, senha e perfil, valida a política de senha e imprime o
+   `INSERT` para colar no phpMyAdmin. Com `--inserir`, grava direto no banco do `.env`:
+   ```bash
+   php database/criar_admin.php "Seu Nome" "voce@exemplo.com" "SuaSenha@123" admin --inserir
    ```
+   O script só roda por linha de comando (a pasta `database/` é bloqueada na web) e a
+   senha não é gravada em lugar nenhum — sai dali apenas o hash.
 
 5. **Garanta que o PHP pode escrever** em `uploads/`, `capas/` e `banners/` — é onde
    os PDFs, as capas geradas e os banners são gravados. No Windows/XAMPP isso já
@@ -230,8 +234,9 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
    APP_DEBUG=false
    APP_URL=https://seu-dominio.com/
    ```
-4. Crie o primeiro admin (passo 4 da instalação local, executando o `INSERT` pelo
-   phpMyAdmin).
+4. Crie o primeiro admin: rode `php database/criar_admin.php` **na sua máquina** e
+   cole o `INSERT` que ele imprime no phpMyAdmin da hospedagem. Assim a senha nunca
+   trafega — só o hash.
 5. Confira que os `.htaccess` estão sendo aplicados (`AllowOverride All`): acessar
    `https://seu-dominio.com/.env` precisa devolver **403**, e um PDF em
    `https://seu-dominio.com/uploads/arquivo.pdf` também.
@@ -262,7 +267,7 @@ meus_livros/
 ├── capas/          # Capas de livros geradas no upload (público, sem execução de PHP)
 ├── components/     # Partials PHP incluídos pelas páginas (acesso direto bloqueado)
 ├── config/         # Bootstrap, conexão de banco, variáveis de ambiente (acesso direto bloqueado)
-├── database/       # schema.sql e migrações versionadas (acesso direto bloqueado)
+├── database/       # schema.sql, migrações e o utilitário criar_admin.php (acesso direto bloqueado)
 ├── includes/       # Funções compartilhadas: escaping, CSRF, RBAC, repositórios de dados (acesso direto bloqueado)
 ├── cypress/        # Suíte de testes E2E (specs, comandos, fixtures) — não vai para produção
 ├── uploads/        # PDFs (acesso direto bloqueado — servidos só via api/download.php)
