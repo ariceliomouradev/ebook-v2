@@ -1,0 +1,133 @@
+/* assets/css/leitor.css */
+
+body { 
+    background-color: #0d0d0d; 
+    margin: 0; padding: 0; 
+    overflow: hidden; 
+    font-family: 'Segoe UI', sans-serif;
+    height: 100vh; width: 100vw;
+}
+
+/* #canvas-container {
+    height: 100%; width: 100%;
+    overflow: auto; 
+    display: flex; justify-content: center; align-items: flex-start;
+    background-color: #0d0d0d;
+    padding-bottom: 80px; 
+} */
+
+#canvas-container {
+    width: 100%;
+    height: 100vh; /* Ocupa a tela toda */
+    overflow-y: auto; /* Permite scroll vertical */
+    overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alinha o PDF no topo */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+}
+
+#the-canvas {
+    display: block;
+    margin: 20px auto; /* Espaço entre as páginas virtuais */
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+canvas { box-shadow: 0 0 40px rgba(0,0,0,1); margin-top: 20px; }
+
+/* MENU FLUTUANTE BASE */
+.hud-menu {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(18, 18, 18, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    padding: 8px 25px;
+    z-index: 9999;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 210, 255, 0.1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hud-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.page-input-container {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 12px;
+    border-radius: 20px;
+    margin: 0 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hud-input {
+    background: transparent;
+    border: none;
+    color: #00d2ff;
+    width: 45px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1rem;
+    outline: none;
+    text-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
+}
+
+/* Remove as setas do input number */
+.hud-input::-webkit-inner-spin-button, 
+.hud-input::-webkit-outer-spin-button { 
+    -webkit-appearance: none; margin: 0; 
+}
+
+.divider {
+    width: 1px;
+    height: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 15px;
+}
+
+.btn-hud {
+    background: transparent;
+    border: none;
+    color: #e0e0e0;
+    font-size: 1.1rem;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.btn-hud:hover {
+    background: rgba(0, 210, 255, 0.1);
+    color: #00d2ff;
+    transform: scale(1.1);
+}
+
+body.inactive .hud-menu { opacity: 0; transform: translateX(-50%) translateY(20px); pointer-events: none; }
+
+.info-text { color: #fff; font-size: 0.85rem; font-weight: 500; }
+.zoom-text { color: #00d2ff; font-size: 0.8rem; }
+
+/* MOBILE */
+@media (max-width: 600px) {
+    .hud-menu {
+        bottom: 15px; padding: 8px 12px; gap: 5px; width: 90%; justify-content: space-around;
+    }
+    .btn-hud { width: 34px; height: 34px; font-size: 1rem; }
+    .zoom-text, .info-text span:last-child, .info-text { display: none; }
+    #pageNum { display: block; color: #fff; font-size: 0.75rem; }
+    .divider { margin: 0 2px; }
+}

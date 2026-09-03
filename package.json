@@ -1,0 +1,24 @@
+{
+  "name": "meus_livros-v1.0.3",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Biblioteca pessoal de PDFs — um web app responsivo para catalogar, ler e acompanhar o progresso de leitura de livros em PDF, com controle de acesso por perfil de usuário.",
+  "scripts": {
+    "fixtures": "node cypress/fixtures/gerar-fixtures.js",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open --e2e --browser electron",
+    "test:regressao": "cypress run --spec \"cypress/e2e/*.cy.js\"",
+    "test:auth": "cypress run --spec cypress/e2e/01-autenticacao.cy.js",
+    "test:rbac": "cypress run --spec cypress/e2e/02-rbac.cy.js",
+    "test:responsivo": "cypress run --spec cypress/e2e/08-responsividade.cy.js",
+    "test": "cypress run",
+    "test:limpar": "node cypress/limpar-massa.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "cypress": "^16.0.0",
+    "mysql2": "^3.24.3"
+  }
+}

@@ -1,0 +1,43 @@
+# ---------------------------------------------------------------------------
+# Configuração local — contém credenciais do banco. NUNCA versionar.
+# Use .env.example como modelo.
+# ---------------------------------------------------------------------------
+.env
+
+# ---------------------------------------------------------------------------
+# Acervo pessoal: os PDFs enviados, as capas geradas e os banners do sistema
+# ficam fora do repositório. As pastas são versionadas vazias (.gitkeep) junto
+# com os .htaccess que as protegem.
+# ---------------------------------------------------------------------------
+/uploads/*
+!/uploads/.htaccess
+!/uploads/.gitkeep
+/capas/*
+!/capas/.htaccess
+!/capas/.gitkeep
+/banners/*
+!/banners/.htaccess
+!/banners/.gitkeep
+
+# ---------------------------------------------------------------------------
+# Documentação interna — o repositório publica apenas o README.md.
+# ---------------------------------------------------------------------------
+ESPECIFICACAO_TECNICA.md
+cypress/README.md
+file.md
+*.log
+
+# ---------------------------------------------------------------------------
+# Node / Cypress
+# ---------------------------------------------------------------------------
+node_modules/
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+cypress/.backup-banners/
+cypress/logs.txt
+
+# Fixtures binárias são geradas por `npm run fixtures`
+cypress/fixtures/*.pdf
+cypress/fixtures/*.png
+cypress/fixtures/*.txt

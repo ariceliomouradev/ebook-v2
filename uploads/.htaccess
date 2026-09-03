@@ -1,0 +1,7 @@
+# Os PDFs desta pasta só podem ser lidos via api/download.php (autenticado).
+# Bloqueia listagem, acesso direto e execução de scripts.
+Require all denied
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
