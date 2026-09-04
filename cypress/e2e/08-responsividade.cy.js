@@ -209,6 +209,52 @@ describe('Responsividade', () => {
         cy.get('html').should('have.attr', 'data-bs-theme', 'dark');
         cy.get('html').should('have.attr', 'lang', 'pt-br');
       });
+
+      it(`${rotulo} pinta a barra do navegador com a cor do fundo`, () => {
+        cy.entrarComo('admin');
+        cy.visit(url);
+
+        cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#121212');
+        cy.get('head meta[name="color-scheme"]').should('have.attr', 'content', 'dark');
+
+        // O que importa não é a tag existir, e sim a cor continuar igual ao fundo
+        // real da página: se um dia o tema mudar e o meta ficar para trás, a barra
+        // de endereços passa a destoar do conteúdo e este teste avisa.
+        cy.get('body').then(($body) => {
+          const fundo = getComputedStyle($body[0]).backgroundColor;
+          const [r, g, b] = fundo.match(/\d+/g).map(Number);
+          const hex = '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
+          cy.get('head meta[name="theme-color"]').should('have.attr', 'content', hex);
+        });
+      });
+
+      it(`${rotulo} declara os metas de aplicativo para iOS e Android`, () => {
+        cy.entrarComo('admin');
+        cy.visit(url);
+
+        cy.get('head meta[name="mobile-web-app-capable"]').should('have.attr', 'content', 'yes');
+        cy.get('head meta[name="apple-mobile-web-app-capable"]').should('have.attr', 'content', 'yes');
+        cy.get('head meta[name="apple-mobile-web-app-status-bar-style"]').should(
+          'have.attr',
+          'content',
+          'black'
+        );
+        cy.get('head meta[name="apple-mobile-web-app-title"]').should('have.attr', 'content', 'Meus Livros');
+      });
+    });
+
+    it('o leitor usa a própria cor de tema, mais escura que a das demais telas', () => {
+      cy.entrarComo('leitor');
+      cy.visit(`leitor?id=${livro.id}`);
+      cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
+
+      cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#0d0d0d');
+      cy.get('body').then(($body) => {
+        const fundo = getComputedStyle($body[0]).backgroundColor;
+        const [r, g, b] = fundo.match(/\d+/g).map(Number);
+        const hex = '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('');
+        cy.get('head meta[name="theme-color"]').should('have.attr', 'content', hex);
+      });
     });
   });
 });

@@ -33,6 +33,21 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
     <meta charset="UTF-8">
     <title>Lendo: <?= e($livro['titulo']) ?></title>
 
+    <!-- Cor da interface do navegador: pinta a barra de endereços do Chrome no
+         Android e o topo do Safari no iOS 15+ com o mesmo tom do fundo da página,
+         em vez de deixar a faixa clara padrão emendando com o tema escuro.
+         color-scheme faz controles de formulário e barras de rolagem nativas
+         seguirem o tema escuro; os metas apple-* valem quando o site é salvo na
+         tela de início do iPhone. -->
+    <meta name="theme-color" content="#0d0d0d">
+    <meta name="color-scheme" content="dark">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Meus Livros">
+    <meta name="application-name" content="Meus Livros">
+    <meta name="msapplication-TileColor" content="#0d0d0d">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>

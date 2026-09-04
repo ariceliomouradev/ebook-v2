@@ -57,6 +57,7 @@ As pastas `uploads/`, `capas/` e `banners/` vêm versionadas vazias, já com os 
 | **Autenticação e controle de acesso** | Login com hash bcrypt, três perfis de RBAC, recuperação de senha por token de uso único, troca de senha autenticada |
 | **Gestão de usuários** (admin) | Criar, listar e remover usuários; redefinir senha de terceiros; proteção contra auto-exclusão |
 | **Banners personalizáveis** (admin) | Banner horizontal (mobile/tablet) e vertical (desktop), com regra de visibilidade por perfil |
+| **Integração com o sistema operacional** | Cor de tema no Chrome do Android e no Safari do iOS 15+ (a barra de endereços assume o tom do fundo), `color-scheme` escuro para controles nativos, e metas de aplicativo para quando o site é salvo na tela de início |
 | **Segurança de aplicação web** | CSRF em todas as ações de escrita, XSS mitigado por escaping consistente, rate limiting de login, validação de upload por assinatura real de arquivo (não só extensão), CSP, cookies de sessão endurecidos |
 
 ---
@@ -414,7 +415,7 @@ contato em privado pelo perfil do GitHub do autor.
 
 ## Testes automatizados (Cypress)
 
-O repositório inclui uma suíte de regressão ponta a ponta com **220 testes** cobrindo
+O repositório inclui uma suíte de regressão ponta a ponta com **226 testes** cobrindo
 os fluxos dos três perfis, o controle de acesso, a experiência de uso e a
 responsividade. A interface é instrumentada com 157 atributos `data-testid`, então os
 testes não dependem de classes CSS nem da estrutura do HTML.
@@ -450,7 +451,7 @@ A URL usada nos testes vem do `APP_URL` do `.env` — não é preciso editar
 | `05-leitor-pdf` | 22 | Range requests, navegação, zoom e seus limites, progresso por usuário gravado no banco, rótulos acessíveis do HUD |
 | `06-usuarios-admin` | 14 | Cadastro (com login efetivo do usuário criado), senha fraca no cliente e no servidor, e-mail duplicado, reset de terceiro, bloqueio da auto-exclusão |
 | `07-senhas` | 13 | Troca da própria senha e fluxo completo de recuperação por token (uso único, expiração, reutilização) |
-| `08-responsividade` | 48 | 375 / 768 / 1024 / 1440 px: colunas da grade, banner × sidebar, ausência de rolagem horizontal, alvos de toque, modais, escala do leitor e swipe |
+| `08-responsividade` | 54 | 375 / 768 / 1024 / 1440 px: colunas da grade, banner × sidebar, ausência de rolagem horizontal, alvos de toque, modais, escala do leitor, swipe e cor de tema conferida contra o fundo real |
 | `09-ux-acessibilidade` | 23 | Console sem erros (inclusive CSP no leitor), títulos e idioma, textos alternativos, loader e toasts, modais, teclado, tema escuro |
 
 ### Os testes não tocam nos seus dados
@@ -474,7 +475,7 @@ Usuários de teste (senha `Senha@E2E1`, definida em `cypress/support/dados.js`):
 
 ### Resultado atual
 
-**218 de 220 testes passam.** As duas falhas restantes não são instabilidade da
+**224 de 226 testes passam.** As duas falhas restantes não são instabilidade da
 suíte — cada uma trava um defeito real, descrito em [Limitações conhecidas](#limitações-conhecidas).
 
 ---
