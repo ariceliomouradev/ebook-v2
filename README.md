@@ -126,6 +126,7 @@ flowchart TD
 
 - [XAMPP](https://www.apachefriends.org/) (ou Apache + PHP 8.2+ + MySQL/MariaDB avulsos)
 - Extensões PHP: `pdo_mysql`, `fileinfo`, `mbstring`, `openssl` (todas vêm habilitadas por padrão no XAMPP)
+- Apache com `mod_rewrite` e `AllowOverride All` — necessário para as URLs amigáveis e para a proteção dos arquivos por `.htaccess` (padrão no XAMPP e na maioria das hospedagens)
 - [Node.js](https://nodejs.org/) 18+ — **apenas** para rodar a suíte de testes; a aplicação em si não precisa dele
 
 ### Passo a passo
@@ -187,6 +188,8 @@ flowchart TD
    direto aos PDFs, ao `.env` e às pastas de código). É preciso ter o
    `mod_rewrite`/`AllowOverride All` habilitado — no XAMPP já vem assim. Para testar,
    abra `http://localhost/meus_livros/.env`: a resposta correta é **403 Forbidden**.
+   Se `/login` der 404 mas `/login.php` abrir, é sinal de que o `mod_rewrite` está
+   desativado — as URLs amigáveis dependem dele.
 
 7. **Acesse pelo navegador** e entre com o usuário criado no passo 4:
    ```
@@ -238,8 +241,9 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
    cole o `INSERT` que ele imprime no phpMyAdmin da hospedagem. Assim a senha nunca
    trafega — só o hash.
 5. Confira que os `.htaccess` estão sendo aplicados (`AllowOverride All`): acessar
-   `https://seu-dominio.com/.env` precisa devolver **403**, e um PDF em
-   `https://seu-dominio.com/uploads/arquivo.pdf` também.
+   `https://seu-dominio.com/.env` precisa devolver **403**, um PDF em
+   `https://seu-dominio.com/uploads/arquivo.pdf` também, e `https://seu-dominio.com/login`
+   precisa abrir a tela de login (se só `/login.php` funcionar, falta `mod_rewrite`).
 
 **Recomendações para produção:**
 
@@ -334,6 +338,31 @@ Schema completo, com todas as colunas, chaves e constraints, em
 [`database/schema.sql`](database/schema.sql). Para bancos criados na versão anterior,
 [`database/migracao_v1.1.sql`](database/migracao_v1.1.sql) aplica as tabelas novas e
 migra o progresso de leitura.
+
+---
+
+## Rotas
+
+As páginas são arquivos `.php` no disco, mas o endereço público não tem extensão —
+a tradução é feita pelo `.htaccess` da raiz, e o PHP monta os links pela função
+`url()` de [`includes/functions.php`](includes/functions.php).
+
+| Endereço | Arquivo | Quem acessa |
+|---|---|---|
+| `/` | `index.php` | autenticado |
+| `/login` | `login.php` | público |
+| `/logout` | `logout.php` | autenticado |
+| `/usuarios` | `usuarios.php` | admin |
+| `/leitor?id=N` | `views/leitor.php` | autenticado |
+| `/redefinir-senha?token=…` | `redefinir_senha.php` | público (com token válido) |
+
+Endereços antigos com `.php` continuam funcionando: respondem **301** para a versão
+limpa, então links já compartilhados — inclusive e-mails de redefinição de senha
+enviados antes da mudança — não quebram.
+
+Os endpoints de `api/` mantêm a extensão de propósito: são alvos de formulário e de
+`fetch`, não aparecem na barra de endereços, e reescrevê-los só criaria risco de
+quebrar um POST.
 
 ---
 

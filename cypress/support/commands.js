@@ -71,7 +71,7 @@ Cypress.Commands.add('limparMassaE2E', () => cy.task('db:limpar'));
 // ---------------------------------------------------------------------------
 
 /** Lê o token CSRF de um formulário já renderizado na página atual. */
-Cypress.Commands.add('tokenCsrfDaPagina', (url = 'login.php') =>
+Cypress.Commands.add('tokenCsrfDaPagina', (url = 'login') =>
   cy.request(url).then((resposta) => {
     const casamento = resposta.body.match(/name="csrf_token" value="([a-f0-9]+)"/);
     expect(casamento, `token CSRF presente em ${url}`).to.not.be.null;
@@ -91,7 +91,7 @@ Cypress.Commands.add('entrarComo', (perfil) => {
   cy.session(
     ['usuario-e2e', perfil],
     () => {
-      cy.tokenCsrfDaPagina('login.php').then((csrf) => {
+      cy.tokenCsrfDaPagina('login').then((csrf) => {
         cy.request({
           method: 'POST',
           url: 'api/auth.php',
@@ -99,11 +99,11 @@ Cypress.Commands.add('entrarComo', (perfil) => {
           body: { csrf_token: csrf, email: usuario.email, senha: SENHA() },
         });
       });
-      cy.request('index.php').its('status').should('eq', 200);
+      cy.request('./').its('status').should('eq', 200);
     },
     {
       validate() {
-        cy.request({ url: 'index.php', followRedirect: false })
+        cy.request({ url: './', followRedirect: false })
           .its('status')
           .should('eq', 200);
       },
@@ -120,7 +120,7 @@ Cypress.Commands.add('entrarComo', (perfil) => {
 Cypress.Commands.add('loginPelaUi', (email, senha) => {
   Cypress.session.clearAllSavedSessions();
   cy.clearCookies();
-  cy.visit('login.php');
+  cy.visit('login');
   cy.tid('login-email-input').clear().type(email);
   cy.tid('login-password-input').clear().type(senha, { log: false });
   cy.tid('login-submit-btn').click();
@@ -134,7 +134,7 @@ Cypress.Commands.add('aguardarBiblioteca', () => {
 
 /** Visita o dashboard já autenticado e com o loader resolvido. */
 Cypress.Commands.add('visitarBiblioteca', (query = '') => {
-  cy.visit('index.php' + query);
+  cy.visit('./' + query);
   cy.aguardarBiblioteca();
 });
 

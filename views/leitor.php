@@ -1,5 +1,5 @@
 <?php
-define('CAMINHO_RAIZ', '../');
+define('CAMINHO_RAIZ', '');
 require_once '../config/bootstrap.php';
 require_login();
 
@@ -46,7 +46,7 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
 </div>
 
 <div class="hud-menu" id="menuPrincipal" data-testid="hud-menu">
-    <a data-testid="btn-back-library" href="../index.php?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-hud" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
+    <a data-testid="btn-back-library" href="<?= url('index.php') ?>?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-hud" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
         <i class="fas fa-arrow-left"></i>
     </a>
 

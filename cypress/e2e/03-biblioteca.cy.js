@@ -52,7 +52,7 @@ describe('Biblioteca (busca, ordenação e paginação)', () => {
           cy.tid('book-title').should('not.be.empty');
           cy.tid('book-progress-text').should('contain.text', 'Lido');
           cy.tid('book-progress-bar').should('exist');
-          cy.tid('book-read-link').should('have.attr', 'href').and('include', 'views/leitor.php?id=');
+          cy.tid('book-read-link').should('have.attr', 'href').and('include', 'leitor?id=');
         });
     });
 

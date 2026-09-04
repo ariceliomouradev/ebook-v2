@@ -47,7 +47,7 @@ $busca = $busca ?? '';
                         <div data-testid="book-progress-text" class="progress-info"><span>Lido</span><span><?= (int) $progresso ?>%</span></div>
                         <div data-testid="book-progress-bar" class="progress"><div class="progress-bar <?= $corBarra ?>" style="width: <?= (int) $progresso ?>%"></div></div>
 
-                        <a data-testid="book-read-link" href="<?= $raiz ?>views/leitor.php?id=<?= (int) $livro['id'] ?>&origem=<?= (int) $paginaAtual ?>&ordem=<?= e($ordemAtual) ?>&busca=<?= urlencode($busca) ?>" class="stretched-link"></a>
+                        <a data-testid="book-read-link" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>&origem=<?= (int) $paginaAtual ?>&ordem=<?= e($ordemAtual) ?>&busca=<?= urlencode($busca) ?>" class="stretched-link"></a>
                     </div>
                 </div>
             </div>

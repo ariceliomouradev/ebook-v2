@@ -70,13 +70,13 @@ $busca = $busca ?? ($_GET['busca'] ?? '');
                     <li><hr class="dropdown-divider border-secondary"></li>
 
                     <?php if ($perfilUsuario === 'admin'): ?>
-                    <li><a class="dropdown-item" href="<?= caminhoRaiz() ?>usuarios.php" data-testid="btn-menu-usuarios"><i class="fas fa-users me-2"></i>Gerenciar Usuários</a></li>
+                    <li><a class="dropdown-item" href="<?= url('usuarios.php') ?>" data-testid="btn-menu-usuarios"><i class="fas fa-users me-2"></i>Gerenciar Usuários</a></li>
                     <?php endif; ?>
 
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalTrocarSenha" data-testid="btn-menu-trocar-senha"><i class="fas fa-key me-2"></i>Trocar Senha</a></li>
 
                     <li><hr class="dropdown-divider border-secondary"></li>
-                    <li><a class="dropdown-item text-danger" href="<?= caminhoRaiz() ?>logout.php" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
+                    <li><a class="dropdown-item text-danger" href="<?= url('logout.php') ?>" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
                 </ul>
             </div>
 

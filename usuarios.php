@@ -23,7 +23,7 @@ $tituloPagina = 'Gerenciar Usuários';
                 <h5 class="text-info mb-0" data-testid="titulo-pagina-usuarios"><i class="fas fa-users-cog me-2"></i>Controle de Acessos</h5>
             </div>
             <div class="col-12 col-md-7 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end">
-                <a href="index.php" class="btn btn-outline-secondary btn-sm" data-testid="btn-voltar-index">
+                <a href="<?= url('index.php') ?>" class="btn btn-outline-secondary btn-sm" data-testid="btn-voltar-index">
                     <i class="fas fa-arrow-left me-1"></i> Voltar à Biblioteca
                 </a>
                 <button class="btn btn-neon btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario" data-testid="btn-modal-novo-usuario">

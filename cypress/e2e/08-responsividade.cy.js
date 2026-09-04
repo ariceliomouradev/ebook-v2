@@ -113,15 +113,15 @@ describe('Responsividade', () => {
       });
 
       it('apresenta a gestão de usuários sem estourar a largura', () => {
-        cy.visit('usuarios.php');
+        cy.visit('usuarios');
         cy.tid('tabela-usuarios').should('be.visible');
         cy.tid('linha-usuario').first().should('be.visible');
         cy.semRolagemHorizontal();
       });
 
       it('mantém a tela de login centralizada e utilizável', () => {
-        cy.visit('logout.php');
-        cy.visit('login.php');
+        cy.visit('logout');
+        cy.visit('login');
         cy.tid('login-container').should('be.visible').dentroDoViewport();
         cy.tid('login-submit-btn').alvoDeToqueConfortavel(38);
         cy.semRolagemHorizontal();
@@ -141,7 +141,7 @@ describe('Responsividade', () => {
       it(`usa escala inicial de ${zoom} em ${largura}px`, () => {
         cy.viewport(largura, altura);
         cy.entrarComo('leitor');
-        cy.visit(`views/leitor.php?id=${livro.id}`);
+        cy.visit(`leitor?id=${livro.id}`);
         cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
         cy.tid('text-zoom-level').should('have.text', zoom);
       });
@@ -150,7 +150,7 @@ describe('Responsividade', () => {
     it('mantém o HUD acessível e o canvas dentro da tela no celular', () => {
       cy.viewport(375, 812);
       cy.entrarComo('leitor');
-      cy.visit(`views/leitor.php?id=${livro.id}`);
+      cy.visit(`leitor?id=${livro.id}`);
       cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
 
       cy.tid('hud-menu').should('be.visible').dentroDoViewport();
@@ -170,7 +170,7 @@ describe('Responsividade', () => {
     it('avança a página com gesto de swipe para cima no celular', () => {
       cy.viewport(375, 812);
       cy.entrarComo('leitor');
-      cy.visit(`views/leitor.php?id=${livro.id}&origem=1`);
+      cy.visit(`leitor?id=${livro.id}&origem=1`);
       cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
       cy.tid('btn-first-page').click();
       cy.tid('input-page-number').should('have.value', '1');
@@ -195,10 +195,14 @@ describe('Responsividade', () => {
   });
 
   describe('Meta viewport e tema', () => {
-    ['login.php', 'index.php', 'usuarios.php'].forEach((pagina) => {
-      it(`${pagina} declara viewport responsivo e tema escuro`, () => {
+    [
+      { rotulo: '/login', url: 'login' },
+      { rotulo: '/ (biblioteca)', url: './' },
+      { rotulo: '/usuarios', url: 'usuarios' },
+    ].forEach(({ rotulo, url }) => {
+      it(`${rotulo} declara viewport responsivo e tema escuro`, () => {
         cy.entrarComo('admin');
-        cy.visit(pagina);
+        cy.visit(url);
         cy.get('head meta[name="viewport"]')
           .should('have.attr', 'content')
           .and('include', 'width=device-width');

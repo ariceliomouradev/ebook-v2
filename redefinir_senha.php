@@ -46,7 +46,7 @@ $tituloPagina = 'Criar Nova Senha';
                 <i class="fas fa-times-circle fs-4 d-block mb-2"></i>
                 Link inválido ou expirado.<br>Por favor, solicite a redefinição novamente.
             </div>
-            <a href="login.php" class="btn btn-outline-light w-100 mt-3">Voltar ao Login</a>
+            <a href="<?= url('login.php') ?>" class="btn btn-outline-light w-100 mt-3">Voltar ao Login</a>
         <?php else: ?>
 
             <form action="api/salvar_nova_senha.php" method="POST" data-testid="form-salvar-nova-senha">

@@ -25,7 +25,7 @@ if ($user) {
         ->execute([$token, $expiraEm, $user['id']]);
 
     $urlBase = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . "://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2);
-    $linkRecuperacao = $urlBase . '/redefinir_senha.php?token=' . $token;
+    $linkRecuperacao = $urlBase . '/redefinir-senha?token=' . $token;
 
     $assunto = 'Redefinição de Senha - Meus Livros';
     $mensagem = "Olá, {$user['nome']}.\n\n"

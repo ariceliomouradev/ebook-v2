@@ -33,7 +33,7 @@ describe('Leitor de PDF', () => {
   /** Abre o leitor já autenticado e espera o PDF terminar de carregar. */
   function abrirLeitor(perfil, query = '') {
     cy.entrarComo(perfil);
-    cy.visit(`views/leitor.php?id=${livro.id}${query}`);
+    cy.visit(`leitor?id=${livro.id}${query}`);
     cy.tid('text-total-pages', { timeout: 30000 }).should('have.text', String(TOTAL_PAGINAS));
   }
 
@@ -45,7 +45,7 @@ describe('Leitor de PDF', () => {
       cy.tid('book-item').should('have.length', 1);
       cy.tid('book-item').first().click();
 
-      cy.url().should('include', `views/leitor.php?id=${livro.id}`);
+      cy.url().should('include', `leitor?id=${livro.id}`);
       cy.title().should('contain', livro.titulo);
       cy.tid('pdf-canvas').should('be.visible');
       cy.tid('text-total-pages', { timeout: 30000 }).should('have.text', String(TOTAL_PAGINAS));
@@ -73,10 +73,10 @@ describe('Leitor de PDF', () => {
 
     it('recusa id inexistente com 404 e id inválido com 400', () => {
       cy.entrarComo('leitor');
-      cy.request({ url: 'views/leitor.php?id=99999999', failOnStatusCode: false })
+      cy.request({ url: 'leitor?id=99999999', failOnStatusCode: false })
         .its('status')
         .should('eq', 404);
-      cy.request({ url: 'views/leitor.php', failOnStatusCode: false }).its('status').should('eq', 400);
+      cy.request({ url: 'leitor', failOnStatusCode: false }).its('status').should('eq', 400);
     });
   });
 
@@ -247,7 +247,7 @@ describe('Leitor de PDF', () => {
         .its('status')
         .should('eq', 400);
 
-      cy.request('index.php').then((pagina) => {
+      cy.request('./').then((pagina) => {
         const csrf = JSON.parse(pagina.body.match(/id="app-config">\s*([\s\S]*?)\s*<\/script>/)[1]).csrfToken;
         cy.request({
           method: 'POST',
@@ -287,7 +287,7 @@ describe('Leitor de PDF', () => {
 
     it('volta preservando página, ordenação e busca da biblioteca', () => {
       cy.entrarComo('leitor');
-      cy.visit(`views/leitor.php?id=${livro.id}&origem=2&ordem=az&busca=teste`);
+      cy.visit(`leitor?id=${livro.id}&origem=2&ordem=az&busca=teste`);
       cy.tid('btn-back-library')
         .should('have.attr', 'href')
         .and('include', 'pagina=2')
@@ -295,7 +295,7 @@ describe('Leitor de PDF', () => {
         .and('include', 'busca=teste');
 
       cy.tid('btn-back-library').click();
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
       cy.tid('input-busca-principal').should('have.value', 'teste');
       cy.tid('select-ordenacao').should('have.value', 'az');
     });

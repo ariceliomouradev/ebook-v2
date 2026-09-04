@@ -18,7 +18,7 @@ function tokenDeReset(email) {
 }
 
 function solicitarReset(email) {
-  cy.visit('login.php');
+  cy.visit('login');
   cy.tid('link-esqueci-senha').click();
   cy.tid('input-email-recuperacao').type(email);
   cy.tid('btn-enviar-link-reset').click();
@@ -61,7 +61,7 @@ describe('Senhas', () => {
       cy.url().should('include', 'erro=1');
 
       cy.loginPelaUi(email, nova);
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
     });
 
     it('recusa quando a senha atual está errada', () => {
@@ -95,7 +95,7 @@ describe('Senhas', () => {
 
     it('bloqueia senha fraca também no servidor', () => {
       cy.tid('btn-fechar-modal-senha').click();
-      cy.request('index.php').then((pagina) => {
+      cy.request('./').then((pagina) => {
         const csrf = JSON.parse(pagina.body.match(/id="app-config">\s*([\s\S]*?)\s*<\/script>/)[1]).csrfToken;
         cy.request({
           method: 'POST',
@@ -152,7 +152,7 @@ describe('Senhas', () => {
 
     it('nunca expõe o link de redefinição na tela', () => {
       solicitarReset(email());
-      cy.get('body').should('not.contain.text', 'redefinir_senha.php?token=');
+      cy.get('body').should('not.contain.text', 'redefinir-senha?token=');
     });
 
     it('permite criar a nova senha e entrar com ela', () => {
@@ -160,7 +160,7 @@ describe('Senhas', () => {
 
       tokenDeReset(email()).then((linhas) => {
         const token = linhas[0].reset_token;
-        cy.visit(`redefinir_senha.php?token=${token}`);
+        cy.visit(`redefinir-senha?token=${token}`);
         cy.tid('redefinir-container').should('be.visible');
         cy.tid('input-redefinir-senha').type(nova, { log: false });
         cy.tid('input-redefinir-confirma').type(nova, { log: false });
@@ -170,7 +170,7 @@ describe('Senhas', () => {
         cy.tid('login-alerta').should('contain.text', 'Senha redefinida');
 
         cy.loginPelaUi(email(), nova);
-        cy.url().should('include', 'index.php');
+        cy.url().should('not.include', '.php');
 
         // O token é de uso único: some do banco após a troca.
         tokenDeReset(email()).then((depois) => {
@@ -184,19 +184,19 @@ describe('Senhas', () => {
 
       tokenDeReset(email()).then((linhas) => {
         const token = linhas[0].reset_token;
-        cy.visit(`redefinir_senha.php?token=${token}`);
+        cy.visit(`redefinir-senha?token=${token}`);
         cy.tid('input-redefinir-senha').type(nova, { log: false });
         cy.tid('input-redefinir-confirma').type(nova, { log: false });
         cy.get('[data-testid="form-salvar-nova-senha"]').submit();
         cy.url().should('include', 'msg=pwd_recovered');
 
-        cy.visit(`redefinir_senha.php?token=${token}`);
+        cy.visit(`redefinir-senha?token=${token}`);
         cy.tid('msg-token-invalido').should('be.visible').and('contain.text', 'Link inválido ou expirado');
       });
     });
 
     it('recusa token inexistente', () => {
-      cy.visit('redefinir_senha.php?token=' + 'f'.repeat(64));
+      cy.visit('redefinir-senha?token=' + 'f'.repeat(64));
       cy.tid('msg-token-invalido').should('be.visible');
       cy.get('[data-testid="form-salvar-nova-senha"]').should('not.exist');
     });
@@ -207,7 +207,7 @@ describe('Senhas', () => {
       // escritas que declarem o escopo de teste no próprio comando.
       cy.sql("UPDATE usuarios SET reset_expires = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE email LIKE '%@e2e.test'");
       tokenDeReset(email()).then((linhas) => {
-        cy.visit(`redefinir_senha.php?token=${linhas[0].reset_token}`);
+        cy.visit(`redefinir-senha?token=${linhas[0].reset_token}`);
         cy.tid('msg-token-invalido').should('be.visible');
       });
     });
@@ -215,7 +215,7 @@ describe('Senhas', () => {
     it('avisa quando a confirmação não coincide e mantém o formulário', () => {
       solicitarReset(email());
       tokenDeReset(email()).then((linhas) => {
-        cy.visit(`redefinir_senha.php?token=${linhas[0].reset_token}`);
+        cy.visit(`redefinir-senha?token=${linhas[0].reset_token}`);
         cy.tid('input-redefinir-senha').type(nova, { log: false });
         cy.tid('input-redefinir-confirma').type('Diferente@2026', { log: false });
         cy.get('[data-testid="form-salvar-nova-senha"]').submit();

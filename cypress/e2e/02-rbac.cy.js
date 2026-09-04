@@ -75,7 +75,7 @@ describe('Controle de acesso por perfil (RBAC)', () => {
   describe('Página de gestão de usuários (usuarios.php)', () => {
     it('admin acessa normalmente', () => {
       cy.entrarComo('admin');
-      cy.visit('usuarios.php');
+      cy.visit('usuarios');
       cy.tid('titulo-pagina-usuarios').should('be.visible');
       cy.tid('tabela-usuarios').should('exist');
     });
@@ -83,9 +83,9 @@ describe('Controle de acesso por perfil (RBAC)', () => {
     ['leitor', 'contribuidor'].forEach((perfil) => {
       it(`${perfil} é redirecionado para o dashboard`, () => {
         cy.entrarComo(perfil);
-        cy.request({ url: 'usuarios.php', followRedirect: false }).then((r) => {
+        cy.request({ url: 'usuarios', followRedirect: false }).then((r) => {
           expect(r.status).to.eq(302);
-          expect(r.redirectedToUrl).to.contain('index.php');
+          expect(r.redirectedToUrl).to.not.contain('.php');
         });
       });
     });
@@ -102,7 +102,7 @@ describe('Controle de acesso por perfil (RBAC)', () => {
 
     /** POST autenticado carregando o CSRF da sessão corrente. */
     function postar(url, corpo, opcoes = {}) {
-      return cy.request('index.php').then((pagina) => {
+      return cy.request('./').then((pagina) => {
         const csrf = JSON.parse(pagina.body.match(/id="app-config">\s*([\s\S]*?)\s*<\/script>/)[1]).csrfToken;
         return cy.request({
           method: 'POST',
@@ -142,7 +142,7 @@ describe('Controle de acesso por perfil (RBAC)', () => {
       it('é redirecionado ao tentar enviar um livro', () => {
         postar('api/upload.php', { titulo: 'x' }).then((r) => {
           expect(r.status).to.eq(302);
-          expect(r.redirectedToUrl).to.contain('index.php');
+          expect(r.redirectedToUrl).to.not.contain('.php');
         });
       });
 
@@ -154,7 +154,7 @@ describe('Controle de acesso por perfil (RBAC)', () => {
       });
 
       it('pode ler livros e salvar o próprio progresso', () => {
-        cy.request({ url: `views/leitor.php?id=${livro.id}`, failOnStatusCode: false })
+        cy.request({ url: `leitor?id=${livro.id}`, failOnStatusCode: false })
           .its('status')
           .should('eq', 200);
         cy.request({ url: `api/download.php?id=${livro.id}`, followRedirect: false })
@@ -252,7 +252,7 @@ describe('Controle de acesso por perfil (RBAC)', () => {
       cy.clearCookies();
       cy.request({ url: 'api/download.php?id=1', followRedirect: false }).then((r) => {
         expect(r.status).to.eq(302);
-        expect(r.redirectedToUrl).to.contain('login.php');
+        expect(r.redirectedToUrl).to.contain('/login');
       });
     });
   });

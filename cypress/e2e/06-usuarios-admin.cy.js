@@ -22,7 +22,7 @@ describe('Gestão de usuários (admin)', () => {
 
   beforeEach(() => {
     cy.entrarComo('admin');
-    cy.visit('usuarios.php');
+    cy.visit('usuarios');
   });
 
   describe('Listagem', () => {
@@ -52,7 +52,7 @@ describe('Gestão de usuários (admin)', () => {
 
     it('volta para a biblioteca pelo botão de retorno', () => {
       cy.tid('btn-voltar-index').click();
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
       cy.aguardarBiblioteca();
     });
   });
@@ -82,7 +82,7 @@ describe('Gestão de usuários (admin)', () => {
 
       Cypress.session.clearAllSavedSessions();
       cy.loginPelaUi(email, SENHA_VALIDA);
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
       cy.aguardarBiblioteca();
       cy.tid('btn-novo-livro').should('exist');
       cy.tid('btn-abrir-gerenciador').should('not.exist');
@@ -98,12 +98,12 @@ describe('Gestão de usuários (admin)', () => {
       cy.tid('input-senha-usuario').then(($el) => {
         expect($el[0].checkValidity(), 'senha fraca reprovada pelo pattern').to.be.false;
       });
-      cy.url().should('include', 'usuarios.php');
+      cy.url().should('include', '/usuarios');
     });
 
     it('bloqueia senha fraca também no servidor', () => {
       const email = `fracosrv${Date.now().toString().slice(-6)}${SUFIXO()}`;
-      cy.request('usuarios.php').then((pagina) => {
+      cy.request('usuarios').then((pagina) => {
         const csrf = pagina.body.match(/name="csrf_token" value="([a-f0-9]+)"/)[1];
         cy.request({
           method: 'POST',
@@ -156,7 +156,7 @@ describe('Gestão de usuários (admin)', () => {
 
       Cypress.session.clearAllSavedSessions();
       cy.loginPelaUi(alvo.email, novaSenha);
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
 
       // Restaura a senha padrão da massa de teste para os demais specs.
       cy.semearUsuarios();
@@ -185,7 +185,7 @@ describe('Gestão de usuários (admin)', () => {
         titulo: `${PREFIXO_TITULO} Livro do Excluído`,
         emailDono: email,
       }).then((livro) => {
-        cy.visit('usuarios.php');
+        cy.visit('usuarios');
         cy.contains('[data-testid="linha-usuario"]', email).tidDentro('btn-excluir-usuario').click();
 
         cy.tid('modal-excluir-usuario').should('be.visible');
@@ -215,7 +215,7 @@ describe('Gestão de usuários (admin)', () => {
       const admin = USUARIOS.admin;
       cy.sql('SELECT id FROM usuarios WHERE email = ?', [admin.email]).then((linhas) => {
         const meuId = linhas[0].id;
-        cy.request('usuarios.php').then((pagina) => {
+        cy.request('usuarios').then((pagina) => {
           const csrf = pagina.body.match(/name="csrf_token" value="([a-f0-9]+)"/)[1];
           cy.request({
             method: 'POST',

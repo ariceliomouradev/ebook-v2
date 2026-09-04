@@ -4,3 +4,71 @@
 <FilesMatch "^(\.env.*|\.git.*|\.gitignore|\.gitattributes|composer\.(json|lock)|package(-lock)?\.json|cypress\.config\.js|.*\.sql|.*\.md)$">
     Require all denied
 </FilesMatch>
+
+Options -Indexes
+
+# ---------------------------------------------------------------------------
+# URLs amigáveis
+#
+# As páginas continuam sendo arquivos .php no disco; o que muda é o endereço:
+#   /login            -> login.php
+#   /usuarios         -> usuarios.php
+#   /redefinir-senha  -> redefinir_senha.php
+#   /leitor           -> views/leitor.php
+#   /                 -> index.php
+#
+# Endereços antigos com .php continuam funcionando: respondem 301 para a versão
+# limpa, então links já compartilhados (inclusive e-mails de redefinição de
+# senha enviados antes desta mudança) não quebram.
+#
+# Os endpoints de api/ ficam de fora de propósito — são alvos de formulário e de
+# fetch, nunca aparecem na barra de endereços, e reescrevê-los só criaria risco
+# de quebrar um POST.
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # --- 0. Descobre em que pasta o projeto está instalado --------------------
+    # Sem isto, um redirecionamento com caminho relativo é expandido pelo Apache
+    # para o caminho do disco (o navegador receberia /C:/xampp/htdocs/...). A
+    # regra compara a URL pedida com o caminho relativo que o mod_rewrite vê e
+    # guarda a diferença — que é justamente o prefixo da instalação. Fica vazio
+    # quando o projeto está na raiz do domínio, e vale "/pasta/" quando não está,
+    # então o mesmo .htaccess serve para os dois casos sem edição.
+    RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+    RewriteRule ^(.*)$ - [E=BASE:%1]
+
+    # --- 1. Endereço antigo (.php) redireciona para o limpo -------------------
+    # A condição REDIRECT_STATUS garante que isto só vale para a requisição que
+    # chegou do navegador, nunca para a reescrita interna da regra 2 — sem ela o
+    # servidor entraria em laço infinito.
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteRule ^index\.php$ %{ENV:BASE} [R=301,L,QSA]
+
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteRule ^redefinir_senha\.php$ %{ENV:BASE}redefinir-senha [R=301,L,QSA]
+
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteRule ^views/leitor\.php$ %{ENV:BASE}leitor [R=301,L,QSA]
+
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteCond %{REQUEST_METHOD} =GET
+    # Só as páginas da raiz: assim os arquivos de config/, includes/, database/ e
+    # components/ continuam sendo negados pelo .htaccess de cada pasta, sem passar
+    # antes por um redirecionamento.
+    RewriteRule ^(?!api/)([^/]+)\.php$ %{ENV:BASE}$1 [R=301,L,QSA]
+
+    # --- 2. Rota limpa serve o arquivo real -----------------------------------
+    RewriteRule ^redefinir-senha/?$ redefinir_senha.php [L,QSA]
+    RewriteRule ^leitor/?$ views/leitor.php [L,QSA]
+
+    # Qualquer /nome vira nome.php, desde que o arquivo exista. O que já é
+    # arquivo ou pasta de verdade (capas/, assets/…) passa direto.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^([^/.]+)/?$ $1.php [L,QSA]
+</IfModule>

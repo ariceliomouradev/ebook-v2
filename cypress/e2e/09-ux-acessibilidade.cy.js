@@ -28,16 +28,20 @@ describe('UX e acessibilidade', () => {
   });
 
   describe('Console limpo', () => {
-    const paginas = ['login.php', 'index.php', 'usuarios.php'];
+    const paginas = [
+      { rotulo: '/login', url: 'login' },
+      { rotulo: '/ (biblioteca)', url: './' },
+      { rotulo: '/usuarios', url: 'usuarios' },
+    ];
 
-    paginas.forEach((pagina) => {
-      it(`${pagina} carrega sem erros no console`, () => {
+    paginas.forEach(({ rotulo, url }) => {
+      it(`${rotulo} carrega sem erros no console`, () => {
         const erros = [];
         cy.entrarComo('admin');
-        cy.visitarColetandoErros(pagina, erros);
+        cy.visitarColetandoErros(url, erros);
         cy.wait(1500);
         cy.then(() => {
-          expect(erros, `erros de console em ${pagina}`).to.deep.eq([]);
+          expect(erros, `erros de console em ${rotulo}`).to.deep.eq([]);
         });
       });
     });
@@ -45,7 +49,7 @@ describe('UX e acessibilidade', () => {
     it('o leitor carrega o PDF sem violar a Content-Security-Policy', () => {
       const erros = [];
       cy.entrarComo('leitor');
-      cy.visitarColetandoErros(`views/leitor.php?id=${livro.id}`, erros);
+      cy.visitarColetandoErros(`leitor?id=${livro.id}`, erros);
       cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
       cy.then(() => {
         const csp = erros.filter((e) => /Content Security Policy|livroConfig is not defined/i.test(e));
@@ -56,15 +60,15 @@ describe('UX e acessibilidade', () => {
 
   describe('Títulos e semântica das páginas', () => {
     const titulos = [
-      { url: 'login.php', contem: 'Login' },
-      { url: 'index.php', contem: 'Meus Livros' },
-      { url: 'usuarios.php', contem: 'Gerenciar Usuários' },
+      { url: 'login', contem: 'Login' },
+      { url: './', contem: 'Meus Livros' },
+      { url: 'usuarios', contem: 'Gerenciar Usuários' },
     ];
 
     titulos.forEach(({ url, contem }) => {
       it(`${url} tem título descritivo na aba`, () => {
-        if (url === 'login.php') {
-          // Autenticado, login.php redireciona para o dashboard.
+        if (url === 'login') {
+          // Autenticado, /login redireciona para o dashboard.
           Cypress.session.clearAllSavedSessions();
           cy.clearCookies();
         } else {
@@ -86,7 +90,7 @@ describe('UX e acessibilidade', () => {
 
     it('os campos de senha têm dica visível do requisito mínimo', () => {
       cy.entrarComo('admin');
-      cy.visit('usuarios.php');
+      cy.visit('usuarios');
       cy.tid('btn-modal-novo-usuario').click();
       // A mesma dica aparece em outros modais (ocultos): a busca fica no aberto.
       cy.tid('modal-novo-usuario').contains('Mín 8 caracteres').should('be.visible');
@@ -97,7 +101,7 @@ describe('UX e acessibilidade', () => {
 
     it('os botões de ação da tabela de usuários têm title explicativo', () => {
       cy.entrarComo('admin');
-      cy.visit('usuarios.php');
+      cy.visit('usuarios');
       cy.tid('btn-reset-senha').first().should('have.attr', 'title', 'Redefinir Senha');
       cy.tid('btn-excluir-usuario').first().should('have.attr', 'title', 'Excluir Usuário');
     });
@@ -109,7 +113,7 @@ describe('UX e acessibilidade', () => {
     });
 
     it('mostra o loader durante o carregamento e o esconde ao final', () => {
-      cy.visit('index.php');
+      cy.visit('./');
       cy.tid('global-loader').should('exist');
       cy.tid('global-loader').should('have.class', 'loader-hidden');
     });
@@ -145,7 +149,7 @@ describe('UX e acessibilidade', () => {
     });
 
     it('limpa o parâmetro msg da URL depois de mostrar o alerta', () => {
-      cy.visit('index.php?msg=pwd_changed');
+      cy.visit('./?msg=pwd_changed');
       cy.tid('modal-alerta-global').should('be.visible');
       cy.url().should('not.include', 'msg=');
     });
@@ -211,15 +215,15 @@ describe('UX e acessibilidade', () => {
     it('permite enviar o login apenas com o teclado', () => {
       const usuario = USUARIOS.leitor;
       Cypress.session.clearAllSavedSessions();
-      cy.visit('login.php');
+      cy.visit('login');
       cy.tid('login-email-input').focus().type(usuario.email);
       cy.tid('login-password-input').type(`${SENHA_PADRAO}{enter}`, { log: false });
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
     });
 
     it('permite trocar de página no leitor pelo campo numérico', () => {
       cy.entrarComo('leitor');
-      cy.visit(`views/leitor.php?id=${livro.id}`);
+      cy.visit(`leitor?id=${livro.id}`);
       cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
       cy.tid('input-page-number').clear().type('2{enter}');
       cy.tid('input-page-number').should('have.value', '2');
@@ -229,7 +233,7 @@ describe('UX e acessibilidade', () => {
   describe('Consistência visual', () => {
     it('usa o tema escuro em todas as telas autenticadas', () => {
       cy.entrarComo('admin');
-      ['index.php', 'usuarios.php'].forEach((pagina) => {
+      ['./', 'usuarios'].forEach((pagina) => {
         cy.visit(pagina);
         cy.get('body').should(($b) => {
           const fundo = getComputedStyle($b[0]).backgroundColor;

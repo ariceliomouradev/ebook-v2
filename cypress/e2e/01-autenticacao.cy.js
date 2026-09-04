@@ -32,7 +32,7 @@ describe('Autenticação', () => {
   });
 
   describe('Tela de login', () => {
-    beforeEach(() => cy.visit('login.php'));
+    beforeEach(() => cy.visit('login'));
 
     it('apresenta identidade, formulário e link de recuperação', () => {
       cy.tid('login-container').should('be.visible');
@@ -58,7 +58,7 @@ describe('Autenticação', () => {
 
     it('não envia o formulário com campos vazios (validação nativa do navegador)', () => {
       cy.tid('login-submit-btn').click();
-      cy.url().should('include', 'login.php');
+      cy.url().should('include', '/login');
       cy.tid('login-email-input').then(($el) => {
         expect($el[0].checkValidity(), 'campo e-mail inválido quando vazio').to.be.false;
       });
@@ -80,7 +80,7 @@ describe('Autenticação', () => {
         const usuario = usuarios()[perfil];
         cy.loginPelaUi(usuario.email, SENHA());
 
-        cy.url().should('include', 'index.php');
+        cy.url().should('not.include', '.php');
         cy.aguardarBiblioteca();
         cy.tid('btn-user-menu').should('contain.text', usuario.nome.split(' ')[0]).click();
         cy.contains('Nível:').should('contain.text', perfil.toUpperCase());
@@ -91,7 +91,7 @@ describe('Autenticação', () => {
   describe('Credenciais inválidas', () => {
     it('rejeita senha errada com mensagem genérica', () => {
       cy.loginPelaUi(usuarios().leitor.email, 'SenhaErrada1!');
-      cy.url().should('include', 'login.php?erro=1');
+      cy.url().should('include', 'login?erro=1');
       cy.tid('login-alerta').should('contain.text', 'E-mail ou senha inválidos');
     });
 
@@ -118,7 +118,7 @@ describe('Autenticação', () => {
     it('recusa GET em api/auth.php (só POST é permitido)', () => {
       cy.request({ url: 'api/auth.php', followRedirect: false }).then((r) => {
         expect(r.status).to.eq(302);
-        expect(r.redirectedToUrl).to.contain('index.php');
+        expect(r.redirectedToUrl).to.not.contain('.php');
       });
     });
   });
@@ -128,7 +128,7 @@ describe('Autenticação', () => {
       const alvo = usuarios().leitor.email;
 
       for (let i = 0; i < 5; i++) {
-        cy.request({ url: 'login.php' }).then((r) => {
+        cy.request({ url: 'login' }).then((r) => {
           const csrf = r.body.match(/name="csrf_token" value="([a-f0-9]+)"/)[1];
           cy.request({
             method: 'POST',
@@ -148,34 +148,34 @@ describe('Autenticação', () => {
     it('libera o acesso quando o histórico de falhas é limpo', () => {
       cy.task('db:limparTentativas', { desde: instanteMysql(600) });
       cy.loginPelaUi(usuarios().leitor.email, SENHA());
-      cy.url().should('include', 'index.php');
+      cy.url().should('not.include', '.php');
     });
   });
 
   describe('Proteção de rota e sessão', () => {
     it('redireciona visitante anônimo do dashboard para o login', () => {
       cy.clearCookies();
-      cy.request({ url: 'index.php', followRedirect: false }).then((r) => {
+      cy.request({ url: './', followRedirect: false }).then((r) => {
         expect(r.status).to.eq(302);
-        expect(r.redirectedToUrl).to.contain('login.php');
+        expect(r.redirectedToUrl).to.contain('/login');
       });
     });
 
     it('redireciona visitante anônimo do leitor e da gestão de usuários', () => {
       cy.clearCookies();
-      ['views/leitor.php?id=1', 'usuarios.php'].forEach((rota) => {
+      ['leitor?id=1', 'usuarios'].forEach((rota) => {
         cy.request({ url: rota, followRedirect: false }).then((r) => {
           expect(r.status, rota).to.eq(302);
-          expect(r.redirectedToUrl, rota).to.contain('login.php');
+          expect(r.redirectedToUrl, rota).to.contain('/login');
         });
       });
     });
 
     it('manda usuário já autenticado direto para o dashboard ao abrir o login', () => {
       cy.entrarComo('leitor');
-      cy.request({ url: 'login.php', followRedirect: false }).then((r) => {
+      cy.request({ url: 'login', followRedirect: false }).then((r) => {
         expect(r.status).to.eq(302);
-        expect(r.redirectedToUrl).to.contain('index.php');
+        expect(r.redirectedToUrl).to.not.contain('.php');
       });
     });
 
@@ -185,8 +185,8 @@ describe('Autenticação', () => {
       cy.tid('btn-user-menu').click();
       cy.tid('btn-logout').click();
 
-      cy.url().should('include', 'login.php');
-      cy.request({ url: 'index.php', followRedirect: false })
+      cy.url().should('include', '/login');
+      cy.request({ url: './', followRedirect: false })
         .its('status')
         .should('eq', 302);
       Cypress.session.clearAllSavedSessions();
@@ -194,7 +194,7 @@ describe('Autenticação', () => {
 
     it('envia cabeçalhos de segurança e anti-cache no dashboard', () => {
       cy.entrarComo('admin');
-      cy.request('index.php').then((r) => {
+      cy.request('./').then((r) => {
         expect(r.headers['x-frame-options']).to.eq('DENY');
         expect(r.headers['x-content-type-options']).to.eq('nosniff');
         expect(r.headers['content-security-policy']).to.contain("frame-ancestors 'none'");
@@ -205,7 +205,7 @@ describe('Autenticação', () => {
 
   describe('Recuperação de senha (solicitação)', () => {
     it('abre o modal e envia a solicitação com resposta neutra', () => {
-      cy.visit('login.php');
+      cy.visit('login');
       cy.tid('link-esqueci-senha').click();
       cy.tid('modal-esqueci-senha').should('be.visible');
       cy.tid('input-email-recuperacao').type(usuarios().leitor.email);
@@ -216,7 +216,7 @@ describe('Autenticação', () => {
     });
 
     it('responde igual para e-mail inexistente (sem vazar cadastro)', () => {
-      cy.visit('login.php');
+      cy.visit('login');
       cy.tid('link-esqueci-senha').click();
       cy.tid('input-email-recuperacao').type('fantasma' + SUFIXO_EMAIL);
       cy.tid('btn-enviar-link-reset').click();

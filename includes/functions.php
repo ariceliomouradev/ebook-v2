@@ -38,9 +38,59 @@ function caminhoRaiz(): string
     return defined('CAMINHO_RAIZ') ? CAMINHO_RAIZ : '';
 }
 
+/**
+ * Traduz um alvo interno na URL amigável correspondente:
+ *
+ *   index.php              -> ''  (a raiz da aplicação)
+ *   login.php?erro=1       -> login?erro=1
+ *   redefinir_senha.php    -> redefinir-senha
+ *   views/leitor.php?id=7  -> leitor?id=7
+ *
+ * As páginas continuam sendo arquivos .php no disco — quem traduz a URL limpa de
+ * volta para o arquivo é o .htaccess. Concentrar a tradução aqui é o que permite
+ * o resto do código continuar se referindo às páginas pelo nome do arquivo.
+ *
+ * Endpoints de api/ ficam intactos: são alvos de formulário e de fetch, não
+ * aparecem na barra de endereços.
+ */
+function rotaAmigavel(string $destino): string
+{
+    [$caminho, $consulta] = array_pad(explode('?', $destino, 2), 2, null);
+    $consulta = $consulta === null ? '' : '?' . $consulta;
+
+    $rotasEspeciais = [
+        'index.php'           => '',
+        'redefinir_senha.php' => 'redefinir-senha',
+        'views/leitor.php'    => 'leitor',
+    ];
+
+    if (array_key_exists($caminho, $rotasEspeciais)) {
+        return $rotasEspeciais[$caminho] . $consulta;
+    }
+
+    if (str_ends_with($caminho, '.php') && !str_starts_with($caminho, 'api/')) {
+        return substr($caminho, 0, -4) . $consulta;
+    }
+
+    return $destino;
+}
+
+/** URL da raiz da aplicação. Nunca vazia: './' aponta para o próprio diretório. */
+function urlBase(): string
+{
+    return caminhoRaiz() !== '' ? caminhoRaiz() : './';
+}
+
+/** Monta a URL pública de uma página a partir do nome do arquivo dela. */
+function url(string $destino = ''): string
+{
+    $rota = rotaAmigavel($destino);
+    return $rota === '' ? urlBase() : caminhoRaiz() . $rota;
+}
+
 function redirecionar(string $destinoRelativoARaiz): void
 {
-    header('Location: ' . caminhoRaiz() . $destinoRelativoARaiz);
+    header('Location: ' . url($destinoRelativoARaiz));
     exit;
 }
 
