@@ -1,133 +1,315 @@
-/* assets/css/leitor.css */
+/* assets/css/leitor.css — leitor de PDF
+ *
+ * Estrutura: página em tela cheia (#canvas-container) + três camadas de interface que somem
+ * sozinhas para a leitura ficar limpa:
+ *   - .leitor-progresso  linha fina no topo (quanto do livro foi lido)
+ *   - .hud-topo          voltar + título + tela cheia
+ *   - .hud-menu          controles de página e zoom (a "doca" na base)
+ * Mesmos tokens do resto do sistema (âmbar sobre fundo escuro); funciona de celular a desktop.
+ */
 
-body { 
-    background-color: #0d0d0d; 
-    margin: 0; padding: 0; 
-    overflow: hidden; 
-    font-family: 'Segoe UI', sans-serif;
-    height: 100vh; width: 100vw;
+@font-face {
+    font-family: 'Inter Variable';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('../fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
 }
 
-/* #canvas-container {
-    height: 100%; width: 100%;
-    overflow: auto; 
-    display: flex; justify-content: center; align-items: flex-start;
-    background-color: #0d0d0d;
-    padding-bottom: 80px; 
-} */
+:root {
+    --lt-bg: #07090d;
+    --lt-vidro: rgba(28, 30, 38, 0.74);
+    --lt-borda: rgba(255, 255, 255, 0.1);
+    --lt-texto: #eceff4;
+    --lt-texto-suave: #a7b0c0;
+    --lt-acento: #f6b445;
+    --lt-acento-suave: rgba(246, 180, 69, 0.14);
+    --lt-topo: 64px;          /* altura da barra superior */
+    --lt-base: 92px;          /* espaço reservado para a doca embaixo */
+    --lt-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
 
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--lt-bg);
+    color: var(--lt-texto);
+    font-family: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+/* ---------- Página ---------------------------------------------------------- */
 #canvas-container {
-    width: 100%;
-    height: 100vh; /* Ocupa a tela toda */
-    overflow-y: auto; /* Permite scroll vertical */
-    overflow-x: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Alinha o PDF no topo */
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch; /* Scroll suave no iOS */
+    position: fixed;
+    inset: 0;
+    overflow: auto;
+    /* folga para a barra de cima e a doca de baixo não cobrirem o texto */
+    padding: calc(var(--lt-topo) + env(safe-area-inset-top)) 0 calc(var(--lt-base) + env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+    /* pan-x/pan-y desliga o zoom nativo do navegador: a pinça é tratada pelo leitor (leitor.js) */
+    touch-action: pan-x pan-y;
+    scrollbar-width: thin;
+    scrollbar-color: #2a3040 transparent;
 }
 
 #the-canvas {
     display: block;
-    margin: 20px auto; /* Espaço entre as páginas virtuais */
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    margin: 0 auto; /* centraliza; se a página ficar mais larga que a tela, a rolagem horizontal alcança tudo */
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+    transform-origin: 50% 0;
 }
 
-canvas { box-shadow: 0 0 40px rgba(0,0,0,1); margin-top: 20px; }
+/* ---------- Progresso -------------------------------------------------------- */
+.leitor-progresso {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 10001;
+    background: rgba(255, 255, 255, 0.06);
+}
+.leitor-progresso span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #d98f21, var(--lt-acento));
+    border-radius: 0 3px 3px 0;
+    transition: width 0.35s var(--lt-ease);
+}
 
-/* MENU FLUTUANTE BASE */
+/* ---------- Barra superior --------------------------------------------------- */
+.hud-topo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 18px calc(14px + env(safe-area-inset-left));
+    /* degradê: a barra "flutua" sobre a página sem uma faixa dura */
+    background: linear-gradient(to bottom, rgba(7, 9, 14, 0.92) 0%, rgba(7, 9, 14, 0.6) 60%, rgba(7, 9, 14, 0) 100%);
+    transition: opacity 0.3s var(--lt-ease), transform 0.3s var(--lt-ease);
+}
+
+/* Voltar: pílula com seta + rótulo, bem separada dos controles de página */
+.btn-voltar {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px 0 12px;
+    border-radius: 999px;
+    background: var(--lt-vidro);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--lt-borda);
+    color: var(--lt-texto);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s var(--lt-ease), color 0.15s var(--lt-ease), transform 0.15s var(--lt-ease);
+}
+.btn-voltar i { font-size: 0.8rem; color: var(--lt-acento); }
+.btn-voltar:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.btn-voltar:active { transform: scale(0.97); }
+
+.hud-titulo {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+.hud-titulo__nome {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.hud-titulo__info {
+    font-size: 0.78rem;
+    color: var(--lt-texto-suave);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Botões ------------------------------------------------------------ */
+.btn-hud {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;   /* alvo de toque mínimo recomendado */
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--lt-texto);
+    font-size: 1rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s var(--lt-ease), color 0.15s var(--lt-ease), transform 0.15s var(--lt-ease);
+}
+.btn-hud:hover { background: var(--lt-acento-suave); color: var(--lt-acento); }
+.btn-hud:active { transform: scale(0.92); }
+.btn-hud:disabled, .btn-hud[aria-disabled='true'] { opacity: 0.3; pointer-events: none; }
+.btn-hud--topo {
+    background: var(--lt-vidro);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--lt-borda);
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--lt-acento);
+    outline-offset: 2px;
+}
+
+/* ---------- Doca de controles ------------------------------------------------- */
 .hud-menu {
     position: fixed;
-    bottom: 30px;
     left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    background: rgba(18, 18, 18, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50px;
+    z-index: 10000;
     display: flex;
     align-items: center;
-    padding: 8px 25px;
-    z-index: 9999;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 210, 255, 0.1);
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    gap: 4px;
+    padding: 6px 10px;
+    max-width: calc(100vw - 24px);
+    background: var(--lt-vidro);
+    backdrop-filter: blur(20px) saturate(170%);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid var(--lt-borda);
+    border-radius: 999px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s var(--lt-ease), transform 0.3s var(--lt-ease);
 }
-
-.hud-group {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+.hud-group { display: flex; align-items: center; gap: 2px; }
 
 .page-input-container {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 2px 12px;
-    border-radius: 20px;
-    margin: 0 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.hud-input {
-    background: transparent;
-    border: none;
-    color: #00d2ff;
-    width: 45px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 1rem;
-    outline: none;
-    text-shadow: 0 0 8px rgba(0, 210, 255, 0.5);
-}
-
-/* Remove as setas do input number */
-.hud-input::-webkit-inner-spin-button, 
-.hud-input::-webkit-outer-spin-button { 
-    -webkit-appearance: none; margin: 0; 
-}
-
-.divider {
-    width: 1px;
-    height: 25px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0 15px;
-}
-
-.btn-hud {
-    background: transparent;
-    border: none;
-    color: #e0e0e0;
-    font-size: 1.1rem;
-    cursor: pointer;
-    width: 40px;
+    gap: 4px;
+    min-width: 112px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    justify-content: center;
+    padding: 0 12px;
     height: 40px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+}
+.hud-input {
+    width: 3.2ch;
+    min-width: 36px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    color: var(--lt-acento);
+    text-align: right;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+.hud-input:focus-visible { outline: none; text-decoration: underline; text-underline-offset: 4px; }
+.hud-input::-webkit-inner-spin-button,
+.hud-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.info-text { color: var(--lt-texto-suave); font-size: 0.9rem; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.divider { width: 1px; height: 24px; margin: 0 8px; background: var(--lt-borda); }
+.zoom-text {
+    min-width: 3.4ch;
+    text-align: center;
+    color: var(--lt-texto);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Interface recolhida (sem atividade): some e não intercepta toques */
+body.inactive .hud-menu { opacity: 0; transform: translateX(-50%) translateY(24px); pointer-events: none; }
+body.inactive .hud-topo { opacity: 0; transform: translateY(-16px); pointer-events: none; }
+body.inactive { cursor: none; }
+
+/* ---------- Carregando / erro ---------------------------------------------------- */
+.leitor-estado {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 14px;
+    background: var(--lt-bg);
+    color: var(--lt-texto-suave);
+    transition: opacity 0.35s var(--lt-ease), visibility 0.35s;
+}
+.leitor-estado[hidden] { display: none; }
+.leitor-estado.is-oculto { opacity: 0; visibility: hidden; pointer-events: none; }
+.leitor-estado p { margin: 0; font-size: 0.95rem; }
+.leitor-estado--erro { z-index: 9500; color: var(--lt-texto); }
+.leitor-estado--erro i { font-size: 2.2rem; color: var(--lt-acento); }
+.leitor-spinner {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
-    transition: all 0.2s;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--lt-acento);
+    animation: girar 0.8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ---------- Tablet ------------------------------------------------------------- */
+@media (max-width: 991px) {
+    :root { --lt-topo: 60px; --lt-base: 88px; }
 }
 
-.btn-hud:hover {
-    background: rgba(0, 210, 255, 0.1);
-    color: #00d2ff;
-    transform: scale(1.1);
+/* ---------- Celular ---------------------------------------------------------------
+ * Na tela estreita a doca fica só com o essencial (página anterior, número, próxima e
+ * "ajustar à largura"): zoom por pinça e primeira/última página saem de cena. O voltar vira
+ * um botão redondo só com a seta.
+ */
+@media (max-width: 599px) {
+    :root { --lt-topo: 58px; --lt-base: 84px; }
+    .hud-topo { gap: 8px; padding-left: calc(10px + env(safe-area-inset-left)); padding-right: calc(10px + env(safe-area-inset-right)); }
+    .btn-voltar { width: 44px; padding: 0; justify-content: center; }
+    .btn-voltar__texto { display: none; }
+    .btn-voltar i { font-size: 0.95rem; }
+    .hud-titulo__nome { font-size: 0.92rem; }
+    .hud-group--extremos, .hud-group--zoom, .divider { display: none; }
+    .hud-menu { width: calc(100vw - 24px); justify-content: space-between; padding: 6px 8px; }
+    .hud-group--paginas { flex: 1 1 auto; justify-content: space-between; }
+    .page-input-container { flex: 1 1 auto; }
 }
 
-body.inactive .hud-menu { opacity: 0; transform: translateX(-50%) translateY(20px); pointer-events: none; }
+/* Celular deitado: pouca altura, então tudo encolhe um pouco */
+@media (max-height: 480px) and (orientation: landscape) {
+    :root { --lt-topo: 52px; --lt-base: 76px; }
+    .hud-topo { padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 10px; }
+    .hud-menu { bottom: calc(8px + env(safe-area-inset-bottom)); }
+    .btn-hud, .btn-voltar { height: 40px; }
+    .btn-hud { width: 40px; }
+}
 
-.info-text { color: #fff; font-size: 0.85rem; font-weight: 500; }
-.zoom-text { color: #00d2ff; font-size: 0.8rem; }
-
-/* MOBILE */
-@media (max-width: 600px) {
-    .hud-menu {
-        bottom: 15px; padding: 8px 12px; gap: 5px; width: 90%; justify-content: space-around;
-    }
-    .btn-hud { width: 34px; height: 34px; font-size: 1rem; }
-    .zoom-text, .info-text span:last-child, .info-text { display: none; }
-    #pageNum { display: block; color: #fff; font-size: 0.75rem; }
-    .divider { margin: 0 2px; }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

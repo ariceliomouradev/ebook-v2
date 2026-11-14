@@ -75,6 +75,43 @@ function rotaAmigavel(string $destino): string
     return $destino;
 }
 
+/**
+ * Janela de números da paginação: sempre a primeira, a última e as vizinhas da atual, com
+ * `null` onde há um salto (reticências). Ex.: página 5 de 70 -> [1, null, 4, 5, 6, null, 70].
+ * Até 7 páginas mostra todas. Quem chama decide como desenhar o `null`.
+ *
+ * @return array<int|null>
+ */
+function paginasVisiveis(int $atual, int $total): array
+{
+    if ($total <= 7) {
+        return $total >= 1 ? range(1, $total) : [];
+    }
+
+    $mostrar = [1, $total, $atual - 1, $atual, $atual + 1];
+    if ($atual <= 3) {
+        $mostrar = array_merge($mostrar, [2, 3, 4]);              // início: evita "1 … 3 4" truncado
+    }
+    if ($atual >= $total - 2) {
+        $mostrar = array_merge($mostrar, [$total - 3, $total - 2, $total - 1]);
+    }
+    $mostrar = array_values(array_unique(array_filter($mostrar, fn($p) => $p >= 1 && $p <= $total)));
+    sort($mostrar);
+
+    $saida = [];
+    $anterior = 0;
+    foreach ($mostrar as $p) {
+        if ($p - $anterior === 2) {
+            $saida[] = $anterior + 1;   // um salto de uma só página: mostra a página, não "…"
+        } elseif ($p - $anterior > 2) {
+            $saida[] = null;
+        }
+        $saida[] = $p;
+        $anterior = $p;
+    }
+    return $saida;
+}
+
 /** URL da raiz da aplicação. Nunca vazia: './' aponta para o próprio diretório. */
 function urlBase(): string
 {
@@ -210,9 +247,11 @@ function arquivoEhPdfValido(string $caminhoTemporario): bool
         return false;
     }
 
+    // Sem finfo_close(): desde o PHP 8.1 o finfo é um objeto liberado automaticamente
+    // e a função está obsoleta no 8.5 (o aviso "Deprecated" corrompia as respostas JSON
+    // com APP_DEBUG=true).
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $caminhoTemporario);
-    finfo_close($finfo);
 
     if ($mime !== 'application/pdf') {
         return false;
@@ -242,9 +281,8 @@ function imagemUploadEhValida(string $caminhoTemporario, array $extensoesPermiti
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $caminhoTemporario);
-    finfo_close($finfo);
 
-    $mapaMime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png'];
+    $mapaMime =['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
     $mimesPermitidos = array_map(fn($ext) => $mapaMime[$ext] ?? null, $extensoesPermitidas);
 
     if (!in_array($mime, $mimesPermitidos, true)) {

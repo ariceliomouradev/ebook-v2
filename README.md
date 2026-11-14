@@ -25,6 +25,7 @@ As pastas `uploads/`, `capas/` e `banners/` vêm versionadas vazias, já com os 
 - [Stack tecnológica](#stack-tecnológica)
 - [Arquitetura](#arquitetura)
 - [Como rodar localmente](#como-rodar-localmente)
+- [Importar um acervo em lote](#importar-um-acervo-em-lote)
 - [Hospedagem](#hospedagem)
 - [Estrutura de pastas](#estrutura-de-pastas)
 - [Modelo de dados](#modelo-de-dados)
@@ -51,13 +52,16 @@ As pastas `uploads/`, `capas/` e `banners/` vêm versionadas vazias, já com os 
 | Área | O que faz |
 |---|---|
 | **Catálogo de livros** | Upload de PDF com geração automática de capa (renderizada no navegador a partir da 1ª página), edição de título/autor, exclusão com limpeza dos arquivos físicos |
-| **Busca e navegação** | Busca em tempo real (server-side, sobre todo o acervo) com debounce; ordenação por mais recentes, mais antigos, A-Z e Z-A; paginação |
-| **Leitor de PDF integrado** | Renderização página a página com PDF.js, zoom (0.4×–3.0×), tela cheia, navegação por teclado/scroll/swipe, carregamento em streaming (HTTP Range requests) para arquivos grandes |
+| **Busca, categorias e navegação** | Busca em tempo real (server-side, sobre todo o acervo) com debounce e atalho `/`; filtro por **categoria** (chips com contagem); ordenação por mais recentes, mais antigos, A-Z e Z-A; **10 livros por página** com paginação em controle segmentado (estilo iOS) |
+| **Continue lendo** | Faixa de atalhos com os livros em andamento (sem barra de rolagem, arrasto com o mouse), com progresso e retomada na página certa |
+| **Leitor de PDF integrado** | PDF.js com texto nítido em telas retina; barra superior (voltar, título, progresso) e doca de controles que somem sozinhas; zoom (0.4×–3.0×) e pinça no toque; toque nas bordas vira a página; atalhos de teclado (← →, + −, 0, F); tela cheia; carregamento em streaming (HTTP Range) para arquivos grandes; layouts para desktop, tablet e celular |
 | **Progresso de leitura por usuário** | Cada usuário tem seu próprio marcador de página em cada livro — dois leitores do mesmo PDF não sobrescrevem o progresso um do outro |
 | **Autenticação e controle de acesso** | Login com hash bcrypt, três perfis de RBAC, recuperação de senha por token de uso único, troca de senha autenticada |
-| **Gestão de usuários** (admin) | Criar, listar e remover usuários; redefinir senha de terceiros; proteção contra auto-exclusão |
-| **Banners personalizáveis** (admin) | Banner horizontal (mobile/tablet) e vertical (desktop), com regra de visibilidade por perfil |
+| **Gestão de usuários** (admin) | Modal no painel (sem trocar de página): criar, listar e remover usuários; redefinir senha de terceiros; proteção contra auto-exclusão |
+| **Carrossel de divulgação** (admin) | Banners que passam sozinhos, sem setas nem pontos: faixa horizontal (mobile/tablet) e lateral vertical (desktop). O admin adiciona, remove, reordena e define um **link por banner** (abre em nova aba). Já vem com peças do app, do Topete Game Retrô e do livro. Visibilidade por perfil |
 | **Integração com o sistema operacional** | Cor de tema no Chrome do Android e no Safari do iOS 15+ (a barra de endereços assume o tom do fundo), `color-scheme` escuro para controles nativos, e metas de aplicativo para quando o site é salvo na tela de início |
+| **Acervo grande** | Importador em lote por linha de comando (centenas ou milhares de PDFs): deduplica por conteúdo, repara nomes corrompidos, gera capas e nunca grava sem `--aplicar`. Paginação numerada (`1 … 4 [5] 6 … 71`) e gerenciador paginado no servidor |
+| **Aplicativo instalável (PWA)** | Manifesto, ícones (inclusive *maskable*) e cor de tema: dá para instalar na tela inicial do Android e do iPhone e abrir sem a moldura do navegador |
 | **Segurança de aplicação web** | CSRF em todas as ações de escrita, XSS mitigado por escaping consistente, rate limiting de login, validação de upload por assinatura real de arquivo (não só extensão), CSP, cookies de sessão endurecidos |
 
 ---
@@ -128,7 +132,7 @@ flowchart TD
 - [XAMPP](https://www.apachefriends.org/) (ou Apache + PHP 8.2+ + MySQL/MariaDB avulsos)
 - Extensões PHP: `pdo_mysql`, `fileinfo`, `mbstring`, `openssl` (todas vêm habilitadas por padrão no XAMPP)
 - Apache com `mod_rewrite` e `AllowOverride All` — necessário para as URLs amigáveis e para a proteção dos arquivos por `.htaccess` (padrão no XAMPP e na maioria das hospedagens)
-- [Node.js](https://nodejs.org/) 18+ — **apenas** para rodar a suíte de testes; a aplicação em si não precisa dele
+- [Node.js](https://nodejs.org/) 22.13+ — **apenas** para os testes e as ferramentas (importador de acervo, ícones); a aplicação em si não precisa dele
 
 ### Passo a passo
 
@@ -140,7 +144,7 @@ flowchart TD
    O nome da pasta define a URL da aplicação (`http://localhost/meus_livros/`) e é
    usado no passo 3 — se você usar outro nome, ajuste `APP_URL` de acordo.
 
-2. **Crie o banco de dados** e aplique o schema:
+2. **Crie o banco de dados** e aplique o schema (cria todas as tabelas e já cadastra as categorias e os banners padrão; pode ser reaplicado sem perder dados):
    ```bash
    mysql -u root -e "CREATE DATABASE biblioteca_pdf CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
    mysql -u root biblioteca_pdf < database/schema.sql
@@ -214,6 +218,40 @@ flowchart TD
 
 ---
 
+## Importar um acervo em lote
+
+Para cadastrar uma coleção grande de PDFs de uma vez (o sistema foi exercitado com 1.400 livros / 5 GB):
+
+```bash
+npm install
+npm run acervo -- --origem "D:\Livros"            # SIMULAÇÃO: analisa tudo e não grava nada
+npm run acervo -- --origem "D:\Livros" --aplicar  # importa de verdade
+npm run acervo -- --desfazer                      # remove exatamente o que o importador gravou
+```
+
+**O que ele faz**
+
+1. **Deduplica por conteúdo** (SHA-256), não pelo nome: o mesmo livro com nomes diferentes entra uma vez só. Também ignora o que já está em `uploads/`.
+2. **Repara nomes corrompidos** (`Educa+º+úo` → `Educação`), um defeito comum de ZIPs extraídos com a página de código errada.
+3. **Valida cada PDF** com o PDF.js: arquivo truncado, protegido por senha, que não é PDF ou com menos de 5 páginas vai para a lista de rejeitados em vez de entrar na biblioteca.
+4. **Gera a capa** da primeira página (o mesmo PDF.js do navegador, então ela fica igual à do upload normal).
+5. **Infere título e autor** do nome do arquivo (`Título - Autor`, `Autor - Título`, `Título by Autor`), usando o próprio acervo para reconhecer autores que se repetem. **Sem evidência, o autor fica "Autor Desconhecido"**: um autor errado é pior que nenhum, e o nome completo do arquivo continua no título.
+
+**Segurança**
+
+- Os PDFs de origem são **copiados**: a pasta de origem nunca é alterada.
+- Sem `--aplicar` nada é gravado (só o relatório).
+- É retomável: se for interrompido, rode de novo e ele continua de onde parou.
+- Recusa rodar com `APP_ENV=production`.
+- Tem trava contra duas execuções simultâneas.
+
+**Relatório para conferir**: `database/.importacao/relatorio.csv` (abre no Excel) traz uma linha por arquivo da origem, com status (`importado`, `duplicado`, `rejeitado`...), título, autor, a confiança da inferência e o motivo de cada rejeição. A pasta é ignorada pelo git e bloqueada no Apache.
+
+Opções: `--limite N` (testar com poucos), `--concorrencia N`, `--min-paginas N`, `--tempo-max S`, `--dono e-mail`. Veja `npm run acervo -- --ajuda`.
+
+> Com milhares de livros, lembre que a hospedagem compartilhada costuma ter limite de espaço em disco e de tamanho de upload. Confira o plano antes de enviar o acervo.
+
+---
 ## Hospedagem
 
 O projeto roda em qualquer hospedagem com Apache + PHP 8.2 + MySQL (compartilhada
@@ -227,9 +265,9 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
    - **FTP/SFTP ou gerenciador de arquivos**: envie tudo, **menos** `node_modules/`
      (não é usado em produção) e, se quiser, `cypress/`.
 
-   `node_modules/` nunca deve ir para o servidor. A pasta `cypress/` é inofensiva
-   (só arquivos de teste, e já vem bloqueada por `.htaccess`), então pode ficar.
-2. Crie o banco pelo painel da hospedagem (ou phpMyAdmin) e importe `database/schema.sql`.
+   `node_modules/` nunca deve ir para o servidor. As pastas `cypress/` e `scripts/` são inofensivas
+   (só ferramentas de desenvolvimento, e já vêm bloqueadas por `.htaccess`), então podem ficar.
+2. Crie o banco pelo painel da hospedagem (ou phpMyAdmin) e importe `database/schema.sql`: ele cria **todas** as tabelas e já cadastra as categorias e os banners padrão (as imagens estão em `assets/promo/`, versionadas no repositório). Pode ser importado de novo sem apagar nada.
 3. Crie o `.env` **direto no servidor** — ele nunca vem no repositório. Copie o
    conteúdo do `.env.example` pelo gerenciador de arquivos e preencha com o usuário
    de banco da hospedagem e:
@@ -245,6 +283,16 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
    `https://seu-dominio.com/.env` precisa devolver **403**, um PDF em
    `https://seu-dominio.com/uploads/arquivo.pdf` também, e `https://seu-dominio.com/login`
    precisa abrir a tela de login (se só `/login.php` funcionar, falta `mod_rewrite`).
+
+**Atualizando uma instalação que já está no ar** (banco criado antes desta versão): não reimporte o schema. No phpMyAdmin, execute em ordem apenas as migrações que faltam,
+[`database/migracao_v1.2_categorias.sql`](database/migracao_v1.2_categorias.sql) (categorias) e
+[`database/migracao_v1.3_banners.sql`](database/migracao_v1.3_banners.sql) (banners, já com as peças padrão). Depois, classifique os livros já cadastrados:
+```bash
+php database/categorizar_acervo.php            # simulação: mostra a distribuição
+php database/categorizar_acervo.php --aplicar  # grava (só livros sem categoria)
+```
+Sem acesso a terminal na hospedagem, rode o comando na sua máquina apontando o `.env` para o banco da hospedagem, ou escolha a categoria pelo editar livro.
+O PHP precisa poder escrever em `banners/` (imagens enviadas no gerenciador de banners são convertidas para WebP e gravadas lá).
 
 **Recomendações para produção:**
 
@@ -266,25 +314,28 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
 
 ```
 meus_livros/
-├── api/            # Endpoints (auth, CRUD de livros, usuários, senha, banners, download, progresso)
-├── assets/         # CSS e JavaScript (sem build step)
+├── api/            # Endpoints (auth, livros, usuários, senha, banners, categorias, download, progresso)
+├── assets/         # CSS, JavaScript, fonte Inter, ícones do app e peças de divulgação (promo/) — sem build step
 ├── banners/        # Imagens de banner (público, sem execução de PHP)
 ├── capas/          # Capas de livros geradas no upload (público, sem execução de PHP)
 ├── components/     # Partials PHP incluídos pelas páginas (acesso direto bloqueado)
 ├── config/         # Bootstrap, conexão de banco, variáveis de ambiente (acesso direto bloqueado)
-├── database/       # schema.sql, migrações e o utilitário criar_admin.php (acesso direto bloqueado)
+├── database/       # schema.sql, migrações, criar_admin.php e seed_dev.php (acesso direto bloqueado)
 ├── includes/       # Funções compartilhadas: escaping, CSRF, RBAC, repositórios de dados (acesso direto bloqueado)
+├── scripts/        # Ferramentas Node: importar-acervo, gerar-icones, iniciar-servidor (não vão para produção)
 ├── cypress/        # Suíte de testes E2E (specs, comandos, fixtures) — não vai para produção
 ├── uploads/        # PDFs (acesso direto bloqueado — servidos só via api/download.php)
 ├── views/          # Leitor de PDF
 ├── .env.example    # Modelo de configuração
 ├── cypress.config.js  # Configuração do Cypress e tasks de banco dos testes
-├── package.json    # Dependências de desenvolvimento (Cypress, driver MySQL)
+├── package.json    # Dependências de desenvolvimento (Cypress, driver MySQL, PDF.js e canvas para o importador)
+├── manifest.webmanifest  # Manifesto do aplicativo instalável (PWA)
+├── CLAUDE.md       # Guia de arquitetura e convenções para agentes de código
 ├── index.php       # Dashboard principal
 ├── login.php
 ├── logout.php
 ├── redefinir_senha.php
-└── usuarios.php    # Gestão de usuários (admin)
+└── usuarios.php    # Redireciona para o painel (a gestão de usuários agora é um modal)
 ```
 
 Cada pasta de código (`config/`, `includes/`, `database/`, `components/`) tem um
@@ -301,6 +352,7 @@ erDiagram
     usuarios ||--o{ leituras : possui
     livros ||--o{ leituras : "tem progresso em"
     usuarios ||--o{ tentativas_login : gera
+    categorias ||--o{ livros : classifica
 
     usuarios {
         int id PK
@@ -318,6 +370,20 @@ erDiagram
         varchar nome_arquivo
         varchar capa_arquivo
         int usuario_id FK
+        int categoria_id FK
+    }
+    categorias {
+        int id PK
+        varchar slug UK
+        varchar nome
+    }
+    banners {
+        int id PK
+        enum formato "h|v"
+        varchar arquivo
+        varchar alt
+        varchar link
+        int ordem
     }
     leituras {
         int usuario_id PK_FK
@@ -335,10 +401,11 @@ erDiagram
     }
 ```
 
-Schema completo, com todas as colunas, chaves e constraints, em
-[`database/schema.sql`](database/schema.sql). Para bancos criados na versão anterior,
-[`database/migracao_v1.1.sql`](database/migracao_v1.1.sql) aplica as tabelas novas e
-migra o progresso de leitura.
+Schema completo, com todas as colunas, chaves, constraints e dados iniciais, em
+[`database/schema.sql`](database/schema.sql). Para bancos criados em versões anteriores, aplique só as migrações que faltam:
+[`migracao_v1.1.sql`](database/migracao_v1.1.sql) (progresso por usuário),
+[`migracao_v1.2_categorias.sql`](database/migracao_v1.2_categorias.sql) e
+[`migracao_v1.3_banners.sql`](database/migracao_v1.3_banners.sql).
 
 ---
 
@@ -353,7 +420,7 @@ a tradução é feita pelo `.htaccess` da raiz, e o PHP monta os links pela fun�
 | `/` | `index.php` | autenticado |
 | `/login` | `login.php` | público |
 | `/logout` | `logout.php` | autenticado |
-| `/usuarios` | `usuarios.php` | admin |
+| `/usuarios` | `usuarios.php` | admin (só redireciona para o painel com o modal de usuários aberto) |
 | `/leitor?id=N` | `views/leitor.php` | autenticado |
 | `/redefinir-senha?token=…` | `redefinir_senha.php` | público (com token válido) |
 
@@ -375,18 +442,17 @@ Todos os endpoints exigem sessão autenticada (exceto login e recuperação de s
 |---|---|---|---|
 | `POST /api/auth.php` | POST | público | Login (com rate limiting) |
 | `POST /api/upload.php` | POST | contribuidor | Cadastra um novo livro |
-| `POST /api/editar.php` | POST | admin | Edita título/autor de um livro |
+| `POST /api/editar.php` | POST | admin | Edita título, autor e categoria de um livro |
 | `POST /api/excluir.php` | POST | admin | Remove um livro e seus arquivos |
 | `GET /api/download.php?id=` | GET | leitor | Entrega o PDF (com suporte a `Range`) |
-| `GET /api/buscar.php` | GET | leitor | Busca/pagina livros via AJAX |
+| `GET /api/buscar.php` | GET | leitor | Busca/pagina livros via AJAX (parâmetros `busca`, `ordem`, `pagina`, `categoria`) |
+| `GET /api/gerenciar_lista.php` | GET | admin | Uma página da lista do modal Gerenciar livros |
 | `POST /api/progresso.php?id=` | POST | leitor | Salva o progresso de leitura do usuário atual |
-| `POST /api/manage_banners.php` | POST | admin | Upload/remoção de banners |
+| `POST /api/manage_banners.php` | POST | admin | Banners do carrossel: `adicionar`, `remover`, `mover`, `salvar_link`, `listar` (devolve o HTML atualizado do gerenciador) |
 | `POST /api/mudar_senha.php` | POST | leitor | Troca a própria senha |
 | `POST /api/solicitar_reset.php` | POST | público | Solicita link de redefinição de senha |
 | `POST /api/salvar_nova_senha.php` | POST | público (token) | Confirma nova senha via token |
-| `POST /api/usuario_add.php` | POST | admin | Cria um usuário |
-| `POST /api/usuario_excluir.php` | POST | admin | Remove um usuário |
-| `POST /api/usuario_reset_senha.php` | POST | admin | Redefine a senha de outro usuário |
+| `POST /api/usuarios_gerenciar.php` | POST | admin | Usuários do modal: `listar`, `adicionar`, `redefinir_senha`, `excluir` (devolve o HTML atualizado da tabela) |
 
 Endpoints que respondem a chamadas `fetch` devolvem JSON (`{ success, ... }`) com o
 status HTTP correspondente — `400` para CSRF inválido, `403` para perfil sem
@@ -415,9 +481,9 @@ contato em privado pelo perfil do GitHub do autor.
 
 ## Testes automatizados (Cypress)
 
-O repositório inclui uma suíte de regressão ponta a ponta com **226 testes** cobrindo
+O repositório inclui uma suíte de regressão ponta a ponta com **259 testes** (mais 56 testes unitários do importador) cobrindo
 os fluxos dos três perfis, o controle de acesso, a experiência de uso e a
-responsividade. A interface é instrumentada com 157 atributos `data-testid`, então os
+responsividade. A interface é instrumentada com mais de 170 atributos `data-testid`, então os
 testes não dependem de classes CSS nem da estrutura do HTML.
 
 ### Como rodar
@@ -425,17 +491,20 @@ testes não dependem de classes CSS nem da estrutura do HTML.
 ```bash
 npm install          # Cypress + driver MySQL (só para desenvolvimento)
 npm run fixtures     # gera os arquivos de teste (PDF de 3 páginas, PNGs, TXT inválido)
-npm run test:e2e     # roda a suíte inteira em modo headless (~7 min)
+npm run test:e2e     # roda a suíte inteira em modo headless (~9 min)
 ```
 
 | Comando | O que faz |
 |---|---|
 | `npm run test:e2e` | Suíte completa, headless |
+| `npm run test:unit` | Testes unitários do importador (segundos, sem navegador nem banco) |
 | `npm run test:e2e:open` | Abre a interface gráfica do Cypress |
 | `npm run test:auth` | Só autenticação |
 | `npm run test:rbac` | Só controle de acesso |
 | `npm run test:responsivo` | Só responsividade |
 | `npm run test:limpar` | Apaga toda a massa de teste do banco |
+| `npm run servidor` | Windows + XAMPP: sobe Apache e MySQL (se parados) e abre o sistema |
+| `npm run icones` | Regenera os ícones do aplicativo em `assets/icons/` |
 
 A URL usada nos testes vem do `APP_URL` do `.env` — não é preciso editar
 `cypress.config.js`. As credenciais do banco também são lidas de lá.
@@ -445,14 +514,14 @@ A URL usada nos testes vem do `APP_URL` do `.env` — não é preciso editar
 | Spec | Testes | O que cobre |
 |---|:---:|---|
 | `01-autenticacao` | 21 | Login dos três perfis, mensagens genéricas de erro (sem enumeração de contas), CSRF, rate limiting, proteção de rota, logout, cabeçalhos de segurança |
-| `02-rbac` | 40 | Matriz de permissões verificada na interface **e** nos endpoints (403/302); CSRF; arquivos e pastas protegidos |
-| `03-biblioteca` | 24 | Busca server-side com debounce, estados vazios, as quatro ordenações conferidas contra o banco, paginação por AJAX, toast de falha |
-| `04-livros-crud` | 15 | Upload com capa gerada pelo PDF.js, rejeição de arquivo que não é PDF, edição, exclusão com limpeza de disco, banners |
+| `02-rbac` | 51 | Matriz de permissões verificada na interface **e** nos endpoints (403/302/401); modais que não vão no HTML de quem não tem permissão; CSRF; arquivos e pastas protegidos |
+| `03-biblioteca` | 29 | Busca server-side com debounce, estados vazios, as quatro ordenações conferidas contra o banco, paginação por AJAX e **numerada**, estabilidade entre páginas com títulos repetidos, toast de falha |
+| `04-livros-crud` | 18 | Upload com capa gerada pelo PDF.js, rejeição de arquivo que não é PDF, gerenciador paginado no servidor (busca, `%` e `_` literais), edição, exclusão com limpeza de disco, banners |
 | `05-leitor-pdf` | 22 | Range requests, navegação, zoom e seus limites, progresso por usuário gravado no banco, rótulos acessíveis do HUD |
 | `06-usuarios-admin` | 14 | Cadastro (com login efetivo do usuário criado), senha fraca no cliente e no servidor, e-mail duplicado, reset de terceiro, bloqueio da auto-exclusão |
 | `07-senhas` | 13 | Troca da própria senha e fluxo completo de recuperação por token (uso único, expiração, reutilização) |
-| `08-responsividade` | 54 | 375 / 768 / 1024 / 1440 px: colunas da grade, banner × sidebar, ausência de rolagem horizontal, alvos de toque, modais, escala do leitor, swipe e cor de tema conferida contra o fundo real |
-| `09-ux-acessibilidade` | 23 | Console sem erros (inclusive CSP no leitor), títulos e idioma, textos alternativos, loader e toasts, modais, teclado, tema escuro |
+| `08-responsividade` | 59 | 375 / 768 / 1024 / 1440 px: colunas da grade, banner × sidebar (o banner não empurra o acervo para fora da tela), ausência de rolagem horizontal, alvos de toque, modais, página do leitor sempre cabendo na tela, swipe e cor de tema conferida contra o fundo real |
+| `09-ux-acessibilidade` | 32 | Console sem erros (inclusive CSP no leitor), títulos e idioma, textos alternativos, loader e toasts, modais, teclado, tema escuro, **PWA** (manifesto válido e ícones que existem), rótulos e `autocomplete` do login, *skip link*, e varredura exigindo nome acessível em todo botão e link |
 
 ### Os testes não tocam nos seus dados
 
@@ -475,28 +544,16 @@ Usuários de teste (senha `Senha@E2E1`, definida em `cypress/support/dados.js`):
 
 ### Resultado atual
 
-**224 de 226 testes passam.** As duas falhas restantes não são instabilidade da
-suíte — cada uma trava um defeito real, descrito em [Limitações conhecidas](#limitações-conhecidas).
+**56 de 56 testes unitários passam.** A suíte E2E fechou em **259 de 259** antes do redesenho (v2); depois dele, o spec novo `10-design-produto` (11 testes) e os specs 01 e 03 passam, mas os specs **02, 04, 06, 08 e 09** ainda precisam ser atualizados para as mudanças de interface (gerenciar livros/banners/usuários agora no menu do perfil e em modais, 10 livros por página, banners gerenciáveis, novo leitor) e a suíte completa ainda não foi reexecutada.
 
 ---
 
 ## Limitações conhecidas
 
-Dois defeitos estão travados por testes que falham de propósito — a suíte fica
-verde de novo quando forem corrigidos:
+Não há defeitos conhecidos em aberto. Os dois que a suíte vinha travando foram corrigidos:
 
-- **Token de recuperação de senha dura mais de 1 hora quando os fusos divergem.**
-  `api/solicitar_reset.php` grava `reset_expires` com o relógio do **PHP**, mas a
-  validação (`reset_expires > NOW()`) usa o relógio do **MySQL**. Se o
-  `date.timezone` do `php.ini` estiver diferente do fuso do servidor de banco, a
-  janela real de validade deixa de ser a especificada. Correção: alinhar
-  `date.timezone` ao fuso do banco, ou calcular a expiração em SQL
-  (`DATE_ADD(NOW(), INTERVAL 1 HOUR)`).
-- **Página cortada no leitor em telas de celular.** Com a escala inicial fixa de
-  0.8, uma página A4 é renderizada com 476 px de largura contra os 375 px do
-  viewport, e `#canvas-container` usa `overflow-x: hidden` — cerca de 27% da largura
-  fica inacessível. Correção: calcular a escala a partir da largura real do viewport,
-  em vez de degraus fixos, ou permitir rolagem horizontal no container.
+- **Token de recuperação de senha** — a expiração agora é calculada no relógio do MySQL (`DATE_ADD(NOW(), INTERVAL 1 HOUR)`), o mesmo que a valida, em vez do relógio do PHP: fusos diferentes davam validade errada.
+- **Página cortada no leitor em celular** — a escala inicial agora vem da largura real do container e da página (e se reajusta ao girar o aparelho), em vez de degraus fixos.
 
 Escolhas de escopo (não são defeitos):
 
@@ -506,8 +563,7 @@ Escolhas de escopo (não são defeitos):
 - Apenas tema escuro.
 - Sem log de auditoria de ações administrativas.
 - Não há tela de cadastro público: novos usuários são criados por um administrador.
-- Os botões de ação do gerenciador medem 31 px de altura no celular — utilizáveis,
-  mas abaixo dos 44 px recomendados pela WCAG 2.5.5.
+- Autores que não aparecem no nome do arquivo nem nos metadados do PDF ficam como "Autor Desconhecido" na importação em lote; dá para corrigir pelo gerenciador.
 
 ---
 

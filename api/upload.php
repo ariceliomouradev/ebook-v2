@@ -11,6 +11,12 @@ $autor  = trim($_POST['autor'] ?? '') ?: 'Autor Desconhecido';
 $titulo = mb_substr($titulo, 0, 255);
 $autor  = mb_substr($autor, 0, 255);
 
+// Categoria: a escolhida no formulário ou, sem escolha, a sugerida pelas palavras do título.
+require_once '../includes/categorias.php';
+garantirCategoriasPadrao($pdo);
+$slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] ?? ''));
+$categoriaId = categoriaIdPorSlug($pdo, $slugCategoria) ?? categoriaIdPorSlug($pdo, categoriaSugerida($titulo));
+
 if (!isset($_FILES['arquivo_pdf']) || $_FILES['arquivo_pdf']['error'] !== UPLOAD_ERR_OK) {
     redirecionar('index.php?msg=erro_arquivo');
 }
@@ -48,9 +54,9 @@ if (!empty($_POST['capa_base64'])) {
 }
 
 try {
-    $sql = "INSERT INTO livros (titulo, autor, nome_arquivo, capa_arquivo, usuario_id) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO livros (titulo, autor, nome_arquivo, capa_arquivo, usuario_id, categoria_id) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$titulo, $autor, $novoNomeArquivo, $capaName, $_SESSION['usuario_id']]);
+    $stmt->execute([$titulo, $autor, $novoNomeArquivo, $capaName, $_SESSION['usuario_id'], $categoriaId]);
 
     redirecionar('index.php?msg=sucesso');
 } catch (PDOException $e) {

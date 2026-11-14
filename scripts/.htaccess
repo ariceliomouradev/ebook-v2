@@ -1,0 +1,3 @@
+# Ferramentas de desenvolvimento (importador de acervo, geracao de icones): nao sao servidas pela web.
+# Em producao esta pasta e apenas codigo que veio junto no deploy.
+Require all denied

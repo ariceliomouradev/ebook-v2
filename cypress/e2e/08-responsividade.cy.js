@@ -82,6 +82,18 @@ describe('Responsividade', () => {
         cy.tid('btn-user-menu').should('be.visible').dentroDoViewport();
       });
 
+      if (!sidebar) {
+        it('o banner é uma faixa e não empurra o acervo para fora da tela', () => {
+          cy.get('[data-testid="banner-horizontal-container"] .banner-h-card').then(($b) => {
+            expect($b[0].getBoundingClientRect().height, 'altura do banner').to.be.at.most(260);
+          });
+          // Antes, o banner ocupava a tela inteira do celular e o 1º livro só aparecia rolando.
+          cy.tid('book-item').first().then(($card) => {
+            const topo = $card[0].getBoundingClientRect().top;
+            expect(topo, 'o primeiro livro começa dentro da tela').to.be.lessThan(altura - 80);
+          });
+        });
+      }
       it('mantém os cards inteiros dentro da tela', () => {
         cy.tid('book-item').first().dentroDoViewport();
         cy.tid('book-title').first().should('be.visible');
@@ -89,7 +101,19 @@ describe('Responsividade', () => {
 
       it('exibe a paginação utilizável', () => {
         cy.tid('pagination-container').should('be.visible').dentroDoViewport();
-        cy.tid('page-current-num').should('be.visible');
+        // Celular: "5 de 70". Telas maiores: os números das páginas (a atual fica destacada).
+        // Exatamente em 768px o breakpoint é ambíguo (depende da barra de rolagem), então só
+        // se exige que a navegação esteja visível.
+        cy.get('body').then(($b) => {
+          const temNumeros = $b.find('[data-testid="btn-page-atual"]').length > 0;
+          if (largura > 768 && temNumeros) {
+            cy.tid('btn-page-atual').should('be.visible');
+            cy.tid('page-current-num').should('not.be.visible');
+          } else if (largura < 768) {
+            cy.tid('page-current-num').should('be.visible');
+          }
+        });
+        cy.tid('btn-page-next').should('be.visible');
         // O status textual é detalhe secundário: escondido em telas pequenas.
         cy.tid('pagination-status-info').should(largura > 768 ? 'be.visible' : 'not.be.visible');
       });
@@ -131,22 +155,49 @@ describe('Responsividade', () => {
   });
 
   describe('Leitor de PDF em cada tamanho de tela', () => {
+    // A escala inicial faz a página inteira caber na largura disponível, limitada a 140%.
+    // A fixture é A4 (595pt): em 375px cabe com ~58%, em 768px com ~122%, e em telas largas
+    // vale o teto de 140%. O que importa não é o número exato e sim a página caber na tela.
     const escalas = [
-      { largura: 375, altura: 812, zoom: '80%' },
-      { largura: 768, altura: 1024, zoom: '110%' },
-      { largura: 1440, altura: 900, zoom: '140%' },
+      { largura: 375, altura: 812, minZoom: 50, maxZoom: 60 },
+      { largura: 768, altura: 1024, minZoom: 105, maxZoom: 125 },
+      { largura: 1440, altura: 900, minZoom: 140, maxZoom: 140 },
     ];
 
-    escalas.forEach(({ largura, altura, zoom }) => {
-      it(`usa escala inicial de ${zoom} em ${largura}px`, () => {
+    escalas.forEach(({ largura, altura, minZoom, maxZoom }) => {
+      it(`ajusta a escala inicial à largura de ${largura}px (${minZoom}–${maxZoom}%)`, () => {
         cy.viewport(largura, altura);
         cy.entrarComo('leitor');
         cy.visit(`leitor?id=${livro.id}`);
         cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
-        cy.tid('text-zoom-level').should('have.text', zoom);
+        cy.tid('text-zoom-level').should(($z) => {
+          const zoom = parseInt($z.text(), 10);
+          expect(zoom, 'zoom inicial').to.be.within(minZoom, maxZoom);
+        });
+        cy.get('#canvas-container').then(($container) => {
+          cy.tid('pdf-canvas').should(($c) => {
+            expect($c[0].getBoundingClientRect().width, 'a página cabe no container').to.be.at.most(
+              $container[0].clientWidth
+            );
+          });
+        });
       });
     });
 
+    it('reajusta a escala ao girar o aparelho enquanto o zoom é automático', () => {
+      cy.viewport(375, 812);
+      cy.entrarComo('leitor');
+      cy.visit(`leitor?id=${livro.id}`);
+      cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
+      cy.tid('text-zoom-level')
+        .invoke('text')
+        .then((retrato) => {
+          cy.viewport(812, 375); // paisagem
+          cy.tid('text-zoom-level').should(($z) => {
+            expect(parseInt($z.text(), 10)).to.be.greaterThan(parseInt(retrato, 10));
+          });
+        });
+    });
     it('mantém o HUD acessível e o canvas dentro da tela no celular', () => {
       cy.viewport(375, 812);
       cy.entrarComo('leitor');
@@ -214,7 +265,7 @@ describe('Responsividade', () => {
         cy.entrarComo('admin');
         cy.visit(url);
 
-        cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#121212');
+        cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#0d0f14');
         cy.get('head meta[name="color-scheme"]').should('have.attr', 'content', 'dark');
 
         // O que importa não é a tag existir, e sim a cor continuar igual ao fundo
@@ -248,7 +299,7 @@ describe('Responsividade', () => {
       cy.visit(`leitor?id=${livro.id}`);
       cy.tid('text-total-pages', { timeout: 30000 }).should('not.have.text', '--');
 
-      cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#0d0d0d');
+      cy.get('head meta[name="theme-color"]').should('have.attr', 'content', '#07090d');
       cy.get('body').then(($body) => {
         const fundo = getComputedStyle($body[0]).backgroundColor;
         const [r, g, b] = fundo.match(/\d+/g).map(Number);

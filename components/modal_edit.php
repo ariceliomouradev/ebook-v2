@@ -3,11 +3,9 @@ if (!defined('ACESSO_PERMITIDO')) {
     define('ACESSO_PERMITIDO', true);
 }
 
-$sqlGerenciar = "SELECT id, titulo, autor FROM livros ORDER BY id DESC";
-$stmtGerenciar = $pdo->query($sqlGerenciar);
-$listaCompleta = $stmtGerenciar->fetchAll();
-
-$totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
+// A lista de livros deste modal NÃO é mais renderizada aqui: o app.js pede uma página por vez a
+// api/gerenciar_lista.php quando o modal abre. Antes, todos os livros iam dentro do HTML do
+// painel a cada carregamento (com milhares de títulos, megabytes).
 ?>
 
 <div data-testid="modal-manager" class="modal fade" id="modalGerenciar" tabindex="-1">
@@ -18,7 +16,7 @@ $totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
                 <h5 class="modal-title text-info" id="tituloModalGerenciar" data-testid="title-modal-manager">
                     <i class="fas fa-sliders-h me-2"></i>Gerenciar Biblioteca
                 </h5>
-                <button data-testid="btn-close-modal-manager" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button data-testid="btn-close-modal-manager" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
 
             <div class="modal-body p-0">
@@ -36,59 +34,32 @@ $totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
                         <button data-testid="btn-limpar-busca-gerenciador" class="btn btn-secondary text-light border-0"
                                 type="button"
                                 id="btnLimparGerenciador"
-                                style="display: none;">
+                                style="display: none;" aria-label="Limpar pesquisa">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
 
-                    <div class="lista-gerenciador" id="containerListaGerenciar" data-testid="container-lista-gerenciador">
-                        <?php foreach ($listaCompleta as $livro): ?>
-                        <div data-testid="item-gerenciador" class="item-lista item-gerenciador d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between py-3 border-bottom border-secondary gap-3"
-                            data-id="<?= (int) $livro['id'] ?>"
-                            data-titulo="<?= e($livro['titulo']) ?>"
-                            data-autor="<?= e($livro['autor'] ?? '') ?>"
-                            data-texto="<?= e(mb_strtolower($livro['titulo'] . ' ' . ($livro['autor'] ?? ''))) ?>">
-
-                            <div class="flex-grow-1 w-100" style="min-width: 0;">
-                                <div data-testid="item-titulo-livro" class="fw-bold text-light fs-5 lh-sm mb-1" style="word-wrap: break-word;">
-                                    <?= e($livro['titulo']) ?>
-                                </div>
-                                <div data-testid="item-autor-livro" class="text-muted small">
-                                    <?= e($livro['autor'] ?? '') ?>
-                                </div>
-                            </div>
-
-                            <div class="d-flex gap-2 w-100 w-md-auto justify-content-end align-self-end align-self-md-center">
-                                <button data-testid="btn-excluir-item" type="button" class="btn btn-sm btn-outline-danger flex-fill flex-md-grow-0 btn-excluir-livro">
-                                    <i class="fas fa-trash"></i> Excluir
-                                </button>
-                                <button data-testid="btn-editar-item" type="button" class="btn btn-sm btn-outline-warning flex-fill flex-md-grow-0 btn-editar-livro">
-                                    <i class="fas fa-pen"></i> Editar
-                                </button>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-
-                        <div data-testid="msg-gerenciar-vazio" class="text-center py-5 <?= count($listaCompleta) > 0 ? 'd-none' : '' ?>" id="msgGerenciarVazio">
-                            <i class="fas fa-folder-open d-block mb-3 fs-1 text-secondary"></i>
-                            <p class="text-muted">Não há livros para gerenciar.</p>
-                        </div>
-
-                        <div data-testid="msg-busca-gerenciar-vazia" class="text-center py-5" id="msgBuscaGerenciarVazia" style="display: none;">
-                            <i class="fas fa-search d-block mb-3 fs-1 text-secondary"></i>
-                            <p class="text-muted">Nenhum resultado para sua pesquisa.</p>
+                    <div class="lista-gerenciador" id="containerListaGerenciar" data-testid="container-lista-gerenciador" aria-live="polite" aria-busy="true">
+                        <div class="text-center py-5 text-muted" data-testid="gerenciador-carregando">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Carregando livros...
                         </div>
                     </div>
 
-                    <div class="mt-3 pt-2 border-top border-secondary d-flex justify-content-between align-items-center">
+                    <div id="paginacaoGerenciador" class="d-flex d-none justify-content-between align-items-center mt-3 gap-2" data-testid="gerenciador-paginacao">
+                        <button data-testid="btn-gerenciador-anterior" id="btnGerenciadorAnterior" type="button" class="btn btn-sm btn-outline-secondary" aria-label="Página anterior" disabled>
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <small class="text-muted text-center" data-testid="gerenciador-pagina-info" id="infoPaginaGerenciador"></small>
+                        <button data-testid="btn-gerenciador-proxima" id="btnGerenciadorProxima" type="button" class="btn btn-sm btn-outline-secondary" aria-label="Próxima página" disabled>
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="mt-3 pt-2 border-top border-secondary">
                         <small class="text-info fw-light">
                             <i class="fas fa-database me-1"></i>
-                            <span data-testid="contador-registros" id="contadorRegistros" class="fw-bold"><?= (int) $totalNoBanco ?></span> Registros encontrados
+                            <span data-testid="contador-registros" id="contadorRegistros" class="fw-bold">&hellip;</span> Registros encontrados
                         </small>
-
-                        <a data-testid="link-gerenciar-banners" href="javascript:void(0)" id="linkGerenciarBanners" class="text-muted small text-decoration-none">
-                            <i class="fas fa-images me-1"></i>Gerenciar Banners
-                        </a>
                     </div>
 
                 </div>
@@ -108,10 +79,19 @@ $totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
                             <input data-testid="input-editar-titulo" type="text" name="titulo" id="editTitulo"
                                 class="form-control bg-secondary text-light border-0" required maxlength="255">
                         </div>
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="text-muted small">Nome do Autor</label>
                             <input data-testid="input-editar-autor" type="text" name="autor" id="editAutor"
                                 class="form-control bg-secondary text-light border-0" required maxlength="255">
+                        </div>
+                        <div class="mb-4">
+                            <label class="text-muted small" for="editCategoria">Categoria</label>
+                            <select data-testid="select-editar-categoria" name="categoria" id="editCategoria" class="form-select bg-secondary text-light border-0">
+                                <option value="">Sem categoria</option>
+                                <?php foreach (($categoriasTodas ?? []) as $c): ?>
+                                    <option value="<?= e($c['slug']) ?>"><?= e($c['nome']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="d-flex gap-2">
                             <button data-testid="btn-cancelar-edicao" type="button" class="btn btn-secondary flex-fill" id="btnCancelarEdicao">Cancelar</button>
@@ -121,57 +101,19 @@ $totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
                 </div>
 
                 <div id="viewBanners" class="p-4" style="display: none;" data-testid="view-gerenciar-banners">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h6 class="text-info mb-0"><i class="fas fa-images"></i> Gerenciar Banners</h6>
-                        <button data-testid="btn-voltar-dos-banners" type="button" class="btn btn-sm btn-outline-secondary" id="btnVoltarBanners">
-                            <i class="fas fa-arrow-left"></i> Voltar
-                        </button>
-                    </div>
-
-                    <div class="row g-4">
-                        <div class="col-12 col-md-6">
-                            <div class="card bg-dark border-secondary">
-                                <div class="card-header border-secondary text-light small">
-                                    <i class="fas fa-arrows-alt-h text-muted me-1"></i> Banner Horizontal (Topo)
-                                </div>
-                                <div class="card-body text-center">
-                                    <input data-testid="input-file-banner-h" type="file" id="fileBannerH" class="d-none" accept=".jpg, .jpeg, .png" data-tipo-banner="h">
-                                    <button data-testid="btn-subir-banner-h" type="button" class="btn btn-outline-info btn-sm mb-2 w-100 btn-subir-banner" data-target-input="fileBannerH">
-                                        <i class="fas fa-upload"></i> Subir Imagem
-                                    </button>
-                                    <button data-testid="btn-remover-banner-h" type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-banner" data-tipo-banner="h">
-                                        <i class="fas fa-trash"></i> Remover Atual
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <div class="card bg-dark border-secondary">
-                                <div class="card-header border-secondary text-light small">
-                                    <i class="fas fa-arrows-alt-v text-muted me-1"></i> Banner Sidebar (Lateral)
-                                </div>
-                                <div class="card-body text-center">
-                                    <input data-testid="input-file-banner-s" type="file" id="fileBannerS" class="d-none" accept=".jpg, .jpeg, .png" data-tipo-banner="s">
-                                    <button data-testid="btn-subir-banner-s" type="button" class="btn btn-outline-info btn-sm mb-2 w-100 btn-subir-banner" data-target-input="fileBannerS">
-                                        <i class="fas fa-upload"></i> Subir Imagem
-                                    </button>
-                                    <button data-testid="btn-remover-banner-s" type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-banner" data-tipo-banner="s">
-                                        <i class="fas fa-trash"></i> Remover Atual
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    <h6 class="text-info mb-1"><i class="fas fa-images me-2"></i>Banners do carrossel</h6>
+                    <p class="text-muted small mb-4">Adicione, reordene ou remova os banners que passam sozinhos na página inicial. Mantenha a mesma quantidade nos dois formatos.</p>
+                    <div id="bannersGerenciador" data-testid="banners-gerenciador">
+                        <?php include __DIR__ . '/banners_gerenciador.php'; ?>
                     </div>
                     <div class="mt-3 text-muted small text-center">
-                        * As alterações serão refletidas imediatamente na página ao fechar o modal.
+                        * As alterações aparecem na página ao fechar esta janela.
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <div data-testid="modal-confirmar-excluir" class="modal fade" id="modalConfirmarExcluir" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content bg-dark border-danger">
@@ -204,7 +146,7 @@ $totalNoBanco = $pdo->query("SELECT COUNT(*) FROM livros")->fetchColumn();
             </div>
             <div class="modal-body text-center">
                 <p class="mb-2 fw-bold text-light">Tem certeza que deseja remover este banner?</p>
-                <small class="text-muted">A área voltará a exibir o texto padrão de "Espaço Reservado".</small>
+                <small class="text-muted">A imagem enviada será apagada. Esta ação não pode ser desfeita.</small>
             </div>
             <div class="modal-footer border-top-0 d-flex justify-content-center gap-2">
                 <button data-testid="btn-cancelar-exclusao-banner" type="button" class="btn btn-sm btn-outline-light px-3" data-bs-dismiss="modal">Cancelar</button>

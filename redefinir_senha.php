@@ -24,17 +24,24 @@ $tituloPagina = 'Criar Nova Senha';
 <html lang="pt-br" data-bs-theme="dark">
 <head>
     <?php include 'components/head.php'; ?>
-    <style>
-        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #121212; }
-        .login-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    </style>
 </head>
-<body>
+<body class="auth-page">
 
+    <div class="auth-layout">
+    <aside class="auth-marca" aria-hidden="true">
+        <div class="auth-marca__topo"><img src="assets/icons/icon-192.png" alt="" width="42" height="42"> Meus Livros</div>
+        <div class="auth-marca__meio">
+            <h2>Uma senha nova, <em>seu acervo de volta.</em></h2>
+            <p class="auth-marca__lead">Escolha uma senha forte: com maiúscula, minúscula, número e símbolo.</p>
+        </div>
+        <div></div>
+    </aside>
+    <div class="auth-painel">
     <div class="login-card" data-testid="redefinir-container">
-        <div class="text-center mb-4">
-            <i class="fas fa-key fa-3x text-warning mb-3"></i>
-            <h4 class="text-light fw-bold">Nova Senha</h4>
+        <div class="auth-marca-mobile"><img src="assets/icons/icon-192.png" alt="" width="44" height="44"> Meus Livros</div>
+        <div class="mb-4">
+            <h1 class="h3 text-light mb-1">Criar nova senha</h1>
+            <p class="text-secondary mb-0">Defina a senha que você usará no próximo acesso.</p>
         </div>
 
         <?php if (isset($mensagensErro[$msg])): ?>
@@ -61,7 +68,7 @@ $tituloPagina = 'Criar Nova Senha';
                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}"
                                title="Mínimo de 8 caracteres. Use letras maiúsculas, minúsculas, números e símbolos."
                                data-testid="input-redefinir-senha">
-                        <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password>
+                        <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password aria-label="Mostrar ou ocultar a senha">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
@@ -72,18 +79,20 @@ $tituloPagina = 'Criar Nova Senha';
                     <label class="form-label text-muted small">Confirme a nova senha</label>
                     <div class="input-group">
                         <input type="password" name="confirma_senha" class="form-control bg-dark border-secondary text-light border-end-0" required data-testid="input-redefinir-confirma">
-                        <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password>
+                        <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password aria-label="Mostrar ou ocultar a senha">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-warning w-100 fw-bold" data-testid="btn-salvar-redefinicao">
-                    Salvar e Entrar
+                <button type="submit" class="btn btn-info w-100" data-testid="btn-salvar-redefinicao">
+                    Salvar e entrar
                 </button>
             </form>
 
         <?php endif; ?>
+    </div>
+    </div>
     </div>
 
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>

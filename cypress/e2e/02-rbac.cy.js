@@ -63,6 +63,13 @@ describe('Controle de acesso por perfil (RBAC)', () => {
           cy.tid('sidebar-container').should(regras.banners ? 'exist' : 'not.exist');
         });
 
+        it(`${regras.novoLivro ? 'recebe' : 'não recebe'} o modal de cadastro no HTML`, () => {
+          cy.tid('modal-add-book').should(regras.novoLivro ? 'exist' : 'not.exist');
+        });
+
+        it(`${regras.gerenciar ? 'recebe' : 'não recebe'} o modal do gerenciador no HTML`, () => {
+          cy.tid('modal-manager').should(regras.gerenciar ? 'exist' : 'not.exist');
+        });
         it('pode abrir a troca da própria senha', () => {
           cy.tid('btn-user-menu').click();
           cy.tid('btn-menu-trocar-senha').click();
@@ -139,6 +146,13 @@ describe('Controle de acesso por perfil (RBAC)', () => {
         postar('api/manage_banners.php', { action: 'remover', tipo: 'h' }).its('status').should('eq', 403);
       });
 
+      it('recebe 403 ao listar o gerenciador (lista paginada de edição)', () => {
+        cy.request({ url: 'api/gerenciar_lista.php', failOnStatusCode: false }).then((r) => {
+          expect(r.status).to.eq(403);
+          expect(r.body.success).to.be.false;
+        });
+      });
+
       it('é redirecionado ao tentar enviar um livro', () => {
         postar('api/upload.php', { titulo: 'x' }).then((r) => {
           expect(r.status).to.eq(302);
@@ -175,6 +189,10 @@ describe('Controle de acesso por perfil (RBAC)', () => {
         postar('api/manage_banners.php', { action: 'remover', tipo: 's' }).its('status').should('eq', 403);
       });
 
+      it('recebe 403 ao listar o gerenciador', () => {
+        cy.request({ url: 'api/gerenciar_lista.php', failOnStatusCode: false }).its('status').should('eq', 403);
+      });
+
       it('é redirecionado ao tentar gerenciar usuários', () => {
         postar('api/usuario_reset_senha.php', { usuario_id: 1, nova_senha: 'Ab1@abcd' })
           .its('status')
@@ -191,6 +209,33 @@ describe('Controle de acesso por perfil (RBAC)', () => {
       });
     });
 
+    describe('lista do gerenciador: admin e anônimo', () => {
+      it('admin recebe a página, o total e o HTML da lista', () => {
+        cy.entrarComo('admin');
+        cy.request('api/gerenciar_lista.php?busca=&pagina=1').then((r) => {
+          expect(r.status).to.eq(200);
+          expect(r.body.success).to.be.true;
+          expect(r.body).to.include.keys('html', 'total', 'pagina', 'totalPaginas', 'inicio', 'fim');
+          expect(r.body.pagina).to.eq(1);
+        });
+      });
+
+      it('página fora do intervalo cai na última válida em vez de devolver lista vazia', () => {
+        cy.entrarComo('admin');
+        cy.request('api/gerenciar_lista.php?pagina=99999').then((r) => {
+          expect(r.body.pagina).to.eq(r.body.totalPaginas);
+          expect(r.body.total === 0 || r.body.html.includes('item-gerenciador')).to.be.true;
+        });
+      });
+
+      it('visitante sem sessão recebe 401 em JSON', () => {
+        cy.clearCookies();
+        cy.request({ url: 'api/gerenciar_lista.php', failOnStatusCode: false }).then((r) => {
+          expect(r.status).to.eq(401);
+          expect(r.body.success).to.be.false;
+        });
+      });
+    });
     describe('proteção CSRF (todos os perfis)', () => {
       beforeEach(() => cy.entrarComo('admin'));
 

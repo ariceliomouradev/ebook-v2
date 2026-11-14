@@ -15,14 +15,22 @@ $raiz = caminhoRaiz();
      color-scheme faz controles de formulário e barras de rolagem nativas
      seguirem o tema escuro; os metas apple-* valem quando o site é salvo na
      tela de início do iPhone. -->
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#0d0f14">
 <meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Meus Livros">
 <meta name="application-name" content="Meus Livros">
-<meta name="msapplication-TileColor" content="#121212">
+<meta name="msapplication-TileColor" content="#0d0f14">
+<meta name="description" content="Meus Livros — sua biblioteca pessoal de PDFs: leia, organize e acompanhe o progresso de leitura.">
+
+<!-- Instalável como aplicativo (PWA) e ícones. Os caminhos são relativos à raiz do sistema, então
+     funcionam tanto em um domínio próprio quanto em uma subpasta. -->
+<link rel="manifest" href="<?= $raiz ?>manifest.webmanifest">
+<link rel="icon" href="<?= $raiz ?>assets/icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="<?= $raiz ?>assets/icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="<?= $raiz ?>assets/icons/apple-touch-icon.png">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">

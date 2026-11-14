@@ -17,15 +17,20 @@ if (!$id || $titulo === '' || $autor === '') {
 $titulo = mb_substr($titulo, 0, 255);
 $autor = mb_substr($autor, 0, 255);
 
+require_once '../includes/categorias.php';
+$slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] ?? ''));
+$categoriaId = categoriaIdPorSlug($pdo, $slugCategoria); // '' = sem categoria
+
 try {
-    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ? WHERE id = ?");
-    $stmt->execute([$titulo, $autor, $id]);
+    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ?, categoria_id = ? WHERE id = ?");
+    $stmt->execute([$titulo, $autor, $categoriaId, $id]);
 
     responderJson([
         'success' => true,
         'id' => $id,
         'titulo' => $titulo,
         'autor' => $autor,
+        'categoria' => $categoriaId === null ? '' : $slugCategoria,
     ]);
 } catch (PDOException $e) {
     error_log('Falha ao editar livro: ' . $e->getMessage());

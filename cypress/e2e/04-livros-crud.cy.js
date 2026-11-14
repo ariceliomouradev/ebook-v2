@@ -110,6 +110,16 @@ describe('Livros — upload, edição, exclusão e banners', () => {
     let livroA;
     let livroB;
 
+    /**
+     * A busca do gerenciador acontece no servidor, com debounce de 350 ms: digita, espera a
+     * resposta de api/gerenciar_lista.php e só então confere a tela.
+     */
+    function buscarNoGerenciador(termo) {
+      cy.tid('input-busca-gerenciador').clear().type(termo, { parseSpecialCharSequences: false });
+      cy.wait('@lista');
+      cy.tid('container-lista-gerenciador').should('have.attr', 'aria-busy', 'false');
+    }
+
     beforeEach(() => {
       cy.semearLivro({ titulo: `${PREFIXO()} Editar ${Date.now().toString().slice(-6)}` }).then(
         (l) => (livroA = l)
@@ -118,38 +128,96 @@ describe('Livros — upload, edição, exclusão e banners', () => {
         (l) => (livroB = l)
       );
       cy.entrarComo('admin');
+      cy.intercept('GET', '**/api/gerenciar_lista.php*').as('lista');
       cy.visitarBiblioteca();
       cy.tid('btn-abrir-gerenciador').click();
       cy.tid('modal-manager').should('be.visible');
+      cy.wait('@lista'); // a lista só é buscada quando o modal abre
+      cy.tid('gerenciador-carregando').should('not.exist');
     });
 
-    it('lista os livros e o contador de registros', () => {
-      cy.sql('SELECT COUNT(*) AS total FROM livros').then((linhas) => {
-        cy.tid('contador-registros').should('have.text', String(linhas[0].total));
-        cy.tid('item-gerenciador').should('have.length', Number(linhas[0].total));
+    it('não embute a lista de livros no HTML do painel (escala com o acervo)', () => {
+      // Antes, o painel do admin trazia TODOS os livros dentro do HTML: megabytes com milhares de títulos.
+      cy.request('./').then((r) => {
+        expect(r.body).to.not.contain('data-testid="item-gerenciador"');
       });
     });
 
-    it('filtra a lista do gerenciador enquanto digita', () => {
-      cy.tid('input-busca-gerenciador').type(livroA.titulo);
-      cy.get('[data-testid="item-gerenciador"]:visible').should('have.length', 1);
-      cy.tid('item-titulo-livro').filter(':visible').should('contain.text', livroA.titulo);
+    it('lista só a primeira página, com contador e paginação do acervo inteiro', () => {
+      cy.readFile('config/app.php').then((php) => {
+        const porPagina = Number(php.match(/const ITENS_POR_PAGINA_GERENCIADOR = (\d+)/)[1]);
+        cy.sql('SELECT COUNT(*) AS total FROM livros').then((linhas) => {
+          const total = Number(linhas[0].total);
+          cy.tid('contador-registros').should('have.text', String(total));
+          cy.tid('item-gerenciador').should('have.length', Math.min(porPagina, total));
+          if (total > porPagina) {
+            cy.tid('gerenciador-paginacao').should('be.visible');
+            cy.tid('gerenciador-pagina-info').should('contain.text', `Página 1 de ${Math.ceil(total / porPagina)}`);
+            cy.tid('btn-gerenciador-anterior').should('be.disabled');
+            cy.tid('btn-gerenciador-proxima').should('not.be.disabled');
+          } else {
+            cy.tid('gerenciador-paginacao').should('not.be.visible');
+          }
+        });
+      });
+    });
+
+    it('navega entre as páginas do gerenciador sem repetir livros', function () {
+      cy.get('#paginacaoGerenciador').then(($barra) => {
+        if ($barra.hasClass('d-none')) this.skip(); // acervo pequeno: só há uma página
+      });
+      cy.get('[data-testid="item-gerenciador"]')
+        .then(($itens) => [...$itens].map((el) => el.dataset.id))
+        .then((pagina1) => {
+          cy.tid('btn-gerenciador-proxima').click();
+          cy.wait('@lista');
+          cy.tid('gerenciador-pagina-info').should('contain.text', 'Página 2');
+          cy.get('[data-testid="item-gerenciador"]').then(($itens) => {
+            const pagina2 = [...$itens].map((el) => el.dataset.id);
+            expect(pagina2.some((id) => pagina1.includes(id)), 'sem sobreposição entre páginas').to.be.false;
+          });
+          cy.tid('btn-gerenciador-anterior').click();
+          cy.wait('@lista');
+          cy.tid('gerenciador-pagina-info').should('contain.text', 'Página 1');
+        });
+    });
+
+    it('filtra a lista no servidor enquanto digita', () => {
+      buscarNoGerenciador(livroA.titulo);
+      cy.tid('item-gerenciador').should('have.length', 1);
+      cy.tid('item-titulo-livro').should('contain.text', livroA.titulo);
+      cy.tid('contador-registros').should('have.text', '1');
 
       cy.tid('btn-limpar-busca-gerenciador').click();
-      cy.get('[data-testid="item-gerenciador"]:visible').should('have.length.greaterThan', 1);
+      cy.wait('@lista');
+      cy.tid('item-gerenciador').should('have.length.greaterThan', 1);
     });
 
     it('mostra estado vazio quando o filtro não encontra nada', () => {
-      cy.tid('input-busca-gerenciador').type('xyz-nao-existe-xyz');
+      buscarNoGerenciador('xyz-nao-existe-xyz');
       cy.tid('msg-busca-gerenciar-vazia').should('be.visible');
       cy.tid('contador-registros').should('have.text', '0');
+      cy.tid('item-gerenciador').should('not.exist');
+    });
+
+    it('trata "%" e "_" como texto, não como curinga do LIKE', () => {
+      // Sem escape, pesquisar "%" casaria com TODOS os livros.
+      ['%', '_'].forEach((curinga) => {
+        const literal = '%' + curinga.replace(/[%_]/g, '\\$&') + '%';
+        cy.sql('SELECT COUNT(*) AS total FROM livros WHERE titulo LIKE ? OR autor LIKE ?', [literal, literal]).then(
+          (linhas) => {
+            buscarNoGerenciador(curinga);
+            cy.tid('contador-registros').should('have.text', String(linhas[0].total));
+          }
+        );
+      });
     });
 
     it('edita título e autor, refletindo no gerenciador e no card da grade', () => {
       const novoTitulo = `${PREFIXO()} Editado ${Date.now().toString().slice(-6)}`;
 
-      cy.tid('input-busca-gerenciador').type(livroA.titulo);
-      cy.tid('btn-editar-item').filter(':visible').click();
+      buscarNoGerenciador(livroA.titulo);
+      cy.tid('btn-editar-item').click();
 
       cy.tid('view-formulario-edicao').should('be.visible');
       cy.tid('input-editar-titulo').should('have.value', livroA.titulo).clear().type(novoTitulo);
@@ -173,8 +241,8 @@ describe('Livros — upload, edição, exclusão e banners', () => {
     });
 
     it('barra a edição com campos vazios no formulário e na API', () => {
-      cy.tid('input-busca-gerenciador').type(livroA.titulo);
-      cy.tid('btn-editar-item').filter(':visible').click();
+      buscarNoGerenciador(livroA.titulo);
+      cy.tid('btn-editar-item').click();
       cy.tid('input-editar-titulo').clear();
       cy.tid('input-editar-autor').clear();
 
@@ -206,8 +274,8 @@ describe('Livros — upload, edição, exclusão e banners', () => {
     });
 
     it('pede confirmação antes de excluir e cancela sem apagar nada', () => {
-      cy.tid('input-busca-gerenciador').type(livroB.titulo);
-      cy.tid('btn-excluir-item').filter(':visible').click();
+      buscarNoGerenciador(livroB.titulo);
+      cy.tid('btn-excluir-item').click();
 
       cy.tid('modal-confirmar-excluir').should('be.visible');
       cy.tid('nome-livro-excluir').should('have.text', livroB.titulo);
@@ -217,16 +285,17 @@ describe('Livros — upload, edição, exclusão e banners', () => {
     });
 
     it('exclui o livro, removendo registro, card e arquivos do disco', () => {
-      cy.tid('input-busca-gerenciador').type(livroB.titulo);
-      cy.tid('btn-excluir-item').filter(':visible').click();
+      buscarNoGerenciador(livroB.titulo);
+      cy.tid('btn-excluir-item').click();
       cy.tid('btn-confirmar-exclusao').click();
+      cy.wait('@lista'); // a lista é recarregada do servidor após a exclusão
 
       cy.get(`.item-gerenciador[data-id="${livroB.id}"]`).should('not.exist');
+      cy.tid('msg-busca-gerenciar-vazia').should('be.visible');
       cy.sql('SELECT id FROM livros WHERE id = ?', [livroB.id]).should('have.length', 0);
       cy.task('arquivos:existe', 'uploads/' + livroB.nomeArquivo).should('be.false');
       cy.task('arquivos:existe', 'capas/' + livroB.capaArquivo).should('be.false');
     });
-
     it('mantém o acervo real intacto após as operações', () => {
       cy.sql('SELECT COUNT(*) AS total FROM livros WHERE titulo NOT LIKE ?', [PREFIXO() + '%']).then(
         (linhas) => {

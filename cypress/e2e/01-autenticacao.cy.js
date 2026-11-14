@@ -36,7 +36,7 @@ describe('Autenticação', () => {
 
     it('apresenta identidade, formulário e link de recuperação', () => {
       cy.tid('login-container').should('be.visible');
-      cy.tid('login-title').should('have.text', 'Meus Livros');
+      cy.tid('login-title').should('have.text', 'Bem-vindo de volta');
       cy.tid('login-form').should('have.attr', 'action', 'api/auth.php');
       cy.tid('login-email-input').should('have.attr', 'type', 'email').and('have.attr', 'required');
       cy.tid('login-password-input').should('have.attr', 'type', 'password');
@@ -83,7 +83,7 @@ describe('Autenticação', () => {
         cy.url().should('not.include', '.php');
         cy.aguardarBiblioteca();
         cy.tid('btn-user-menu').should('contain.text', usuario.nome.split(' ')[0]).click();
-        cy.contains('Nível:').should('contain.text', perfil.toUpperCase());
+        cy.contains('.dropdown-item-text','Nível').should('contain.text', perfil.toUpperCase());
       });
     });
   });

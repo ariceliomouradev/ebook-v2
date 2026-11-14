@@ -13,18 +13,37 @@ $tituloPagina = 'Login - Biblioteca';
 <html lang="pt-br" data-bs-theme="dark">
 <head>
     <?php include 'components/head.php'; ?>
-    <style>
-        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #121212; }
-        .login-card { background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    </style>
 </head>
-<body>
+<body class="auth-page">
 
+<div class="auth-layout">
+    <aside class="auth-marca" aria-hidden="true">
+        <div class="auth-marca__topo"><img src="assets/icons/icon-192.png" alt="" width="42" height="42"> Meus Livros</div>
+        <div class="auth-marca__meio">
+            <h2>Toda a sua biblioteca, <em>em um só lugar.</em></h2>
+            <p class="auth-marca__lead">Leia seus PDFs em qualquer tela e continue exatamente de onde parou.</p>
+            <ul class="auth-beneficios">
+                <li><i class="fas fa-bookmark"></i><span>Retome a leitura na página certa<small>O progresso é salvo automaticamente.</small></span></li>
+                <li><i class="fas fa-search"></i><span>Encontre qualquer livro em segundos<small>Busca por título ou autor no acervo inteiro.</small></span></li>
+                <li><i class="fas fa-mobile-alt"></i><span>Instale como aplicativo<small>Funciona no computador, no Android e no iPhone.</small></span></li>
+            </ul>
+        </div>
+        <div class="estante">
+            <span style="height:62%;--c1:#f6b445;--c2:#a86a10"></span><span style="height:84%;--c1:#3b4a7a;--c2:#1c2547"></span><span style="height:48%;--c1:#6b3a5e;--c2:#341b2e"></span>
+            <span style="height:72%;--c1:#2f6f6a;--c2:#143633"></span><span style="height:92%;--c1:#f6b445;--c2:#7a4a0a"></span><span style="height:56%;--c1:#4a5568;--c2:#222833"></span>
+            <span style="height:78%;--c1:#7a3b3b;--c2:#381a1a"></span><span style="height:66%;--c1:#3b4a7a;--c2:#1c2547"></span><span style="height:88%;--c1:#2f6f6a;--c2:#143633"></span>
+            <span style="height:52%;--c1:#f6b445;--c2:#a86a10"></span><span style="height:74%;--c1:#6b3a5e;--c2:#341b2e"></span><span style="height:94%;--c1:#4a5568;--c2:#222833"></span>
+            <span style="height:60%;--c1:#7a3b3b;--c2:#381a1a"></span><span style="height:80%;--c1:#f6b445;--c2:#7a4a0a"></span><span style="height:68%;--c1:#3b4a7a;--c2:#1c2547"></span>
+            <span style="height:86%;--c1:#2f6f6a;--c2:#143633"></span><span style="height:54%;--c1:#6b3a5e;--c2:#341b2e"></span><span style="height:76%;--c1:#4a5568;--c2:#222833"></span>
+        </div>
+    </aside>
+
+    <div class="auth-painel">
     <div class="login-card" data-testid="login-container">
-        <div class="text-center mb-4">
-            <i class="fas fa-book-reader fa-3x text-info mb-3"></i>
-            <h3 class="text-light fw-bold" data-testid="login-title">Meus Livros</h3>
-            <p class="text-muted small">Faça login para acessar o acervo</p>
+        <div class="auth-marca-mobile"><img src="assets/icons/icon-192.png" alt="" width="44" height="44"> Meus Livros</div>
+        <div class="mb-4">
+            <h1 class="h3 text-light mb-1" data-testid="login-title">Bem-vindo de volta</h1>
+            <p class="text-secondary mb-0">Entre para acessar o seu acervo.</p>
         </div>
 
         <?php
@@ -48,36 +67,38 @@ $tituloPagina = 'Login - Biblioteca';
         <form action="api/auth.php" method="POST" data-testid="login-form">
             <?= csrf_field() ?>
             <div class="mb-3">
-                <label class="form-label text-muted small">E-mail</label>
-                <input type="email" name="email" class="form-control bg-dark border-secondary text-light" required autofocus data-testid="login-email-input">
+                <label class="form-label text-muted small" for="loginEmail">E-mail</label>
+                <input type="email" id="loginEmail" name="email" class="form-control bg-dark border-secondary text-light" required autofocus autocomplete="username" autocapitalize="off" spellcheck="false" inputmode="email" data-testid="login-email-input">
             </div>
             <div class="mb-4">
-                <label class="form-label text-muted small">Senha</label>
+                <label class="form-label text-muted small" for="loginSenha">Senha</label>
                 <div class="input-group">
-                    <input type="password" name="senha" class="form-control bg-dark border-secondary text-light border-end-0" required data-testid="login-password-input">
-                    <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password>
+                    <input type="password" id="loginSenha" name="senha" class="form-control bg-dark border-secondary text-light border-end-0" required autocomplete="current-password" data-testid="login-password-input">
+                    <button class="btn btn-outline-secondary border-secondary border-start-0 text-muted" type="button" data-toggle-password aria-label="Mostrar ou ocultar a senha">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
             </div>
-            <button type="submit" class="btn btn-info w-100 fw-bold text-dark" data-testid="login-submit-btn">
-                <i class="fas fa-sign-in-alt me-2"></i> Entrar
+            <button type="submit" class="btn btn-info w-100" data-testid="login-submit-btn">
+                Entrar <i class="fas fa-arrow-right ms-2"></i>
             </button>
         </form>
 
         <div class="text-center mt-4">
-            <a href="#" data-bs-toggle="modal" data-bs-target="#modalEsqueciSenha" class="text-info small text-decoration-none" data-testid="link-esqueci-senha">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#modalEsqueciSenha" class="small" data-testid="link-esqueci-senha">
                 Esqueceu sua senha?
             </a>
         </div>
     </div>
+    </div>
+</div>
 
     <div class="modal fade" id="modalEsqueciSenha" tabindex="-1" data-testid="modal-esqueci-senha">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content bg-dark border-secondary">
                 <div class="modal-header border-secondary">
                     <h6 class="modal-title text-light"><i class="fas fa-envelope me-2 text-info"></i>Recuperar Senha</h6>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <form action="api/solicitar_reset.php" method="POST" data-testid="form-esqueci-senha">
                     <?= csrf_field() ?>

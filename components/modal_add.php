@@ -12,7 +12,7 @@ if (!defined('ACESSO_PERMITIDO')) {
                 <h5 class="modal-title text-info">
                     <i class="fas fa-file-upload me-2"></i>Novo Livro
                 </h5>
-                <button data-testid="btn-close-modal-add" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button data-testid="btn-close-modal-add" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
 
             <form action="<?= caminhoRaiz() ?>api/upload.php" method="POST" enctype="multipart/form-data" id="formNovoLivro" data-testid="form-novo-livro">
@@ -37,6 +37,14 @@ if (!defined('ACESSO_PERMITIDO')) {
 
                     <input data-testid="input-book-author" type="text" class="form-control bg-secondary text-light border-0" name="autor"
                         placeholder="Nome do Autor" required maxlength="255">
+
+                    <label class="text-muted small mt-3 mb-1" for="novaCategoria">Categoria</label>
+                    <select data-testid="select-categoria-livro" id="novaCategoria" name="categoria" class="form-select bg-secondary text-light border-0">
+                        <option value="">Detectar automaticamente</option>
+                        <?php foreach (($categoriasTodas ?? []) as $c): ?>
+                            <option value="<?= e($c['slug']) ?>"><?= e($c['nome']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
 
                 </div>
 

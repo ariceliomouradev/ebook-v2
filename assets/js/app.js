@@ -82,6 +82,7 @@ function estadoAtualDaUrl() {
         busca: params.get('busca') || '',
         ordem: params.get('ordem') || 'recentes',
         pagina: params.get('pagina') || '1',
+        categoria: params.get('categoria') || '',
     };
 }
 
@@ -89,6 +90,7 @@ function carregarLivros(novoEstadoParcial, options = {}) {
     const estado = Object.assign(estadoAtualDaUrl(), novoEstadoParcial);
     const params = new URLSearchParams();
     if (estado.busca) params.set('busca', estado.busca);
+    if (estado.categoria) params.set('categoria', estado.categoria);
     params.set('ordem', estado.ordem);
     params.set('pagina', estado.pagina);
 
@@ -106,6 +108,8 @@ function carregarLivros(novoEstadoParcial, options = {}) {
             const areaPaginacao = document.getElementById('areaPaginacao');
             if (areaLivros) areaLivros.innerHTML = data.gradeHtml;
             if (areaPaginacao) areaPaginacao.innerHTML = data.paginacaoHtml;
+            atualizarCabecalhoAcervo(data.totalLivros, estado);
+            marcarCategoriaAtiva(estado.categoria);
 
             if (!options.semHistorico) {
                 const novaUrl = window.location.pathname + '?' + params.toString();
@@ -121,12 +125,88 @@ function carregarLivros(novoEstadoParcial, options = {}) {
         });
 }
 
+/** Atualiza título, contagem e a faixa 'Continue lendo' conforme a busca/página atual. */
+function atualizarCabecalhoAcervo(total, estado) {
+    const totalEl = document.getElementById('totalLivros');
+    const rotuloEl = document.getElementById('rotuloTotal');
+    const tituloEl = document.getElementById('tituloAcervo');
+    const faixa = document.getElementById('faixaContinuar');
+    if (typeof total === 'number') {
+        if (totalEl) totalEl.textContent = String(total);
+        if (rotuloEl) rotuloEl.textContent = total === 1 ? 'livro' : 'livros';
+    }
+    if (tituloEl) tituloEl.textContent = estado && (estado.busca || estado.categoria) ? 'Resultados' : 'Acervo';
+    // O atalho só faz sentido na vitrine; durante busca ou em outra página ele some.
+    if (faixa) faixa.hidden = !!(estado && (estado.busca || estado.categoria || String(estado.pagina) !== '1'));
+}
+
+/** Destaca o chip da categoria escolhida (e mantém o escolhido à vista no trilho). */
+function marcarCategoriaAtiva(slug) {
+    document.querySelectorAll('#chipsCategorias .chip').forEach((chip) => {
+        const ativo = (chip.dataset.categoria || '') === (slug || '');
+        chip.classList.toggle('is-ativo', ativo);
+        if (ativo) chip.setAttribute('aria-current', 'true');
+        else chip.removeAttribute('aria-current');
+        if (ativo) chip.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    });
+}
+
+/** Trilhos horizontais sem barra de rolagem: no mouse dá para arrastar; no toque o navegador já rola. */
+function habilitarArrastar(trilho) {
+    let apertado = false;
+    let moveu = false;
+    let x0 = 0;
+    let rolagem0 = 0;
+    trilho.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'mouse' || e.button !== 0) return;
+        apertado = true;
+        moveu = false;
+        x0 = e.clientX;
+        rolagem0 = trilho.scrollLeft;
+    });
+    window.addEventListener('pointermove', (e) => {
+        if (!apertado) return;
+        const dx = e.clientX - x0;
+        if (Math.abs(dx) > 4) {
+            moveu = true;
+            trilho.classList.add('is-arrastando');
+        }
+        trilho.scrollLeft = rolagem0 - dx;
+    });
+    window.addEventListener('pointerup', () => {
+        apertado = false;
+        trilho.classList.remove('is-arrastando');
+    });
+    // Se houve arrasto, o "clique" que o navegador dispara ao soltar não deve abrir o link.
+    trilho.addEventListener('click', (e) => {
+        if (moveu) {
+            e.preventDefault();
+            e.stopPropagation();
+            moveu = false;
+        }
+    }, true);
+}
+document.querySelectorAll('[data-arrastar], .continuar-trilho').forEach(habilitarArrastar);
+
+/** Tecla '/' leva o foco para a busca (como em GitHub e YouTube), sem atrapalhar quem digita. */
+document.addEventListener('keydown', function (e) {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const alvo = e.target;
+    if (alvo && (alvo.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(alvo.tagName))) return;
+    const campo = document.getElementById('campoBusca');
+    if (campo) {
+        e.preventDefault();
+        campo.focus();
+        campo.select();
+    }
+});
+
 function filtrarLivros() {
     const input = document.getElementById('campoBusca');
     const btnLimpar = document.getElementById('btnLimparBusca');
     const termo = input ? input.value : '';
 
-    if (btnLimpar) btnLimpar.style.display = termo.length > 0 ? 'block' : 'none';
+    if (btnLimpar) btnLimpar.style.display = termo.length > 0 ? 'flex' : 'none';
 
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -154,6 +234,13 @@ document.addEventListener('click', function (e) {
         return;
     }
 
+    const chip = e.target.closest('#chipsCategorias .chip');
+    if (chip) {
+        e.preventDefault();
+        carregarLivros({ categoria: chip.dataset.categoria || '', pagina: '1' });
+        return;
+    }
+
     const linkPagina = e.target.closest('#areaPaginacao a.btn-page');
     if (linkPagina && !linkPagina.classList.contains('disabled')) {
         e.preventDefault();
@@ -164,95 +251,136 @@ document.addEventListener('click', function (e) {
 
 /**
  * ============================================================================
- * 4. PESQUISA (GERENCIADOR / MODAL EDIT — permanece client-side pois a lista
- *    completa já foi carregada de uma vez ao abrir o modal)
+ * 4. GERENCIADOR (MODAL "GERENCIAR BIBLIOTECA") — LISTA PAGINADA NO SERVIDOR
  * ============================================================================
+ * Antes o PHP colocava TODOS os livros no HTML do painel e o filtro rodava no DOM: com um
+ * acervo de milhares de títulos isso eram megabytes a cada carregamento de página. Agora o
+ * modal pede ao servidor uma página por vez (api/gerenciar_lista.php), já filtrada pela busca.
  */
-function filtrarGerenciador() {
-    const input = document.getElementById('buscaGerenciador');
-    const termo = input ? input.value.toLowerCase().trim() : '';
-    const btnLimpar = document.getElementById('btnLimparGerenciador');
-    const itens = document.getElementsByClassName('item-gerenciador');
-    const msgBuscaVazia = document.getElementById('msgBuscaGerenciarVazia');
-    const msgBancoVazio = document.getElementById('msgGerenciarVazio');
-    let encontrados = 0;
-    const totalItensExistentes = itens.length;
+const estadoGerenciador = { busca: '', pagina: 1, totalPaginas: 1, sequencia: 0 };
+let temporizadorGerenciador;
 
-    if (btnLimpar) btnLimpar.style.display = termo.length > 0 ? 'block' : 'none';
+function carregarGerenciador({ busca, pagina } = {}) {
+    if (busca !== undefined) estadoGerenciador.busca = busca;
+    if (pagina !== undefined) estadoGerenciador.pagina = pagina;
 
-    for (let i = 0; i < itens.length; i++) {
-        const texto = itens[i].getAttribute('data-texto') || '';
-        if (termo === '' || texto.includes(termo)) {
-            itens[i].classList.remove('d-none');
-            itens[i].classList.add('d-flex');
-            encontrados++;
-        } else {
-            itens[i].classList.remove('d-flex');
-            itens[i].classList.add('d-none');
-        }
-    }
+    const container = document.getElementById('containerListaGerenciar');
+    if (!container) return Promise.resolve();
 
-    atualizarContadorGerenciador(encontrados);
+    // Se o usuário digitar de novo antes da resposta chegar, só a última resposta vale.
+    const minhaVez = ++estadoGerenciador.sequencia;
+    container.classList.add('grid-searching');
+    container.setAttribute('aria-busy', 'true');
 
-    if (msgBuscaVazia) msgBuscaVazia.style.display = 'none';
-    if (msgBancoVazio) msgBancoVazio.classList.add('d-none');
+    const params = new URLSearchParams({ busca: estadoGerenciador.busca, pagina: String(estadoGerenciador.pagina) });
+    return fetch(`${BASE_URL}api/gerenciar_lista.php?${params.toString()}`, { headers: headersComCsrf() })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (minhaVez !== estadoGerenciador.sequencia) return;
+            if (!ok || !data.success) throw new Error((data && data.error) || 'Não foi possível carregar a lista.');
 
-    if (totalItensExistentes === 0) {
-        if (msgBancoVazio) msgBancoVazio.classList.remove('d-none');
-    } else if (encontrados === 0 && termo !== '') {
-        if (msgBuscaVazia) msgBuscaVazia.style.display = 'block';
-    }
+            container.innerHTML = data.html;
+            estadoGerenciador.pagina = data.pagina;
+            estadoGerenciador.totalPaginas = data.totalPaginas;
+            atualizarRodapeGerenciador(data);
+        })
+        .catch((err) => {
+            if (minhaVez !== estadoGerenciador.sequencia) return;
+            console.error('Erro ao carregar o gerenciador:', err);
+            mostrarErro('Não foi possível carregar a lista de livros. Tente novamente.');
+        })
+        .finally(() => {
+            if (minhaVez === estadoGerenciador.sequencia) {
+                container.classList.remove('grid-searching');
+                container.setAttribute('aria-busy', 'false');
+            }
+        });
 }
 
-function atualizarContadorGerenciador(valorCustomizado = null) {
-    const contadorSpan = document.getElementById('contadorRegistros');
-    if (contadorSpan) {
-        if (valorCustomizado !== null) {
-            contadorSpan.innerText = valorCustomizado;
-        } else {
-            contadorSpan.innerText = document.querySelectorAll('.item-gerenciador:not(.d-none)').length;
-        }
-    }
+function atualizarRodapeGerenciador(data) {
+    const contador = document.getElementById('contadorRegistros');
+    if (contador) contador.innerText = data.total;
+
+    const barra = document.getElementById('paginacaoGerenciador');
+    if (!barra) return;
+
+    barra.classList.toggle('d-none', data.totalPaginas <= 1);
+
+    const info = document.getElementById('infoPaginaGerenciador');
+    if (info) info.innerText = `Página ${data.pagina} de ${data.totalPaginas} · ${data.inicio}–${data.fim} de ${data.total}`;
+
+    const anterior = document.getElementById('btnGerenciadorAnterior');
+    const proxima = document.getElementById('btnGerenciadorProxima');
+    if (anterior) anterior.disabled = data.pagina <= 1;
+    if (proxima) proxima.disabled = data.pagina >= data.totalPaginas;
 }
 
+// Mostra o estado vazio da GRADE da biblioteca depois de uma exclusão.
 function verificarEstadoVazio() {
-    atualizarContadorGerenciador();
-
     const msgVazioBanco = document.getElementById('msgVazioBanco');
     if (msgVazioBanco) {
         const cardsRestantes = document.querySelectorAll('.livro-item');
         msgVazioBanco.style.display = cardsRestantes.length === 0 ? 'flex' : 'none';
     }
-
-    const msgGerenciarVazio = document.getElementById('msgGerenciarVazio');
-    if (msgGerenciarVazio) {
-        const itensRestantesGerenciador = document.querySelectorAll('.item-gerenciador');
-        if (itensRestantesGerenciador.length === 0) msgGerenciarVazio.classList.remove('d-none');
-        else msgGerenciarVazio.classList.add('d-none');
-    }
 }
 
 document.addEventListener('input', function (e) {
-    if (e.target && e.target.id === 'buscaGerenciador') filtrarGerenciador();
+    if (!e.target || e.target.id !== 'buscaGerenciador') return;
+
+    const termo = e.target.value;
+    const btnLimpar = document.getElementById('btnLimparGerenciador');
+    if (btnLimpar) btnLimpar.style.display = termo.length > 0 ? 'flex' : 'none';
+
+    clearTimeout(temporizadorGerenciador);
+    temporizadorGerenciador = setTimeout(() => carregarGerenciador({ busca: termo.trim(), pagina: 1 }), 350);
 });
 
 document.addEventListener('click', function (e) {
-    if (e.target && e.target.closest('#btnLimparGerenciador')) {
+    if (e.target.closest('#btnLimparGerenciador')) {
         const input = document.getElementById('buscaGerenciador');
         if (input) { input.value = ''; input.focus(); }
-        filtrarGerenciador();
+        const btnLimpar = document.getElementById('btnLimparGerenciador');
+        if (btnLimpar) btnLimpar.style.display = 'none';
+        clearTimeout(temporizadorGerenciador);
+        carregarGerenciador({ busca: '', pagina: 1 });
+        return;
+    }
+
+    if (e.target.closest('#btnGerenciadorAnterior') && estadoGerenciador.pagina > 1) {
+        carregarGerenciador({ pagina: estadoGerenciador.pagina - 1 });
+        return;
+    }
+    if (e.target.closest('#btnGerenciadorProxima') && estadoGerenciador.pagina < estadoGerenciador.totalPaginas) {
+        carregarGerenciador({ pagina: estadoGerenciador.pagina + 1 });
     }
 });
 
+// A lista só é buscada quando o modal abre (e sempre começa limpa, na primeira página).
+document.getElementById('modalGerenciar')?.addEventListener('show.bs.modal', function (evento) {
+    // O item "Gerenciar banners" do menu do perfil abre o mesmo modal, já na tela de banners.
+    // O Bootstrap informa em relatedTarget qual botão abriu o modal.
+    if (evento.relatedTarget && evento.relatedTarget.hasAttribute('data-abrir-banners')) {
+        abrirViewBanners();
+    } else {
+        voltarParaLista();
+    }
+    const input = document.getElementById('buscaGerenciador');
+    if (input) input.value = '';
+    const btnLimpar = document.getElementById('btnLimparGerenciador');
+    if (btnLimpar) btnLimpar.style.display = 'none';
+    carregarGerenciador({ busca: '', pagina: 1 });
+});
 /**
  * ============================================================================
  * 5. OPERAÇÕES CRUD (EDIÇÃO E EXCLUSÃO VIA AJAX)
  * ============================================================================
  */
-function abrirEdicao(id, titulo, autor) {
+function abrirEdicao(id, titulo, autor, categoria) {
     document.getElementById('editId').value = id;
     document.getElementById('editTitulo').value = titulo;
     document.getElementById('editAutor').value = autor;
+    const selCategoria = document.getElementById('editCategoria');
+    if (selCategoria) selCategoria.value = categoria || '';
 
     document.getElementById('viewLista').style.display = 'none';
     document.getElementById('viewFormulario').style.display = 'block';
@@ -269,7 +397,7 @@ document.addEventListener('click', function (e) {
     const btnEditar = e.target.closest('.btn-editar-livro');
     if (btnEditar) {
         const item = btnEditar.closest('.item-gerenciador');
-        abrirEdicao(item.dataset.id, item.dataset.titulo, item.dataset.autor);
+        abrirEdicao(item.dataset.id, item.dataset.titulo, item.dataset.autor, item.dataset.categoria);
         return;
     }
 
@@ -305,9 +433,9 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
             if (itemGerenciador) {
                 itemGerenciador.querySelector('[data-testid="item-titulo-livro"]').innerText = data.titulo;
                 itemGerenciador.querySelector('[data-testid="item-autor-livro"]').innerText = data.autor;
-                itemGerenciador.setAttribute('data-texto', (data.titulo + ' ' + data.autor).toLowerCase());
                 itemGerenciador.setAttribute('data-titulo', data.titulo);
                 itemGerenciador.setAttribute('data-autor', data.autor);
+                itemGerenciador.setAttribute('data-categoria', data.categoria || '');
 
                 itemGerenciador.style.backgroundColor = 'rgba(40, 167, 69, 0.2)';
                 setTimeout(() => (itemGerenciador.style.backgroundColor = ''), 1000);
@@ -369,15 +497,13 @@ document.addEventListener('click', function (e) {
                 const modalEl = document.getElementById('modalConfirmarExcluir');
                 if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
 
-                document.querySelector(`.item-gerenciador[data-id="${id}"]`)?.remove();
                 document.querySelector(`.livro-item[data-id="${id}"]`)?.remove();
+                verificarEstadoVazio();
 
-                const inputBusca = document.getElementById('buscaGerenciador');
-                if (inputBusca && inputBusca.value.trim() !== '') {
-                    filtrarGerenciador();
-                } else {
-                    verificarEstadoVazio();
-                }
+                // A lista do gerenciador vem do servidor: recarrega a página atual. Isso repõe o
+                // item que "subiu" da página seguinte, atualiza o contador e, se a página ficou
+                // vazia, o servidor devolve a última página válida.
+                carregarGerenciador();
             })
             .catch((err) => {
                 console.error('Erro ao excluir:', err);
@@ -486,105 +612,219 @@ function voltarParaLista() {
     document.getElementById('tituloModalGerenciar').innerText = 'Gerenciar Biblioteca';
 }
 
-document.addEventListener('click', function (e) {
-    if (e.target.closest('#linkGerenciarBanners')) abrirViewBanners();
-    if (e.target.closest('#btnVoltarBanners')) voltarParaLista();
+/**
+ * Chamada única para a API de banners. Toda resposta de sucesso traz `html` (o gerenciador já
+ * renderizado), que substitui o conteúdo da tela: assim a lista nunca fica fora de sincronia.
+ */
+function chamarApiBanners(campos, mensagemCarregando) {
+    showLoader(mensagemCarregando || 'Salvando...');
 
+    const formData = new FormData();
+    Object.entries(campos).forEach(([chave, valor]) => formData.append(chave, valor));
+    formData.append('csrf_token', CSRF_TOKEN);
+
+    return fetch(`${BASE_URL}api/manage_banners.php`, {
+        method: 'POST',
+        headers: headersComCsrf(),
+        body: formData,
+    })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok || !data.success) {
+                mostrarErro((data && data.error) || 'Não foi possível concluir a operação.');
+                return false;
+            }
+            const area = document.getElementById('bannersGerenciador');
+            if (area && data.html) area.innerHTML = data.html;
+            bibliotecaAlterada = true;
+            return true;
+        })
+        .catch((err) => {
+            console.error('Erro na API de banners:', err);
+            mostrarErro('Erro de conexão. Tente novamente.');
+            return false;
+        })
+        .finally(() => hideLoader());
+}
+
+document.addEventListener('click', function (e) {
+    // Escolher a imagem de um novo banner
     const btnSubir = e.target.closest('.btn-subir-banner');
     if (btnSubir) {
         document.getElementById(btnSubir.dataset.targetInput)?.click();
+        return;
     }
-});
 
-document.addEventListener('change', function (e) {
-    const input = e.target.closest('[data-tipo-banner]');
-    if (input && input.tagName === 'INPUT' && input.type === 'file') {
-        uploadBannerAjax(input.dataset.tipoBanner, input);
+    // Reordenar
+    const btnMover = e.target.closest('.btn-mover-banner');
+    if (btnMover) {
+        chamarApiBanners({ action: 'mover', id: btnMover.dataset.id, direcao: btnMover.dataset.direcao }, 'Reordenando...');
+        return;
     }
-});
 
-function uploadBannerAjax(tipo, inputElement) {
-    const file = inputElement.files[0];
-    if (!file) return;
-
-    showLoader('Enviando banner...');
-
-    const formData = new FormData();
-    formData.append('action', 'upload');
-    formData.append('tipo', tipo);
-    formData.append('imagem', file);
-    formData.append('csrf_token', CSRF_TOKEN);
-
-    fetch(`${BASE_URL}api/manage_banners.php`, {
-        method: 'POST',
-        headers: headersComCsrf(),
-        body: formData,
-    })
-        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-            if (!ok || !data.success) {
-                mostrarErro((data && data.error) || 'Erro ao enviar o banner.');
-                return;
-            }
-            bibliotecaAlterada = true;
-            inputElement.value = '';
-        })
-        .catch((err) => {
-            console.error('Erro no upload do banner:', err);
-            mostrarErro('Erro de conexão ao enviar o banner.');
-        })
-        .finally(() => hideLoader());
-}
-
-document.addEventListener('click', function (e) {
+    // Remover (com confirmação)
     const btnRemover = e.target.closest('.btn-remover-banner');
-    if (!btnRemover) return;
+    if (btnRemover) {
+        const id = btnRemover.dataset.id;
+        const modalEl = document.getElementById('modalConfirmarExcluirBanner');
+        const btnConfirmar = document.getElementById('btnConfirmarRemocaoBanner');
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
 
-    const tipo = btnRemover.dataset.tipoBanner;
-    const modalEl = document.getElementById('modalConfirmarExcluirBanner');
-    const btnConfirmar = document.getElementById('btnConfirmarRemocaoBanner');
-    const modalInstance = new bootstrap.Modal(modalEl);
-
-    const novoBtn = btnConfirmar.cloneNode(true);
-    btnConfirmar.parentNode.replaceChild(novoBtn, btnConfirmar);
-
-    novoBtn.onclick = function () {
-        modalInstance.hide();
-        executarRemocaoRealBanner(tipo, btnRemover);
-    };
-
-    modalInstance.show();
+        // clona o botão para descartar o handler da confirmação anterior
+        const novoBtn = btnConfirmar.cloneNode(true);
+        btnConfirmar.parentNode.replaceChild(novoBtn, btnConfirmar);
+        novoBtn.onclick = function () {
+            modalInstance.hide();
+            chamarApiBanners({ action: 'remover', id }, 'Removendo banner...');
+        };
+        modalInstance.show();
+    }
 });
 
-function executarRemocaoRealBanner(tipo, btnAcionador) {
-    showLoader('Removendo banner...');
+// Enviar a imagem assim que ela é escolhida
+document.addEventListener('change', function (e) {
+    const input = e.target;
+    if (input.tagName !== 'INPUT' || input.type !== 'file' || !input.dataset.formatoBanner) return;
 
-    const formData = new FormData();
-    formData.append('action', 'remove');
-    formData.append('tipo', tipo);
-    formData.append('csrf_token', CSRF_TOKEN);
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+    const formato = input.dataset.formatoBanner;
+    const alt = document.getElementById(`bmAlt-${formato}`)?.value || '';
+    const link = document.getElementById(`bmLinkNovo-${formato}`)?.value || '';
 
-    fetch(`${BASE_URL}api/manage_banners.php`, {
-        method: 'POST',
-        headers: headersComCsrf(),
-        body: formData,
-    })
-        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-            if (!ok || !data.success) {
-                mostrarErro((data && data.error) || 'Erro ao remover o banner.');
-                return;
+    chamarApiBanners({ action: 'adicionar', formato, imagem: arquivo, alt, link }, 'Enviando banner...').then(() => {
+        input.value = '';
+    });
+});
+
+// Salvar o link de um banner já cadastrado
+document.addEventListener('submit', function (e) {
+    const form = e.target.closest('.form-salvar-link-banner');
+    if (!form) return;
+    e.preventDefault();
+    chamarApiBanners({ action: 'salvar_link', id: form.dataset.id, link: form.querySelector('input').value }, 'Salvando link...');
+});
+
+/**
+ * ============================================================================
+ * 9. GERENCIAR USUÁRIOS (MODAL, SÓ ADMIN) — tudo por AJAX, sem recarregar a página
+ * ============================================================================
+ * Quatro telas no mesmo modal (lista, novo, redefinir senha, excluir). Fechar o modal é o jeito
+ * de "voltar": a página inicial nunca é recarregada nem trocada.
+ */
+(function () {
+    const modalEl = document.getElementById('modalUsuarios');
+    if (!modalEl) return;
+
+    const telas = {
+        lista: document.getElementById('viewUsuariosLista'),
+        novo: document.getElementById('formNovoUsuario'),
+        reset: document.getElementById('formResetSenha'),
+        excluir: document.getElementById('formExcluirUsuario'),
+    };
+    const aviso = document.getElementById('usuariosAviso');
+
+    function mostrarTela(nome) {
+        Object.entries(telas).forEach(([chave, el]) => el.classList.toggle('d-none', chave !== nome));
+    }
+
+    function mostrarAviso(mensagem, tipo) {
+        if (!mensagem) {
+            aviso.classList.add('d-none');
+            return;
+        }
+        aviso.className = `alert alert-${tipo} py-2 small`;
+        aviso.textContent = mensagem;
+    }
+
+    async function chamarUsuarios(campos) {
+        showLoader('Salvando...');
+        const formData = new FormData();
+        Object.entries(campos).forEach(([chave, valor]) => formData.append(chave, valor));
+        formData.append('csrf_token', CSRF_TOKEN);
+        try {
+            const response = await fetch(`${BASE_URL}api/usuarios_gerenciar.php`, {
+                method: 'POST',
+                headers: headersComCsrf(),
+                body: formData,
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                mostrarAviso((data && data.error) || 'Não foi possível concluir a operação.', 'danger');
+                return false;
             }
-            bibliotecaAlterada = true;
-            if (btnAcionador) {
-                const original = btnAcionador.innerHTML;
-                btnAcionador.innerHTML = '<i class="fas fa-check"></i> Removido!';
-                setTimeout(() => (btnAcionador.innerHTML = original), 1500);
-            }
-        })
-        .catch((err) => {
-            console.error('Erro:', err);
-            mostrarErro('Erro de conexão ao tentar remover.');
-        })
-        .finally(() => hideLoader());
-}
+            document.getElementById('usuariosTabela').innerHTML = data.html;
+            document.getElementById('usuariosTotal').textContent = String(data.total);
+            document.getElementById('usuariosRotulo').textContent = data.total === 1 ? 'pessoa' : 'pessoas';
+            mostrarAviso(data.mensagem, 'success');
+            mostrarTela('lista');
+            return true;
+        } catch (err) {
+            console.error('Erro na API de usuários:', err);
+            mostrarAviso('Erro de conexão. Tente novamente.', 'danger');
+            return false;
+        } finally {
+            hideLoader();
+        }
+    }
+
+    // Sempre abre na lista, sem aviso antigo, com os dados do servidor (outra aba pode ter mudado algo).
+    modalEl.addEventListener('show.bs.modal', function () {
+        mostrarTela('lista');
+        mostrarAviso('');
+        Object.values(telas).forEach((el) => el.tagName === 'FORM' && el.reset());
+    });
+
+    modalEl.addEventListener('click', function (e) {
+        if (e.target.closest('#btnNovoUsuario')) {
+            mostrarAviso('');
+            mostrarTela('novo');
+            document.getElementById('novoUsuarioNome').focus();
+            return;
+        }
+        if (e.target.closest('.btn-cancelar-usuarios')) {
+            mostrarAviso('');
+            mostrarTela('lista');
+            return;
+        }
+        const btnReset = e.target.closest('.btn-abrir-reset-senha');
+        if (btnReset) {
+            mostrarAviso('');
+            document.getElementById('resetUsuarioId').value = btnReset.dataset.id;
+            document.getElementById('resetUsuarioNome').textContent = btnReset.dataset.nome;
+            telas.reset.reset();
+            document.getElementById('resetUsuarioId').value = btnReset.dataset.id; // reset() limpa o hidden
+            mostrarTela('reset');
+            document.getElementById('resetNovaSenha').focus();
+            return;
+        }
+        const btnExcluir = e.target.closest('.btn-abrir-excluir-usuario');
+        if (btnExcluir) {
+            mostrarAviso('');
+            document.getElementById('excluirUsuarioId').value = btnExcluir.dataset.id;
+            document.getElementById('excluirUsuarioNome').textContent = btnExcluir.dataset.nome;
+            mostrarTela('excluir');
+        }
+    });
+
+    function aoEnviar(form, acao) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!form.reportValidity()) return; // mantém a dica nativa do padrão de senha forte
+            const campos = { action: acao };
+            new FormData(form).forEach((valor, chave) => (campos[chave] = valor));
+            chamarUsuarios(campos).then((ok) => {
+                if (ok) form.reset();
+            });
+        });
+    }
+    aoEnviar(telas.novo, 'adicionar');
+    aoEnviar(telas.reset, 'redefinir_senha');
+    aoEnviar(telas.excluir, 'excluir');
+
+    // Endereço antigo (/usuarios) leva ao painel já com o modal aberto.
+    if (new URLSearchParams(window.location.search).get('abrir') === 'usuarios' && window.bootstrap) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        window.history.replaceState({}, '', window.location.pathname); // tira o ?abrir= do endereço
+    }
+})();

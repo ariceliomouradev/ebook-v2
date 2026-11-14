@@ -10,12 +10,14 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
 require_once 'includes/repositorios.php';
+require_once 'includes/categorias.php';
 
 $ordemAtual = $_GET['ordem'] ?? 'recentes';
 $busca = $_GET['busca'] ?? '';
+$categoriaAtual = preg_replace('/[^a-z0-9-]/', '', (string) ($_GET['categoria'] ?? ''));
 $paginaAtual = max(1, (int) ($_GET['pagina'] ?? 1));
 
-$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id']);
+$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoriaAtual);
 $livros = $resultado['livros'];
 $progressos = $resultado['progressos'];
 $totalLivros = $resultado['totalLivros'];
@@ -23,6 +25,7 @@ $totalPaginas = $resultado['totalPaginas'];
 $paginaAtual = $resultado['paginaAtual'];
 $ordemAtual = $resultado['ordemAtual'];
 $busca = $resultado['busca'];
+$categorias = listarCategoriasComContagem($pdo);
 
 $tituloPagina = 'Meus Livros';
 ?>
@@ -37,13 +40,14 @@ $tituloPagina = 'Meus Livros';
 
 <body class="d-flex flex-column">
 
+    <a href="#conteudo" class="skip-link" data-testid="skip-link">Ir para o conteúdo</a>
+
     <div data-testid="global-loader" id="globalLoader" class="loader-overlay">
         <div class="loader-content text-center">
-            <div class="spinner-border text-info mb-3" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Carregando...</span>
-            </div>
+            <img src="assets/icons/icon-192.png" alt="" width="64" height="64" class="mb-3 animate-pulse" style="border-radius: 18px;">
+            <div class="visually-hidden" role="status">Carregando...</div>
             <h5 class="text-light animate-pulse">Carregando sua biblioteca...</h5>
-            <small class="text-muted">Por favor, aguarde.</small>
+            <small class="text-secondary">Por favor, aguarde.</small>
         </div>
     </div>
 
@@ -58,15 +62,38 @@ $tituloPagina = 'Meus Livros';
         </div>
     </div>
 
-    <div class="container py-4 flex-grow-1">
+    <?php $mostrarBusca = true; include 'components/header.php'; ?>
 
-        <?php include 'components/header.php'; ?>
+    <main id="conteudo" class="container app-main flex-grow-1">
 
         <?php include 'components/banner_horizontal.php'; ?>
 
         <div class="row g-4 main-row">
 
-            <div class="col-12 col-xl-10 d-flex flex-column gap-4">
+            <div class="col-12 col-xl-10 d-flex flex-column gap-3">
+
+                <?php if ($paginaAtual === 1 && $busca === '' && $categoriaAtual === '') {
+                    $emAndamento = listarEmAndamento($pdo, (int) $_SESSION['usuario_id']);
+                    include 'components/continuar_lendo.php';
+                } ?>
+
+                <div class="toolbar">
+                    <div class="toolbar__titulo">
+                        <h1 id="tituloAcervo"><?= ($busca !== '' || $categoriaAtual !== '') ? 'Resultados' : 'Acervo' ?></h1>
+                        <span class="toolbar__contagem" aria-live="polite"><b id="totalLivros" data-testid="total-livros"><?= (int) $totalLivros ?></b> <span id="rotuloTotal"><?= $totalLivros === 1 ? 'livro' : 'livros' ?></span></span>
+                    </div>
+                    <label class="toolbar__ordem">
+                        <span>Ordenar por</span>
+                        <select class="form-select bg-dark text-light" id="selectOrdenacao" data-testid="select-ordenacao">
+                            <option value="recentes" <?= $ordemAtual == 'recentes' ? 'selected' : '' ?>>Mais recentes</option>
+                            <option value="antigos" <?= $ordemAtual == 'antigos' ? 'selected' : '' ?>>Mais antigos</option>
+                            <option value="az" <?= $ordemAtual == 'az' ? 'selected' : '' ?>>A – Z</option>
+                            <option value="za" <?= $ordemAtual == 'za' ? 'selected' : '' ?>>Z – A</option>
+                        </select>
+                    </label>
+                </div>
+
+                <?php include 'components/categorias_chips.php'; ?>
 
                 <div id="areaLivros">
                     <?php include 'components/book_list.php'; ?>
@@ -81,10 +108,28 @@ $tituloPagina = 'Meus Livros';
             <?php include 'components/sidebar.php'; ?>
 
         </div>
-    </div>
+    </main>
 
-    <?php include 'components/modal_add.php'; ?>
-    <?php include 'components/modal_edit.php'; ?>
+    <?php
+    // Os modais só existem no HTML de quem pode usá-los: leitor não recebe nenhum dos dois.
+    // (A permissão real continua sendo checada em cada endpoint; isto só evita enviar marcação
+    // inútil e reduz a superfície exposta.)
+    $perfilDaSessao = $_SESSION['usuario_perfil'] ?? 'leitor';
+    $categoriasTodas = listarCategoriasComContagem($pdo, true);
+    if ($perfilDaSessao === 'admin') {
+        $listaUsuarios = $pdo->query('SELECT id, nome, email, perfil, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+        require_once 'includes/banners.php';
+        $bannersH = listarBanners($pdo, 'h');
+        $bannersV = listarBanners($pdo, 'v');
+    }
+    if (in_array($perfilDaSessao, ['admin', 'contribuidor'], true)) {
+        include 'components/modal_add.php';
+    }
+    if ($perfilDaSessao === 'admin') {
+        include 'components/modal_edit.php';
+        include 'components/modal_usuarios.php';
+    }
+    ?>
 
     <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
         <div id="toastErro" class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-testid="toast-erro">
@@ -104,6 +149,7 @@ $tituloPagina = 'Meus Livros';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
     <script src="<?= asset('assets/js/app.js') ?>"></script>
+    <script src="<?= asset('assets/js/promo.js') ?>"></script>
 
 </body>
 </html>

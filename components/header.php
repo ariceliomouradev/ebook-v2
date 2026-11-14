@@ -5,91 +5,84 @@ if (!defined('ACESSO_PERMITIDO')) {
 }
 
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? 'leitor';
-$primeiroNome = explode(' ', $_SESSION['usuario_nome'] ?? 'Usuário')[0];
-$ordemAtual = $ordemAtual ?? ($_GET['ordem'] ?? 'recentes');
+$nomeCompleto = $_SESSION['usuario_nome'] ?? 'Usuário';
+$primeiroNome = explode(' ', $nomeCompleto)[0];
+$inicial = mb_strtoupper(mb_substr($primeiroNome, 0, 1));
 $busca = $busca ?? ($_GET['busca'] ?? '');
+$mostrarBusca = $mostrarBusca ?? false;
 ?>
-<div class="row mb-4 align-items-center g-3" data-testid="header-container">
+<header class="app-bar" data-testid="header-container">
+    <div class="container app-bar__inner">
 
-    <div class="col-12 col-md-3 text-center text-md-start">
-        <h4 class="text-info mb-0" data-testid="header-title"><i class="fas fa-book-reader"></i> Meus Livros</h4>
-    </div>
+        <a class="brand" href="<?= url('index.php') ?>" aria-label="Meus Livros — início">
+            <img class="brand__mark" src="<?= caminhoRaiz() ?>assets/icons/icon-192.png" alt="" width="36" height="36">
+            <span class="brand__nome" data-testid="header-title">Meus Livros</span>
+        </a>
 
-    <div class="col-12 col-md-4">
-        <div class="input-group input-group-sm">
-            <span class="input-group-text bg-dark border-secondary text-secondary">
-                <i class="fas fa-search"></i>
-            </span>
-            <input type="text" id="campoBusca"
-                class="form-control bg-dark text-light border-secondary border-start-0"
-                placeholder="Pesquisar em todo o acervo..."
+        <?php if ($mostrarBusca): ?>
+        <div class="busca" role="search">
+            <i class="fas fa-search busca__icone" aria-hidden="true"></i>
+            <input type="search" id="campoBusca"
+                class="form-control bg-dark text-light"
+                placeholder="Buscar por título ou autor"
+                aria-label="Buscar no acervo"
+                autocomplete="off"
                 value="<?= e($busca) ?>"
                 data-testid="input-busca-principal">
-            <button class="btn btn-outline-secondary border-secondary border-start-0 text-secondary"
-                    type="button" id="btnLimparBusca" style="display: <?= $busca !== '' ? 'block' : 'none' ?>;"
-                    data-testid="btn-limpar-busca">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="busca__direita">
+                <button class="busca__limpar" type="button" id="btnLimparBusca" aria-label="Limpar pesquisa"
+                        style="display: <?= $busca !== '' ? 'flex' : 'none' ?>;" data-testid="btn-limpar-busca">
+                    <i class="fas fa-times"></i>
+                </button>
+                <kbd class="busca__atalho" aria-hidden="true">/</kbd>
+            </div>
         </div>
-    </div>
+        <?php endif; ?>
 
-    <div class="col-12 col-md-5">
-        <div class="d-flex gap-2 align-items-center justify-content-center justify-content-md-end">
-
-            <select class="form-select form-select-sm bg-dark text-light border-secondary"
-                    style="max-width: 130px;"
-                    id="selectOrdenacao"
-                    data-testid="select-ordenacao">
-                <option value="recentes" <?= $ordemAtual == 'recentes' ? 'selected' : '' ?>>Mais Recentes</option>
-                <option value="antigos" <?= $ordemAtual == 'antigos' ? 'selected' : '' ?>>Mais Antigos</option>
-                <option value="az" <?= $ordemAtual == 'az' ? 'selected' : '' ?>>A - Z</option>
-                <option value="za" <?= $ordemAtual == 'za' ? 'selected' : '' ?>>Z - A</option>
-            </select>
-
-            <?php if ($perfilUsuario === 'admin'): ?>
-            <button class="btn btn-edit btn-sm flex-fill flex-md-grow-0" data-bs-toggle="modal"
-                data-bs-target="#modalGerenciar"
-                data-testid="btn-abrir-gerenciador">
-                <i class="fas fa-edit"></i> Editar
-            </button>
-            <?php endif; ?>
-
+        <div class="app-acoes">
             <?php if ($perfilUsuario === 'admin' || $perfilUsuario === 'contribuidor'): ?>
-            <button class="btn btn-neon btn-sm flex-fill flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#modalUpload"
-                data-testid="btn-novo-livro">
-                <i class="fas fa-plus"></i> Novo
+            <button class="btn btn-neon" data-bs-toggle="modal" data-bs-target="#modalUpload"
+                data-testid="btn-novo-livro" aria-label="Adicionar livro">
+                <i class="fas fa-plus" aria-hidden="true"></i><span class="btn-rotulo ms-2">Adicionar</span>
             </button>
             <?php endif; ?>
 
             <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" data-testid="btn-user-menu">
-                    <i class="fas fa-user-circle"></i> <?= e($primeiroNome) ?>
+                <button class="menu-usuario dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        aria-label="Menu da conta de <?= e($primeiroNome) ?>" data-testid="btn-user-menu">
+                    <span class="avatar" aria-hidden="true"><?= e($inicial) ?></span>
+                    <span class="menu-usuario__nome"><?= e($primeiroNome) ?></span>
+                    <i class="fas fa-chevron-down" aria-hidden="true"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
-                    <li><span class="dropdown-item-text text-muted small">Nível: <b class="text-info"><?= e(strtoupper($perfilUsuario)) ?></b></span></li>
-                    <li><hr class="dropdown-divider border-secondary"></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><span class="dropdown-item-text small text-secondary">Nível <span class="perfil-etiqueta ms-1"><?= e(strtoupper($perfilUsuario)) ?></span></span></li>
+                    <li><hr class="dropdown-divider"></li>
+
+                    <?php if ($perfilUsuario === 'admin' && !empty($mostrarBusca)): ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalGerenciar" data-testid="btn-abrir-gerenciador"><i class="fas fa-book me-2"></i>Gerenciar livros</button></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalGerenciar" data-abrir-banners data-testid="btn-menu-banners"><i class="fas fa-image me-2"></i>Gerenciar banners</button></li>
+                    <?php endif; ?>
 
                     <?php if ($perfilUsuario === 'admin'): ?>
-                    <li><a class="dropdown-item" href="<?= url('usuarios.php') ?>" data-testid="btn-menu-usuarios"><i class="fas fa-users me-2"></i>Gerenciar Usuários</a></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalUsuarios" data-testid="btn-menu-usuarios"><i class="fas fa-users me-2"></i>Gerenciar usuários</button></li>
                     <?php endif; ?>
 
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalTrocarSenha" data-testid="btn-menu-trocar-senha"><i class="fas fa-key me-2"></i>Trocar Senha</a></li>
 
-                    <li><hr class="dropdown-divider border-secondary"></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item text-danger" href="<?= url('logout.php') ?>" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
                 </ul>
             </div>
-
         </div>
     </div>
-</div>
+</header>
 
 <div class="modal fade" id="modalTrocarSenha" tabindex="-1" data-testid="modal-trocar-senha">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
                 <h6 class="modal-title text-light"><i class="fas fa-key me-2 text-info"></i>Alterar Senha</h6>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-testid="btn-fechar-modal-senha"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-testid="btn-fechar-modal-senha" aria-label="Fechar"></button>
             </div>
             <form action="<?= caminhoRaiz() ?>api/mudar_senha.php" method="POST" data-testid="form-trocar-senha">
                 <?= csrf_field() ?>
@@ -98,7 +91,7 @@ $busca = $busca ?? ($_GET['busca'] ?? '');
                         <label class="text-muted small">Senha Atual</label>
                         <div class="input-group">
                             <input type="password" name="senha_atual" class="form-control bg-secondary text-light border-0 border-end-0" required data-testid="input-senha-atual">
-                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-senha-atual">
+                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-senha-atual" aria-label="Mostrar ou ocultar a senha">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
@@ -111,7 +104,7 @@ $busca = $busca ?? ($_GET['busca'] ?? '');
                                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}"
                                    title="A senha deve ter no mínimo 8 caracteres, contendo pelo menos 1 letra maiúscula, 1 minúscula, 1 número e 1 caractere especial."
                                    data-testid="input-nova-senha">
-                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-nova-senha">
+                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-nova-senha" aria-label="Mostrar ou ocultar a senha">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
@@ -121,7 +114,7 @@ $busca = $busca ?? ($_GET['busca'] ?? '');
                         <label class="text-muted small">Confirmar Nova Senha</label>
                         <div class="input-group">
                             <input type="password" name="confirma_senha" class="form-control bg-secondary text-light border-0 border-end-0" required data-testid="input-confirma-senha">
-                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-confirma-senha">
+                            <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-confirma-senha" aria-label="Mostrar ou ocultar a senha">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>

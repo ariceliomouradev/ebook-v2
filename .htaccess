@@ -7,6 +7,11 @@
 
 Options -Indexes
 
+# Manifesto do aplicativo (PWA): alguns Apache não conhecem a extensão e serviriam como texto.
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
 # ---------------------------------------------------------------------------
 # URLs amigáveis
 #

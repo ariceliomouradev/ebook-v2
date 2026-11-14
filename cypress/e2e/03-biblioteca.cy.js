@@ -8,13 +8,16 @@
 const { PREFIXO_TITULO } = require('../support/dados');
 
 const PREFIXO = () => PREFIXO_TITULO;
-const POR_PAGINA = 10;
+let POR_PAGINA = 20; // lido de config/app.php no before(): fonte única da verdade, sem número solto aqui
 
 describe('Biblioteca (busca, ordenação e paginação)', () => {
   const marcador = 'Zaratustra' + Date.now().toString().slice(-5);
   let totalLivros;
 
   before(() => {
+    cy.readFile('config/app.php').then((php) => {
+      POR_PAGINA = Number(php.match(/const ITENS_POR_PAGINA = (\d+)/)[1]);
+    });
     cy.limparMassaE2E();
     cy.semearUsuarios();
     // Livro com título único: garante um resultado determinístico de busca sem
@@ -50,7 +53,7 @@ describe('Biblioteca (busca, ordenação e paginação)', () => {
         .first()
         .within(() => {
           cy.tid('book-title').should('not.be.empty');
-          cy.tid('book-progress-text').should('contain.text', 'Lido');
+          cy.tid('book-progress-text').invoke('text').should('match', /Lido|Não iniciado/);
           cy.tid('book-progress-bar').should('exist');
           cy.tid('book-read-link').should('have.attr', 'href').and('include', 'leitor?id=');
         });
@@ -114,11 +117,12 @@ describe('Biblioteca (busca, ordenação e paginação)', () => {
   });
 
   describe('Ordenação', () => {
+    // Mesmos critérios do app (includes/repositorios.php), com desempate por id.
     const ordens = {
       recentes: 'id DESC',
       antigos: 'id ASC',
-      az: 'titulo ASC',
-      za: 'titulo DESC',
+      az: 'titulo ASC, id ASC',
+      za: 'titulo DESC, id DESC',
     };
 
     Object.entries(ordens).forEach(([valor, sqlOrdem]) => {
@@ -216,6 +220,68 @@ describe('Biblioteca (busca, ordenação e paginação)', () => {
       cy.tid('btn-page-next').click();
       cy.wait('@buscar').its('request.url').should('include', 'ordem=az');
       cy.tid('select-ordenacao').should('have.value', 'az');
+    });
+  });
+
+  describe('Paginação numerada', () => {
+    // Em telas médias e grandes a navegação mostra "1 … 4 [5] 6 … 70". Com poucas páginas
+    // (instalação nova, sem acervo) não há o que verificar além do básico.
+    beforeEach(function () {
+      cy.viewport(1280, 800);
+      if (Math.ceil(totalLivros / POR_PAGINA) < 8) this.skip();
+    });
+
+    it('mostra a página atual destacada, os vizinhos e a última página', () => {
+      const ultima = Math.ceil(totalLivros / POR_PAGINA);
+      cy.visitarBiblioteca('?pagina=5');
+      cy.tid('btn-page-atual').should('have.text', '5').and('have.attr', 'aria-current', 'page');
+      cy.tid('pagination-numeros').should('contain.text', '…');
+      cy.tid('btn-page-num').first().should('have.text', '1');
+      cy.tid('btn-page-num').last().should('have.text', String(ultima));
+      cy.tid('btn-page-num').then(($links) => {
+        const numeros = [...$links].map((el) => Number(el.textContent));
+        expect(numeros, 'vizinhos da página 5').to.include.members([4, 6]);
+        expect(numeros, 'a atual não é link').to.not.include(5);
+      });
+    });
+
+    it('navega ao clicar em um número, sem recarregar a página', () => {
+      cy.visitarBiblioteca();
+      cy.window().then((win) => (win.__marcador = 'intacto'));
+      cy.tid('btn-page-num').contains(/^3$/).click();
+      cy.wait('@buscar');
+      cy.tid('btn-page-atual').should('have.text', '3');
+      cy.url().should('include', 'pagina=3');
+      cy.window().its('__marcador').should('eq', 'intacto');
+    });
+
+    it('chega à última página pelo número e desabilita "próxima"', () => {
+      const ultima = Math.ceil(totalLivros / POR_PAGINA);
+      cy.visitarBiblioteca();
+      cy.tid('btn-page-num').last().click();
+      cy.wait('@buscar');
+      cy.tid('btn-page-atual').should('have.text', String(ultima));
+      cy.tid('btn-page-next').should('have.class', 'disabled');
+      cy.tid('btn-page-next').should('have.attr', 'aria-disabled', 'true');
+    });
+
+    it('os links numéricos preservam ordenação e busca', () => {
+      cy.visitarBiblioteca('?ordem=az');
+      cy.tid('btn-page-num').first().should('have.attr', 'href').and('include', 'ordem=az');
+    });
+
+    it('nenhum livro aparece em duas páginas consecutivas (títulos repetidos incluídos)', () => {
+      // O desempate por id na ordenação A-Z é o que impede um livro de repetir ou sumir entre páginas.
+      const ids = [];
+      const coletar = (pagina) =>
+        cy.visitarBiblioteca(`?ordem=az&pagina=${pagina}`).then(() =>
+          cy.tid('book-item').then(($itens) => ids.push(...[...$itens].map((el) => el.dataset.id)))
+        );
+      [1, 2, 3].forEach(coletar);
+      cy.then(() => {
+        expect(new Set(ids).size, 'ids únicos nas 3 primeiras páginas').to.eq(ids.length);
+        expect(ids).to.have.length(POR_PAGINA * 3);
+      });
     });
   });
 

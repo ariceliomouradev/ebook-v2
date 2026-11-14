@@ -19,10 +19,13 @@ $user = $stmt->fetch();
 // do contrário o endpoint permite descobrir quais contas estão cadastradas.
 if ($user) {
     $token = bin2hex(random_bytes(32));
-    $expiraEm = date('Y-m-d H:i:s', strtotime('+' . RESET_TOKEN_VALIDADE_HORAS . ' hour'));
 
-    $pdo->prepare("UPDATE usuarios SET reset_token = ?, reset_expires = ? WHERE id = ?")
-        ->execute([$token, $expiraEm, $user['id']]);
+    // A expiração é calculada pelo relógio do MySQL — o mesmo que depois valida o token
+    // (`reset_expires > NOW()` em redefinir_senha.php e api/salvar_nova_senha.php). Calcular
+    // com date()/strtotime() do PHP dava validade errada sempre que o fuso do PHP e o do
+    // banco divergiam (ex.: date.timezone=Europe/Berlin contra MySQL em UTC-3 = 6h, não 1h).
+    $pdo->prepare("UPDATE usuarios SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL " . (int) RESET_TOKEN_VALIDADE_HORAS . " HOUR) WHERE id = ?")
+        ->execute([$token, $user['id']]);
 
     $urlBase = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . "://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2);
     $linkRecuperacao = $urlBase . '/redefinir-senha?token=' . $token;

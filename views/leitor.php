@@ -28,9 +28,10 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
 ?>
 
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Lendo: <?= e($livro['titulo']) ?></title>
 
     <!-- Cor da interface do navegador: pinta a barra de endereços do Chrome no
@@ -39,14 +40,18 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
          color-scheme faz controles de formulário e barras de rolagem nativas
          seguirem o tema escuro; os metas apple-* valem quando o site é salvo na
          tela de início do iPhone. -->
-    <meta name="theme-color" content="#0d0d0d">
+    <meta name="theme-color" content="#07090d">
     <meta name="color-scheme" content="dark">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Meus Livros">
     <meta name="application-name" content="Meus Livros">
-    <meta name="msapplication-TileColor" content="#0d0d0d">
+    <meta name="msapplication-TileColor" content="#07090d">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="assets/icons/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -56,61 +61,85 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
 </head>
 <body>
 
+<!-- Barra de progresso fina no topo: quanto do livro já foi lido -->
+<div class="leitor-progresso" aria-hidden="true"><span id="barraProgresso" data-testid="leitor-barra-progresso"></span></div>
+
+<header class="hud-topo" id="hudTopo" data-testid="hud-topo">
+    <a data-testid="btn-back-library" href="<?= url('index.php') ?>?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-voltar" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i><span class="btn-voltar__texto">Biblioteca</span>
+    </a>
+
+    <div class="hud-titulo">
+        <h1 class="hud-titulo__nome" data-testid="leitor-titulo"><?= e($livro['titulo']) ?></h1>
+        <span class="hud-titulo__info" id="progressoTexto" data-testid="leitor-progresso-texto" aria-live="polite">Abrindo…</span>
+    </div>
+
+    <button data-testid="btn-fullscreen" class="btn-hud btn-hud--topo" id="btnFullscreen" title="Tela Cheia" aria-label="Tela cheia">
+        <i class="fas fa-expand" id="iconFull" aria-hidden="true"></i>
+    </button>
+</header>
+
 <div id="canvas-container" data-testid="pdf-container">
     <canvas id="the-canvas" data-testid="pdf-canvas"></canvas>
 </div>
 
-<div class="hud-menu" id="menuPrincipal" data-testid="hud-menu">
-    <a data-testid="btn-back-library" href="<?= url('index.php') ?>?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-hud" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
-        <i class="fas fa-arrow-left"></i>
-    </a>
+<div class="leitor-estado" id="leitorCarregando" role="status" data-testid="leitor-carregando">
+    <div class="leitor-spinner" aria-hidden="true"></div>
+    <p>Abrindo o livro…</p>
+</div>
 
-    <div class="divider"></div>
+<div class="leitor-estado leitor-estado--erro" id="leitorErro" role="alert" data-testid="leitor-erro" hidden>
+    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    <p>Não foi possível abrir este livro.</p>
+    <a class="btn-voltar" href="<?= url('index.php') ?>"><i class="fas fa-chevron-left" aria-hidden="true"></i><span>Voltar à biblioteca</span></a>
+</div>
 
-    <div class="hud-group">
+<nav class="hud-menu" id="menuPrincipal" data-testid="hud-menu" aria-label="Controles de leitura">
+    <div class="hud-group hud-group--extremos">
         <button data-testid="btn-first-page" class="btn-hud" id="btnPrimeiraPagina" title="Primeira Página" aria-label="Primeira página">
-            <i class="fas fa-angle-double-left"></i>
+            <i class="fas fa-angle-double-left" aria-hidden="true"></i>
         </button>
+    </div>
 
+    <div class="hud-group hud-group--paginas">
         <button data-testid="btn-prev-page" class="btn-hud" id="btnPaginaAnterior" title="Página Anterior" aria-label="Página anterior">
-            <i class="fas fa-chevron-left"></i>
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
         </button>
 
         <div class="page-input-container">
-            <input data-testid="input-page-number" type="number" id="pageInput" class="hud-input" min="1" value="1" aria-label="Número da página">
+            <input data-testid="input-page-number" type="number" id="pageInput" class="hud-input" min="1" value="1" inputmode="numeric" aria-label="Número da página">
             <span class="info-text">/ <span data-testid="text-total-pages" id="pageCount">--</span></span>
         </div>
 
         <button data-testid="btn-next-page" class="btn-hud" id="btnProximaPagina" title="Próxima Página" aria-label="Próxima página">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-
-        <button data-testid="btn-last-page" class="btn-hud" id="btnUltimaPagina" title="Última Página" aria-label="Última página">
-            <i class="fas fa-angle-double-right"></i>
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
         </button>
     </div>
 
-    <div class="divider"></div>
+    <div class="hud-group hud-group--extremos">
+        <button data-testid="btn-last-page" class="btn-hud" id="btnUltimaPagina" title="Última Página" aria-label="Última página">
+            <i class="fas fa-angle-double-right" aria-hidden="true"></i>
+        </button>
+    </div>
 
-    <div class="hud-group">
+    <div class="divider" aria-hidden="true"></div>
+
+    <div class="hud-group hud-group--zoom">
         <button data-testid="btn-zoom-out" class="btn-hud" id="btnZoomOut" title="Diminuir Zoom" aria-label="Diminuir zoom">
-            <i class="fas fa-search-minus"></i>
+            <i class="fas fa-minus" aria-hidden="true"></i>
         </button>
 
-        <span data-testid="text-zoom-level" class="zoom-text" id="zoomLevel">140%</span>
+        <span data-testid="text-zoom-level" class="zoom-text" id="zoomLevel" aria-live="polite">140%</span>
 
         <button data-testid="btn-zoom-in" class="btn-hud" id="btnZoomIn" title="Aumentar Zoom" aria-label="Aumentar zoom">
-            <i class="fas fa-search-plus"></i>
+            <i class="fas fa-plus" aria-hidden="true"></i>
         </button>
     </div>
 
-    <div class="divider"></div>
-
-    <button data-testid="btn-fullscreen" class="btn-hud" id="btnFullscreen" title="Tela Cheia" aria-label="Tela cheia">
-        <i class="fas fa-expand" id="iconFull"></i>
+    <button data-testid="btn-fit-width" class="btn-hud" id="btnAjustarLargura" title="Ajustar à largura" aria-label="Ajustar à largura da tela">
+        <i class="fas fa-arrows-alt-h" aria-hidden="true"></i>
     </button>
-</div>
-
+</nav>
 <script type="application/json" id="livro-config">
 <?= json_encode([
     'id'            => (int) $id,

@@ -1,0 +1,106 @@
+<?php
+/**
+ * Gestão de usuários pelo modal do painel (só admin). Ações (POST + CSRF), sempre em JSON:
+ *   listar
+ *   adicionar        nome, email, senha, perfil
+ *   redefinir_senha  usuario_id, nova_senha
+ *   excluir          usuario_id
+ * Toda resposta traz `html` (a tabela já renderizada) e, quando há, `mensagem` para o aviso do modal.
+ */
+define('CAMINHO_RAIZ', '../');
+require_once '../config/bootstrap.php';
+
+require_perfil(['admin'], true);
+require_post(true);
+csrf_verify(true);
+
+function listaDeUsuarios(PDO $pdo): array
+{
+    return $pdo->query('SELECT id, nome, email, perfil, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+}
+
+function responderUsuarios(PDO $pdo, string $mensagem = ''): never
+{
+    $listaUsuarios = listaDeUsuarios($pdo);
+    ob_start();
+    include __DIR__ . '/../components/usuarios_gerenciador.php';
+    $html = ob_get_clean();
+    responderJson(['success' => true, 'html' => $html, 'mensagem' => $mensagem, 'total' => count($listaUsuarios)]);
+}
+
+function falhar(string $mensagem, int $codigo = 422): never
+{
+    responderJson(['success' => false, 'error' => $mensagem], $codigo);
+}
+
+$action = $_POST['action'] ?? '';
+
+if ($action === 'listar') {
+    responderUsuarios($pdo);
+}
+
+if ($action === 'adicionar') {
+    $nome = trim($_POST['nome'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $senha = $_POST['senha'] ?? '';
+    $perfil = $_POST['perfil'] ?? 'leitor';
+    if (!in_array($perfil, ['leitor', 'contribuidor', 'admin'], true)) {
+        $perfil = 'leitor';
+    }
+
+    if ($nome === '' || $email === '' || $senha === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        falhar('Dados inválidos ou incompletos. Tente novamente.');
+    }
+    if (!validarSenhaForte($senha)) {
+        falhar('A senha não atende aos requisitos mínimos de segurança.');
+    }
+
+    try {
+        $stmt = $pdo->prepare('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)');
+        $stmt->execute([mb_substr($nome, 0, 100), $email, password_hash($senha, PASSWORD_DEFAULT), $perfil]);
+    } catch (PDOException $e) {
+        if ($e->getCode() == 23000) {
+            falhar('Este e-mail já está em uso por outro usuário.', 409);
+        }
+        error_log('Falha ao cadastrar usuário: ' . $e->getMessage());
+        falhar('Erro interno do banco de dados.', 500);
+    }
+    responderUsuarios($pdo, 'Usuário cadastrado com sucesso no sistema.');
+}
+
+if ($action === 'redefinir_senha') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    $novaSenha = $_POST['nova_senha'] ?? '';
+    if (!$id || $novaSenha === '') {
+        falhar('Dados inválidos ou incompletos. Tente novamente.');
+    }
+    if (!validarSenhaForte($novaSenha)) {
+        falhar('A senha não atende aos requisitos mínimos de segurança.');
+    }
+    try {
+        $pdo->prepare('UPDATE usuarios SET senha = ? WHERE id = ?')->execute([password_hash($novaSenha, PASSWORD_DEFAULT), $id]);
+    } catch (PDOException $e) {
+        error_log('Falha ao redefinir senha: ' . $e->getMessage());
+        falhar('Erro interno do banco de dados.', 500);
+    }
+    responderUsuarios($pdo, 'A senha do usuário foi redefinida com sucesso.');
+}
+
+if ($action === 'excluir') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id) {
+        falhar('Dados inválidos ou incompletos. Tente novamente.');
+    }
+    if ($id === (int) $_SESSION['usuario_id']) {
+        falhar('Operação bloqueada: você não pode excluir a sua própria conta.', 403);
+    }
+    try {
+        $pdo->prepare('DELETE FROM usuarios WHERE id = ?')->execute([$id]);
+    } catch (PDOException $e) {
+        error_log('Falha ao excluir usuário: ' . $e->getMessage());
+        falhar('Erro interno do banco de dados.', 500);
+    }
+    responderUsuarios($pdo, 'Usuário excluído. O acervo de livros dele foi mantido.');
+}
+
+falhar('Ação inválida.', 400);

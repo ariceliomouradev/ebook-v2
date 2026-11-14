@@ -44,3 +44,9 @@ cypress/fixtures/*.txt
 
 # Scripts de diagnóstico temporários (nunca versionar)
 diagnostico.php
+
+# Logins gerados por database/seed_dev.php (somente desenvolvimento)
+database/.dev-credenciais.txt
+
+# Estado e relatórios da importação em lote de acervo
+database/.importacao/

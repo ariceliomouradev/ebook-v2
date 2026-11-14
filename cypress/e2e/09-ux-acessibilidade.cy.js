@@ -230,6 +230,137 @@ describe('UX e acessibilidade', () => {
     });
   });
 
+  describe('Aplicativo instalável (PWA)', () => {
+    it('declara manifesto, ícones e nome do app na tela de login e no painel', () => {
+      ['login', './'].forEach((rota) => {
+        if (rota === 'login') {
+          Cypress.session.clearAllSavedSessions();
+          cy.clearCookies();
+        } else {
+          cy.entrarComo('leitor');
+        }
+        cy.visit(rota);
+        cy.get('link[rel="manifest"]').should('have.attr', 'href').and('include', 'manifest.webmanifest');
+        cy.get('link[rel="apple-touch-icon"]').should('have.attr', 'href').and('include', 'apple-touch-icon.png');
+        cy.get('link[rel="icon"]').should('have.length.at.least', 1);
+        cy.get('meta[name="apple-mobile-web-app-title"]').should('have.attr', 'content', 'Meus Livros');
+      });
+    });
+
+    it('o manifesto é válido: nome, modo standalone, cores e ícones que existem de verdade', () => {
+      cy.request('manifest.webmanifest').then((r) => {
+        expect(r.headers['content-type']).to.contain('manifest+json');
+        const m = typeof r.body === 'string' ? JSON.parse(r.body) : r.body;
+        expect(m.name).to.eq('Meus Livros');
+        expect(m.display).to.eq('standalone');
+        expect(m.start_url).to.eq('./');
+        expect(m.theme_color).to.eq('#0d0f14');
+        expect(m.background_color).to.eq('#0d0f14');
+
+        const tamanhos = m.icons.map((i) => i.sizes);
+        expect(tamanhos, 'ícones mínimos para instalar no Android').to.include.members(['192x192', '512x512']);
+        expect(m.icons.some((i) => i.purpose === 'maskable'), 'ícone maskable').to.be.true;
+
+        m.icons.forEach((icone) => {
+          cy.request(icone.src).then((resp) => {
+            expect(resp.status, icone.src).to.eq(200);
+            expect(resp.headers['content-type'], icone.src).to.contain('image/png');
+          });
+        });
+      });
+    });
+
+    it('a cor de tema do manifesto é a mesma do meta theme-color do painel', () => {
+      cy.entrarComo('leitor');
+      cy.visit('./');
+      cy.request('manifest.webmanifest').then((r) => {
+        const m = typeof r.body === 'string' ? JSON.parse(r.body) : r.body;
+        cy.get('meta[name="theme-color"]').should('have.attr', 'content', m.theme_color);
+      });
+    });
+  });
+
+  describe('Acessibilidade estrutural', () => {
+    it('login: rótulos associados aos campos e autocomplete para gerenciadores de senha', () => {
+      Cypress.session.clearAllSavedSessions();
+      cy.clearCookies();
+      cy.visit('login');
+      ['login-email-input', 'login-password-input'].forEach((testid) => {
+        cy.tid(testid)
+          .should('have.attr', 'id')
+          .then((id) => cy.get(`label[for="${id}"]`).should('exist'));
+      });
+      cy.tid('login-email-input').should('have.attr', 'autocomplete', 'username');
+      cy.tid('login-password-input').should('have.attr', 'autocomplete', 'current-password');
+    });
+
+    it('o painel tem região principal e um "pular para o conteúdo" que só aparece com o teclado', () => {
+      cy.entrarComo('leitor');
+      cy.visitarBiblioteca();
+      cy.get('main#conteudo').should('exist');
+      cy.tid('skip-link').should('have.attr', 'href', '#conteudo');
+      cy.tid('skip-link').then(($a) => {
+        expect($a[0].getBoundingClientRect().bottom, 'fora da tela enquanto não há foco').to.be.at.most(0);
+      });
+      cy.tid('skip-link').focus();
+      cy.tid('skip-link').should(($a) => {
+        expect($a[0].getBoundingClientRect().top, 'visível ao receber foco').to.be.at.least(0);
+      });
+    });
+
+    it('cada card de livro tem link com nome acessível e barra de progresso semântica', () => {
+      cy.entrarComo('leitor');
+      cy.visitarBiblioteca();
+      cy.tid('book-read-link').first().should('have.attr', 'aria-label').and('match', /^Ler /);
+      cy.tid('book-progress-bar')
+        .first()
+        .should('have.attr', 'role', 'progressbar')
+        .and('have.attr', 'aria-valuenow')
+        .and('match', /^\d+$/);
+      cy.tid('book-progress-bar').first().should('have.attr', 'aria-valuemin', '0').and('have.attr', 'aria-valuemax', '100');
+    });
+
+    ['leitor', 'admin'].forEach((perfil) => {
+      it(`todo botão e link do painel (${perfil}) tem nome acessível`, () => {
+        cy.entrarComo(perfil);
+        cy.visitarBiblioteca();
+        cy.get('button, a[href]').then(($els) => {
+          const semNome = [...$els]
+            .filter(
+              (el) =>
+                !(
+                  el.getAttribute('aria-label') ||
+                  el.getAttribute('aria-labelledby') ||
+                  el.getAttribute('title') ||
+                  el.textContent.trim() ||
+                  el.querySelector('img[alt]:not([alt=""])')
+                )
+            )
+            .map((el) => el.outerHTML.replace(/\s+/g, ' ').slice(0, 130));
+          expect(semNome, 'controles sem nome acessível (leitores de tela anunciam só "botão")').to.deep.eq([]);
+        });
+      });
+    });
+
+    it('todo botão e link da gestão de usuários tem nome acessível', () => {
+      cy.entrarComo('admin');
+      cy.visit('usuarios');
+      cy.get('button, a[href]').then(($els) => {
+        const semNome = [...$els]
+          .filter(
+            (el) =>
+              !(
+                el.getAttribute('aria-label') ||
+                el.getAttribute('aria-labelledby') ||
+                el.getAttribute('title') ||
+                el.textContent.trim()
+              )
+          )
+          .map((el) => el.outerHTML.replace(/\s+/g, ' ').slice(0, 130));
+        expect(semNome, 'controles sem nome acessível').to.deep.eq([]);
+      });
+    });
+  });
   describe('Consistência visual', () => {
     it('usa o tema escuro em todas as telas autenticadas', () => {
       cy.entrarComo('admin');
@@ -247,7 +378,7 @@ describe('UX e acessibilidade', () => {
       cy.entrarComo('contribuidor');
       cy.visitarBiblioteca();
       cy.tid('btn-user-menu').should('contain.text', 'E2E').click();
-      cy.contains('Nível:').should('contain.text', 'CONTRIBUIDOR');
+      cy.contains('.dropdown-item-text','Nível').should('contain.text', 'CONTRIBUIDOR');
     });
 
     it('indica progresso de leitura com cor distinta ao concluir', () => {
