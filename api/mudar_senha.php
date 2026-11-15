@@ -28,7 +28,7 @@ if ($user && password_verify($senhaAtual, $user['senha'])) {
     $pdo->prepare("UPDATE usuarios SET senha = ? WHERE id = ?")->execute([$hashNovo, $usuario_id]);
 
     // Renova o ID de sessão após troca de senha (evita reaproveitamento em caso de sessão comprometida).
-    session_regenerate_id(true);
+    renovarIdDaSessao($pdo);
 
     redirecionar('index.php?msg=pwd_changed');
 } else {

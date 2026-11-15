@@ -57,7 +57,7 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
-                            <small class="text-muted"><?= e($dicaSenha) ?></small>
+                            <small class="text-muted"><?= e($dicaSenha) ?> A pessoa troca no primeiro acesso.</small>
                         </div>
                         <div class="col-12 col-md-6">
                             <label class="text-muted small" for="novoUsuarioPerfil">Nível de acesso</label>
@@ -78,23 +78,63 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                     </div>
                 </form>
 
-                <!-- Tela 3: redefinir senha -->
+                <!-- Tela 3: senha temporária -->
                 <form id="formResetSenha" class="d-none" data-testid="form-reset-senha" autocomplete="off" novalidate>
                     <input type="hidden" name="usuario_id" id="resetUsuarioId">
-                    <h6 class="mb-1">Redefinir senha</h6>
-                    <p class="text-muted small mb-3">Nova senha para: <strong class="text-light" id="resetUsuarioNome"></strong></p>
-                    <label class="text-muted small" for="resetNovaSenha">Nova senha</label>
-                    <div class="input-group">
-                        <input type="password" id="resetNovaSenha" name="nova_senha" class="form-control bg-secondary text-light border-0 border-end-0" required
-                               pattern="<?= $regexSenha ?>" title="<?= e($dicaSenha) ?>" data-testid="input-reset-nova-senha" autocomplete="new-password">
-                        <button class="btn btn-secondary border-0 text-muted" type="button" data-toggle-password data-testid="btn-toggle-reset-senha" aria-label="Mostrar ou ocultar a senha">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                    <h6 class="mb-1">Senha temporária</h6>
+                    <p class="text-muted small mb-3">Para: <strong class="text-light" id="resetUsuarioNome"></strong></p>
+
+                    <div id="resetPasso1">
+                        <p class="small text-secondary">O sistema gera uma senha temporária. A pessoa entra com ela e é <strong class="text-light">obrigada a criar uma senha nova</strong> no primeiro acesso. Quem estiver logado será desconectado.</p>
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios">Cancelar</button>
+                            <button type="submit" class="btn btn-warning flex-fill fw-bold" data-testid="btn-confirmar-reset-senha"><i class="fas fa-key me-2"></i>Gerar senha temporária</button>
+                        </div>
                     </div>
-                    <small class="text-muted"><?= e($dicaSenha) ?></small>
+
+                    <div id="resetPasso2" class="d-none" data-testid="reset-resultado">
+                        <label class="text-muted small" for="resetSenhaGerada">Senha temporária (aparece só agora)</label>
+                        <div class="input-group">
+                            <input type="text" id="resetSenhaGerada" class="form-control bg-secondary text-light border-0 senha-temporaria" readonly data-testid="senha-temporaria" spellcheck="false" autocomplete="off">
+                            <button class="btn btn-warning fw-bold" type="button" id="btnCopiarSenhaTemp" data-testid="btn-copiar-senha-temporaria"><i class="fas fa-copy me-1"></i>Copiar</button>
+                        </div>
+                        <p class="small text-secondary mt-2 mb-0">Passe esta senha para a pessoa. Ela vai definir a senha definitiva ao entrar.</p>
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <a href="#" id="resetLinkWhats" class="btn btn-outline-success d-none" target="_blank" rel="noopener noreferrer" data-testid="btn-enviar-whatsapp"><i class="fab fa-whatsapp me-2"></i>Enviar pelo WhatsApp</a>
+                            <button type="button" class="btn btn-neon ms-auto btn-cancelar-usuarios" data-testid="btn-concluir-reset">Concluir</button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Tela 3b: editar WhatsApp e vencimento -->
+                <form id="formEditarUsuario" class="d-none" data-testid="form-editar-usuario" autocomplete="off" novalidate>
+                    <input type="hidden" name="usuario_id" id="editarUsuarioId">
+                    <h6 class="mb-1">Editar usuário</h6>
+                    <p class="text-muted small mb-3">Pessoa: <strong class="text-light" id="editarUsuarioNome"></strong></p>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="text-muted small" for="editarWhatsapp">WhatsApp</label>
+                            <input type="tel" inputmode="tel" id="editarWhatsapp" name="whatsapp" class="form-control bg-secondary text-light border-0" maxlength="20" placeholder="(85) 98888-7777" data-testid="input-editar-whatsapp">
+                            <small class="text-muted">Com DDD. Deixe vazio para remover.</small>
+                        </div>
+                        <div class="col-12 col-md-3" id="editarBlocoVencimento">
+                            <label class="text-muted small" for="editarVencimento">Vencimento</label>
+                            <input type="date" id="editarVencimento" name="vencimento" class="form-control bg-secondary text-light border-0" min="2020-01-01" max="2100-12-31" data-testid="input-editar-vencimento">
+                            <small class="text-muted">Vazio = sem vencimento.</small>
+                        </div>
+                        <div class="col-12 col-md-3" id="editarBlocoTipo">
+                            <label class="text-muted small" for="editarTipo">Tipo de acesso</label>
+                            <select id="editarTipo" name="tipo" class="form-select bg-secondary text-light border-0" data-testid="select-editar-tipo">
+                                <option value="teste">Teste grátis</option>
+                                <option value="pago">Pago</option>
+                                <option value="cortesia">Cortesia</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="small text-secondary mt-3 mb-0 d-none" id="editarSemVencimento">Administradores e contas dependentes de uma Família não têm vencimento próprio.</p>
                     <div class="d-flex gap-2 mt-4">
-                        <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios">Cancelar</button>
-                        <button type="submit" class="btn btn-warning flex-fill fw-bold" data-testid="btn-confirmar-reset-senha">Salvar nova senha</button>
+                        <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios" data-testid="btn-cancelar-editar-usuario">Cancelar</button>
+                        <button type="submit" class="btn btn-neon flex-fill" data-testid="btn-salvar-editar-usuario"><i class="fas fa-save me-2"></i>Salvar</button>
                     </div>
                 </form>
 

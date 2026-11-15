@@ -812,7 +812,7 @@ document.addEventListener('submit', function (e) {
  * ============================================================================
  * 9. GERENCIAR USUÁRIOS (MODAL, SÓ ADMIN) — tudo por AJAX, sem recarregar a página
  * ============================================================================
- * Quatro telas no mesmo modal (lista, novo, redefinir senha, excluir). Fechar o modal é o jeito
+ * Telas no mesmo modal (lista, novo, editar, senha temporária, excluir). Fechar o modal é o jeito
  * de "voltar": a página inicial nunca é recarregada nem trocada.
  */
 (function () {
@@ -823,6 +823,7 @@ document.addEventListener('submit', function (e) {
         lista: document.getElementById('viewUsuariosLista'),
         novo: document.getElementById('formNovoUsuario'),
         reset: document.getElementById('formResetSenha'),
+        editar: document.getElementById('formEditarUsuario'),
         excluir: document.getElementById('formExcluirUsuario'),
     };
     const aviso = document.getElementById('usuariosAviso');
@@ -840,7 +841,7 @@ document.addEventListener('submit', function (e) {
         aviso.textContent = mensagem;
     }
 
-    async function chamarUsuarios(campos) {
+    async function chamarUsuarios(campos, opcoes = {}) {
         showLoader('Salvando...');
         const formData = new FormData();
         Object.entries(campos).forEach(([chave, valor]) => formData.append(chave, valor));
@@ -860,8 +861,8 @@ document.addEventListener('submit', function (e) {
             document.getElementById('usuariosTotal').textContent = String(data.total);
             document.getElementById('usuariosRotulo').textContent = data.total === 1 ? 'pessoa' : 'pessoas';
             mostrarAviso(data.mensagem, 'success');
-            mostrarTela('lista');
-            return true;
+            if (!opcoes.semVoltar) mostrarTela('lista');
+            return data;
         } catch (err) {
             console.error('Erro na API de usuários:', err);
             mostrarAviso('Erro de conexão. Tente novamente.', 'danger');
@@ -876,6 +877,68 @@ document.addEventListener('submit', function (e) {
         mostrarTela('lista');
         mostrarAviso('');
         Object.values(telas).forEach((el) => el.tagName === 'FORM' && el.reset());
+        prepararSenhaTemporaria();
+    });
+    // a senha temporária não fica no HTML depois que o modal fecha
+    modalEl.addEventListener('hidden.bs.modal', prepararSenhaTemporaria);
+
+    /* ---------- senha temporária ---------- */
+    const passo1 = document.getElementById('resetPasso1');
+    const passo2 = document.getElementById('resetPasso2');
+    const campoSenhaGerada = document.getElementById('resetSenhaGerada');
+    const linkWhats = document.getElementById('resetLinkWhats');
+    let zapDaPessoa = '';
+
+    function prepararSenhaTemporaria() {
+        passo1.classList.remove('d-none');
+        passo2.classList.add('d-none');
+        campoSenhaGerada.value = '';
+        linkWhats.classList.add('d-none');
+        linkWhats.removeAttribute('href');
+    }
+
+    function mostrarSenhaTemporaria(senha, nome) {
+        campoSenhaGerada.value = senha;
+        passo1.classList.add('d-none');
+        passo2.classList.remove('d-none');
+        if (zapDaPessoa) {
+            const numero = zapDaPessoa.startsWith('55') ? zapDaPessoa : '55' + zapDaPessoa;
+            const texto = 'Olá, ' + nome.split(' ')[0] + '! Sua senha temporária do Meus Livros é: ' + senha +
+                '\n' + 'Entre em ' + new URL(BASE_URL, window.location.href).href + ' e crie a sua senha definitiva no primeiro acesso.';
+            linkWhats.href = 'https://wa.me/' + numero + '?text=' + encodeURIComponent(texto);
+            linkWhats.classList.remove('d-none');
+        }
+        campoSenhaGerada.focus();
+        campoSenhaGerada.select();
+    }
+
+    document.getElementById('btnCopiarSenhaTemp').addEventListener('click', async function () {
+        const rotulo = this.innerHTML;
+        try {
+            await navigator.clipboard.writeText(campoSenhaGerada.value);
+        } catch (err) {
+            campoSenhaGerada.select();
+            document.execCommand('copy');
+        }
+        this.innerHTML = '<i class="fas fa-check me-1"></i>Copiada';
+        setTimeout(() => { this.innerHTML = rotulo; }, 1800);
+    });
+
+    telas.reset.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const id = document.getElementById('resetUsuarioId').value;
+        const nome = document.getElementById('resetUsuarioNome').textContent;
+        chamarUsuarios({ action: 'redefinir_senha', usuario_id: id }, { semVoltar: true }).then((data) => {
+            if (data && data.senha_temporaria) mostrarSenhaTemporaria(data.senha_temporaria, nome);
+        });
+    });
+
+    /* ---------- editar WhatsApp e vencimento ---------- */
+    telas.editar.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const campos = { action: 'editar' };
+        new FormData(telas.editar).forEach((valor, chave) => (campos[chave] = valor));
+        chamarUsuarios(campos);
     });
 
     modalEl.addEventListener('click', function (e) {
@@ -905,10 +968,30 @@ document.addEventListener('submit', function (e) {
             mostrarAviso('');
             document.getElementById('resetUsuarioId').value = btnReset.dataset.id;
             document.getElementById('resetUsuarioNome').textContent = btnReset.dataset.nome;
-            telas.reset.reset();
-            document.getElementById('resetUsuarioId').value = btnReset.dataset.id; // reset() limpa o hidden
+            zapDaPessoa = btnReset.dataset.whatsapp || '';
+            prepararSenhaTemporaria();
             mostrarTela('reset');
-            document.getElementById('resetNovaSenha').focus();
+            return;
+        }
+        const btnEditar = e.target.closest('.btn-abrir-editar-usuario');
+        if (btnEditar) {
+            mostrarAviso('');
+            const d = btnEditar.dataset;
+            document.getElementById('editarUsuarioId').value = d.id;
+            document.getElementById('editarUsuarioNome').textContent = d.nome;
+            document.getElementById('editarWhatsapp').value = d.whatsapp || '';
+            const comVenc = d.vencEditavel === '1';
+            const campoData = document.getElementById('editarVencimento');
+            const campoTipo = document.getElementById('editarTipo');
+            campoData.value = d.vencimento || '';
+            campoTipo.value = d.tipo || 'pago';
+            campoData.disabled = !comVenc; // desabilitado não é enviado: o servidor não mexe no vencimento
+            campoTipo.disabled = !comVenc;
+            document.getElementById('editarBlocoVencimento').classList.toggle('d-none', !comVenc);
+            document.getElementById('editarBlocoTipo').classList.toggle('d-none', !comVenc);
+            document.getElementById('editarSemVencimento').classList.toggle('d-none', comVenc);
+            mostrarTela('editar');
+            document.getElementById('editarWhatsapp').focus();
             return;
         }
         const btnExcluir = e.target.closest('.btn-abrir-excluir-usuario');
@@ -945,7 +1028,6 @@ document.addEventListener('submit', function (e) {
         });
     }
     aoEnviar(telas.novo, 'adicionar');
-    aoEnviar(telas.reset, 'redefinir_senha');
     aoEnviar(telas.excluir, 'excluir');
 
     // Endereço antigo (/usuarios) leva ao painel já com o modal aberto.

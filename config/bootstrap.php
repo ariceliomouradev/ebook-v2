@@ -80,6 +80,18 @@ if (isset($_SESSION['usuario_id']) && !acessoAindaValido($pdo)) {
     exit;
 }
 
+// Senha temporária (criada ou redefinida pelo administrador): até definir a senha nova, só a tela de definir senha e o logout.
+if (isset($_SESSION['usuario_id']) && !empty($_SESSION['trocar_senha'])) {
+    $paginaAtual = basename($_SERVER['SCRIPT_NAME'] ?? '');
+    if (!in_array($paginaAtual, ['definir_senha.php', 'logout.php'], true)) {
+        if (isRequisicaoJson() || str_contains($_SERVER['SCRIPT_NAME'] ?? '', '/api/')) {
+            responderJson(['success' => false, 'error' => 'Defina a sua nova senha para continuar.'], 403);
+        }
+        header('Location: ' . url('definir_senha.php'));
+        exit;
+    }
+}
+
 // Com ASSINATURA_EXIGIDA=true, quem terminou o teste (ou o período pago) só enxerga a tela /assinatura.
 if (isset($_SESSION['usuario_id']) && assinaturaExigida() && ($_SESSION['usuario_perfil'] ?? '') !== 'admin') {
     $paginaAtual = basename($_SERVER['SCRIPT_NAME'] ?? '');

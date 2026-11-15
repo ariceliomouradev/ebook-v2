@@ -93,9 +93,16 @@ $meuId = (int) ($_SESSION['usuario_id'] ?? 0);
                                 <i class="fas <?= $bloqueado ? 'fa-lock-open' : 'fa-ban' ?> me-1" aria-hidden="true"></i><?= $bloqueado ? 'Desbloquear' : 'Bloquear' ?>
                             </button>
                         <?php endif; ?>
+                        <button type="button" class="btn btn-sm btn-outline-light btn-icone btn-abrir-editar-usuario" data-id="<?= (int) $user['id'] ?>" data-nome="<?= e($user['nome']) ?>"
+                                data-whatsapp="<?= e(!empty($user['whatsapp']) ? formatarWhatsapp($user['whatsapp']) : '') ?>"
+                                data-vencimento="<?= e(!empty($user['acesso_ate']) ? substr((string) $user['acesso_ate'], 0, 10) : '') ?>"
+                                data-tipo="<?= e((string) ($user['acesso_origem'] ?? 'pago')) ?>" data-venc-editavel="<?= $podeCobrar ? '1' : '0' ?>"
+                                data-testid="btn-editar-usuario" title="Editar WhatsApp e vencimento" aria-label="Editar os dados de <?= e($user['nome']) ?>">
+                            <i class="fas fa-pen" aria-hidden="true"></i>
+                        </button>
                         <?php if (!$ehEu): ?>
-                            <button type="button" class="btn btn-sm btn-outline-warning btn-icone btn-abrir-reset-senha" data-id="<?= (int) $user['id'] ?>" data-nome="<?= e($user['nome']) ?>"
-                                    data-testid="btn-reset-senha" title="Redefinir senha" aria-label="Redefinir a senha de <?= e($user['nome']) ?>">
+                            <button type="button" class="btn btn-sm btn-outline-warning btn-icone btn-abrir-reset-senha" data-id="<?= (int) $user['id'] ?>" data-nome="<?= e($user['nome']) ?>" data-whatsapp="<?= e(preg_replace('/\D+/', '', (string) ($user['whatsapp'] ?? ''))) ?>"
+                                    data-testid="btn-reset-senha" title="Gerar senha temporária" aria-label="Gerar senha temporária para <?= e($user['nome']) ?>">
                                 <i class="fas fa-key" aria-hidden="true"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger btn-icone btn-abrir-excluir-usuario" data-id="<?= (int) $user['id'] ?>" data-nome="<?= e($user['nome']) ?>"

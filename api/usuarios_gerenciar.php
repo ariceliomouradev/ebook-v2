@@ -3,7 +3,8 @@
  * Gestão de usuários pelo modal do painel (só admin). Ações (POST + CSRF), sempre em JSON:
  *   listar
  *   adicionar        nome, email, senha, perfil
- *   redefinir_senha  usuario_id, nova_senha
+ *   redefinir_senha  usuario_id   (gera uma senha TEMPORÁRIA, devolvida uma única vez em `senha_temporaria`; a pessoa é obrigada a trocá-la no primeiro acesso)
+ *   editar           usuario_id, whatsapp, vencimento (AAAA-MM-DD ou vazio = sem vencimento), tipo (teste|pago|cortesia)
  *   excluir          usuario_id
  *   mudar_perfil     usuario_id, perfil   (derruba os acessos abertos da pessoa: o perfil novo vale no próximo login)
  *   renovar          usuario_id           (+30 dias e desbloqueia)
@@ -17,13 +18,13 @@ require_perfil(['admin'], true);
 require_post(true);
 csrf_verify(true);
 
-function responderUsuarios(PDO $pdo, string $mensagem = ''): never
+function responderUsuarios(PDO $pdo, string $mensagem = '', array $extra = []): never
 {
     $listaUsuarios = listaDeUsuarios($pdo);
     ob_start();
     include __DIR__ . '/../components/usuarios_gerenciador.php';
     $html = ob_get_clean();
-    responderJson(['success' => true, 'html' => $html, 'mensagem' => $mensagem, 'total' => count($listaUsuarios)]);
+    responderJson(['success' => true, 'html' => $html, 'mensagem' => $mensagem, 'total' => count($listaUsuarios)] + $extra);
 }
 
 function falhar(string $mensagem, int $codigo = 422): never
@@ -56,6 +57,12 @@ if ($action === 'adicionar') {
     try {
         $stmt = $pdo->prepare('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)');
         $stmt->execute([mb_substr($nome, 0, 100), $email, password_hash($senha, PASSWORD_DEFAULT), $perfil]);
+        $novoId = (int) $pdo->lastInsertId();
+        try {
+            $pdo->prepare('UPDATE usuarios SET trocar_senha = 1 WHERE id = ?')->execute([$novoId]); // senha provisória: troca no primeiro acesso
+        } catch (PDOException $e2) {
+            // banco sem a migração v1.14
+        }
         if (!empty($_POST['teste']) && $perfil !== 'admin') {
             $pdo->prepare("UPDATE usuarios SET acesso_ate = DATE_ADD(NOW(), INTERVAL " . (int) TESTE_DIAS . " DAY), acesso_origem = 'teste' WHERE id = ?")->execute([(int) $pdo->lastInsertId()]);
         }
@@ -71,20 +78,66 @@ if ($action === 'adicionar') {
 
 if ($action === 'redefinir_senha') {
     $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
-    $novaSenha = $_POST['nova_senha'] ?? '';
-    if (!$id || $novaSenha === '') {
+    if (!$id) {
         falhar('Dados inválidos ou incompletos. Tente novamente.');
     }
-    if (!validarSenhaForte($novaSenha)) {
-        falhar('A senha não atende aos requisitos mínimos de segurança.');
+    $stmt = $pdo->prepare('SELECT nome FROM usuarios WHERE id = ?');
+    $stmt->execute([$id]);
+    $nome = $stmt->fetchColumn();
+    if ($nome === false) {
+        falhar('Usuário não encontrado.', 404);
     }
+    $temporaria = gerarSenhaTemporaria();
     try {
-        $pdo->prepare('UPDATE usuarios SET senha = ? WHERE id = ?')->execute([password_hash($novaSenha, PASSWORD_DEFAULT), $id]);
+        $pdo->prepare('UPDATE usuarios SET senha = ?, trocar_senha = 1, reset_token = NULL, reset_expires = NULL WHERE id = ?')->execute([password_hash($temporaria, PASSWORD_DEFAULT), $id]);
+        $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ?')->execute([$id]); // quem estava logado precisa entrar de novo com a temporária
     } catch (PDOException $e) {
         error_log('Falha ao redefinir senha: ' . $e->getMessage());
-        falhar('Erro interno do banco de dados.', 500);
+        falhar('Para usar senha temporária, o banco precisa da atualização v1.14 (veja database/migracao_v1.14_senha_temporaria.sql).', 500);
     }
-    responderUsuarios($pdo, 'A senha do usuário foi redefinida com sucesso.');
+    responderUsuarios($pdo, 'Senha temporária gerada para ' . $nome . '. Ela aparece só desta vez.', ['senha_temporaria' => $temporaria, 'usuario_nome' => $nome]);
+}
+
+if ($action === 'editar') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id) {
+        falhar('Dados inválidos ou incompletos. Tente novamente.');
+    }
+    $stmt = $pdo->prepare('SELECT perfil, titular_id FROM usuarios WHERE id = ?');
+    $stmt->execute([$id]);
+    $alvo = $stmt->fetch();
+    if (!$alvo) {
+        falhar('Usuário não encontrado.', 404);
+    }
+
+    $zapTexto = trim((string) ($_POST['whatsapp'] ?? ''));
+    $zap = null;
+    if ($zapTexto !== '') {
+        $zap = normalizarWhatsapp($zapTexto);
+        if ($zap === null) {
+            falhar('WhatsApp inválido. Use o DDD e o número, por exemplo (85) 98888-7777.');
+        }
+    }
+    $pdo->prepare('UPDATE usuarios SET whatsapp = ? WHERE id = ?')->execute([$zap, $id]);
+
+    // Vencimento e tipo são da conta titular: administrador e dependente não têm.
+    if ($alvo['perfil'] !== 'admin' && empty($alvo['titular_id']) && array_key_exists('vencimento', $_POST)) {
+        $dataTexto = trim((string) $_POST['vencimento']);
+        $tipo = $_POST['tipo'] ?? 'pago';
+        if (!in_array($tipo, ['teste', 'pago', 'cortesia'], true)) {
+            $tipo = 'pago';
+        }
+        if ($dataTexto === '') {
+            $pdo->prepare("UPDATE usuarios SET acesso_ate = NULL, acesso_origem = 'cortesia' WHERE id = ?")->execute([$id]);
+        } else {
+            $d = DateTime::createFromFormat('!Y-m-d', $dataTexto);
+            if (!$d || $d->format('Y-m-d') !== $dataTexto || (int) $d->format('Y') < 2020 || (int) $d->format('Y') > 2100) {
+                falhar('Data de vencimento inválida.');
+            }
+            $pdo->prepare('UPDATE usuarios SET acesso_ate = ?, acesso_origem = ? WHERE id = ?')->execute([$dataTexto . ' 23:59:59', $tipo, $id]);
+        }
+    }
+    responderUsuarios($pdo, 'Dados do usuário atualizados.');
 }
 
 if ($action === 'renovar') {

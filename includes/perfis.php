@@ -160,3 +160,51 @@ function encerrarAcesso(PDO $pdo): void
         // sem a tabela, nada a limpar
     }
 }
+
+/* ------------------------------- senha temporária ------------------------------- */
+
+/**
+ * Senha temporária aleatória (12 caracteres, sem letras parecidas como 0/O e 1/l) que sempre passa na regra
+ * de senha forte: tem maiúscula, minúscula, número e símbolo.
+ */
+function gerarSenhaTemporaria(): string
+{
+    $grupos = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnpqrstuvwxyz', '23456789', '#@$%&*!?'];
+    $todos = implode('', $grupos);
+    $chars = [];
+    foreach ($grupos as $g) {
+        $chars[] = $g[random_int(0, strlen($g) - 1)];
+    }
+    while (count($chars) < 12) {
+        $chars[] = $todos[random_int(0, strlen($todos) - 1)];
+    }
+    for ($i = count($chars) - 1; $i > 0; $i--) { // embaralha (Fisher-Yates com random_int)
+        $j = random_int(0, $i);
+        [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+    }
+    return implode('', $chars);
+}
+
+/** A conta precisa definir uma senha nova antes de usar o sistema? Banco sem a migração v1.14: nunca. */
+function precisaTrocarSenha(PDO $pdo, int $usuarioId): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT trocar_senha FROM usuarios WHERE id = ?');
+        $stmt->execute([$usuarioId]);
+        return (int) $stmt->fetchColumn() === 1;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/** Troca o ID da sessão (boa prática ao mudar a senha) sem perder o registro em sessoes_ativas. */
+function renovarIdDaSessao(PDO $pdo): void
+{
+    $antigo = session_id();
+    session_regenerate_id(true);
+    try {
+        $pdo->prepare('UPDATE sessoes_ativas SET session_id = ? WHERE session_id = ?')->execute([session_id(), $antigo]);
+    } catch (PDOException $e) {
+        error_log('Não foi possível renovar o ID da sessão: ' . $e->getMessage());
+    }
+}

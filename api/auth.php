@@ -30,6 +30,11 @@ if ($usuario && password_verify($senha, $usuario['senha'])) {
 
     abrirSessaoDoUsuario($pdo, $usuario);
 
+    if (precisaTrocarSenha($pdo, (int) $usuario['id'])) {
+        $_SESSION['trocar_senha'] = true;
+        redirecionar('definir_senha.php');
+    }
+
     redirecionar('index.php');
 } else {
     registrarTentativaLogin($pdo, $email, $ip, false);

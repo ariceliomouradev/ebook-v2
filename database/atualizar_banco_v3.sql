@@ -88,6 +88,8 @@ SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `acesso_o
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `bloqueado` tinyint(1) NOT NULL DEFAULT 0', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'bloqueado');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `trocar_senha` tinyint(1) NOT NULL DEFAULT 0', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'trocar_senha');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 -- ---------- índices ----------
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `livros` ADD KEY `idx_livros_categoria` (`categoria_id`)', 'DO 0') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'livros' AND INDEX_NAME = 'idx_livros_categoria');

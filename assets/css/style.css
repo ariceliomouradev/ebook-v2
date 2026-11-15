@@ -1414,9 +1414,9 @@ input[type='password']::-ms-clear {
 
 /* Lista de usuários sem rolagem horizontal: 4 colunas; no celular cada linha vira um cartão */
 .tabela-usuarios-cartao .table { table-layout: fixed; width: 100%; }
-.tabela-usuarios-cartao th:nth-child(1) { width: 36%; }
-.tabela-usuarios-cartao th:nth-child(2) { width: 15%; }
-.tabela-usuarios-cartao th:nth-child(3) { width: 17%; }
+.tabela-usuarios-cartao th:nth-child(1) { width: 28%; }
+.tabela-usuarios-cartao th:nth-child(2) { width: 17%; }
+.tabela-usuarios-cartao th:nth-child(3) { width: 15%; }
 .tabela-usuarios-cartao td { padding: 12px 14px; }
 .tabela-usuarios-cartao thead th { padding: 12px 14px; }
 .usuario-celula { min-width: 0; }
@@ -1835,3 +1835,6 @@ body.auth-page {
     padding: 0;
     flex: 0 0 auto;
 }
+
+/* senha temporária gerada pelo administrador */
+.senha-temporaria { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 1.15rem; font-weight: 700; letter-spacing: 0.06em; }

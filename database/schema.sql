@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `acesso_ate` datetime DEFAULT NULL,
   `acesso_origem` enum('teste','pago','cortesia') NOT NULL DEFAULT 'cortesia',
   `bloqueado` tinyint(1) NOT NULL DEFAULT 0,
+  `trocar_senha` tinyint(1) NOT NULL DEFAULT 0,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   `reset_token` varchar(64) DEFAULT NULL,
   `reset_expires` datetime DEFAULT NULL,
