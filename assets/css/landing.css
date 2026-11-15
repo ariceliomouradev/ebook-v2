@@ -239,3 +239,52 @@ a { color: inherit; }
     .leitor__progresso span { animation: none; }
     * { transition-duration: 0.01ms !important; }
 }
+
+/* ------------------- capa: o app de verdade em tablet + celular ------------------- */
+.palco { position: relative; width: 100%; max-width: 620px; margin-inline: auto; aspect-ratio: 1 / 1.1; }
+.palco__aura { position: absolute; inset: 6% 0 0 8%; border-radius: 50%; background: radial-gradient(closest-side, rgba(246, 180, 69, 0.2), rgba(246, 180, 69, 0)); filter: blur(10px); }
+.aparelho { position: absolute; background: linear-gradient(160deg, #2a3042, #0b0d12 60%); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 50px 90px -24px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(246, 180, 69, 0.05), inset 0 0 0 2px rgba(255, 255, 255, 0.03); }
+.aparelho__tela { position: relative; overflow: hidden; background: #07090d; }
+.aparelho--tablet { right: 0; top: 0; width: 76%; padding: 2.6%; border-radius: 28px; }
+.aparelho--tablet .aparelho__tela { aspect-ratio: 980 / 1410; border-radius: 14px; }
+.aparelho--celular { left: 0; bottom: 0; width: 35%; padding: 2.2%; border-radius: 34px; z-index: 2; }
+.aparelho--celular .aparelho__tela { aspect-ratio: 720 / 1558; border-radius: 26px; }
+.aparelho--celular .aparelho__tela::after { content: ''; position: absolute; top: 1.6%; left: 50%; width: 28%; height: 1.6%; transform: translateX(-50%); border-radius: 99px; background: #05060a; }
+.tela { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.tela--b { opacity: 0; }
+
+.selo { position: absolute; z-index: 3; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: rgba(24, 27, 36, 0.94); border: 1px solid var(--borda-forte); font-size: 0.82rem; font-weight: 650; box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.7); white-space: nowrap; }
+.selo i { color: var(--ambar); }
+.selo small { display: block; font-size: 0.72rem; font-weight: 500; color: var(--texto-suave); }
+.selo b { display: block; font-weight: 700; }
+.selo--pagina { left: 24%; top: 17%; border-radius: 16px; padding: 11px 16px 11px 14px; }
+.selo--marca { right: 2%; bottom: 33%; background: var(--ambar); color: var(--ambar-tinta); border-color: transparent; }
+.selo--marca i { color: var(--ambar-tinta); }
+.selo--sync { left: 50%; bottom: -2%; transform: translateX(-30%); }
+
+@media (prefers-reduced-motion: no-preference) {
+    .aparelho--tablet { animation: flutuar 7s ease-in-out infinite alternate; }
+    .aparelho--celular { animation: flutuar 6s ease-in-out -2s infinite alternate; }
+    .tela--a { animation: cena-a 14s var(--ease) infinite; }
+    .tela--b { animation: cena-b 14s var(--ease) infinite; }
+    .selo--pagina { animation: selo-pagina 14s var(--ease) infinite; }
+    .selo--marca { animation: selo-marca 14s var(--ease) infinite; }
+    .selo--sync { animation: selo-sync 14s var(--ease) infinite; }
+}
+@keyframes flutuar { from { transform: translateY(-7px); } to { transform: translateY(7px); } }
+/* a = cena inicial (tablet no livro, celular na biblioteca); b = a cena trocada, em que o celular abre o livro e o tablet volta à biblioteca */
+@keyframes cena-a { 0%, 44% { opacity: 1; } 50%, 94% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes cena-b { 0%, 44% { opacity: 0; } 50%, 94% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes selo-pagina { 0%, 6% { opacity: 0; transform: translateY(10px); } 12%, 40% { opacity: 1; transform: none; } 46%, 100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes selo-marca { 0%, 18% { opacity: 0; transform: scale(0.85); } 24%, 42% { opacity: 1; transform: none; } 48%, 100% { opacity: 0; } }
+@keyframes selo-sync { 0%, 50% { opacity: 0; transform: translateX(-30%) translateY(8px); } 58%, 90% { opacity: 1; transform: translateX(-30%); } 96%, 100% { opacity: 0; } }
+
+@media (max-width: 960px) {
+    .palco { max-width: 480px; }
+}
+@media (max-width: 520px) {
+    .selo { font-size: 0.74rem; padding: 8px 12px; }
+    .selo--pagina { left: 18%; }
+    .selo--sync { transform: translateX(-40%); }
+    @keyframes selo-sync { 0%, 50% { opacity: 0; } 58%, 90% { opacity: 1; } 96%, 100% { opacity: 0; } }
+}

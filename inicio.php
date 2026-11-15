@@ -107,32 +107,27 @@ $ano = date('Y');
                 <p class="heroi__prova"><strong><?= (int) TESTE_DIAS ?> dias grátis</strong>, sem cartão. Depois, a partir de <?= e($precoAssinante) ?> por mês.<?php if ($acervoArredondado > 0): ?> <span class="heroi__acervo">+<?= number_format($acervoArredondado, 0, ',', '.') ?> livros prontos para ler.</span><?php endif; ?></p>
             </div>
 
-            <!-- a tela do próprio produto (maquete em CSS; nada de capas reais) -->
-            <div class="heroi__tela" aria-hidden="true">
-                <div class="leitor">
-                    <div class="leitor__topo">
-                        <span class="leitor__voltar"><i class="fas fa-chevron-left"></i> Biblioteca</span>
-                        <span class="leitor__titulo">Guia da Produtividade<small>Página 31 de 204 · 15%</small></span>
+            <!-- o produto de verdade: telas reais do app no tablet e no celular (animação em CSS) -->
+            <div class="palco" role="img" aria-label="O Meus Livros no tablet e no celular: a biblioteca, o livro aberto na página em que você parou e os trechos marcados em cores.">
+                <span class="palco__aura" aria-hidden="true"></span>
+
+                <div class="aparelho aparelho--tablet" aria-hidden="true">
+                    <div class="aparelho__tela">
+                        <img class="tela tela--a" src="assets/landing/leitor-tablet.webp" width="980" height="1410" alt="" decoding="async">
+                        <img class="tela tela--b" src="assets/landing/painel-tablet.webp" width="980" height="1410" alt="" loading="lazy" decoding="async">
                     </div>
-                    <div class="leitor__progresso"><span></span></div>
-                    <div class="leitor__pagina">
-                        <i class="ln ln--tit"></i>
-                        <i class="ln"></i><i class="ln m1"></i><i class="ln"></i>
-                        <i class="ln m2"></i><i class="ln"></i><i class="ln c60"></i>
-                        <i class="ln m3"></i><i class="ln"></i>
-                        <span class="pino"><i class="fas fa-comment"></i></span>
+                </div>
+
+                <div class="aparelho aparelho--celular" aria-hidden="true">
+                    <div class="aparelho__tela">
+                        <img class="tela tela--b" src="assets/landing/leitor-phone.webp" width="720" height="1558" alt="" decoding="async">
+                        <img class="tela tela--a" src="assets/landing/painel-phone.webp" width="720" height="1558" alt="" decoding="async">
                     </div>
-                    <div class="leitor__doca"><i class="fas fa-chevron-left"></i><b>31</b><span>/ 204</span><i class="fas fa-chevron-right"></i></div>
                 </div>
-                <div class="continue">
-                    <span class="continue__capa"></span>
-                    <span class="continue__corpo">
-                        <b>Guia da Produtividade</b>
-                        <small>Página 31 de 204 · 15%</small>
-                        <i class="continue__barra"><i></i></i>
-                    </span>
-                    <span class="continue__play"><i class="fas fa-play"></i></span>
-                </div>
+
+                <span class="selo selo--pagina" aria-hidden="true"><i class="fas fa-bookmark"></i><span><b>Página 31 de 204</b><small>Abre onde você parou</small></span></span>
+                <span class="selo selo--marca" aria-hidden="true"><i class="fas fa-highlighter"></i> Marcação salva</span>
+                <span class="selo selo--sync" aria-hidden="true"><i class="fas fa-rotate"></i> Celular e tablet em sincronia</span>
             </div>
         </div>
     </section>

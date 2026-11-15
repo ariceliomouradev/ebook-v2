@@ -24,6 +24,10 @@ $usuario = $stmt->fetch();
 if ($usuario && password_verify($senha, $usuario['senha'])) {
     registrarTentativaLogin($pdo, $email, $ip, true);
 
+    if (contaBloqueada($pdo, (int) $usuario['id'])) {
+        redirecionar('login.php?erro=conta_bloqueada');
+    }
+
     abrirSessaoDoUsuario($pdo, $usuario);
 
     redirecionar('index.php');

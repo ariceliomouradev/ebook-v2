@@ -1412,6 +1412,50 @@ input[type='password']::-ms-clear {
     flex: 0 0 auto;
 }
 
+/* Lista de usuários sem rolagem horizontal: 4 colunas; no celular cada linha vira um cartão */
+.tabela-usuarios-cartao .table { table-layout: fixed; width: 100%; }
+.tabela-usuarios-cartao th:nth-child(1) { width: 36%; }
+.tabela-usuarios-cartao th:nth-child(2) { width: 15%; }
+.tabela-usuarios-cartao th:nth-child(3) { width: 17%; }
+.tabela-usuarios-cartao td { padding: 12px 14px; }
+.tabela-usuarios-cartao thead th { padding: 12px 14px; }
+.usuario-celula { min-width: 0; }
+.usuario-celula__texto { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
+.usuario-celula__nome { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usuario-celula__email { font-size: 0.82rem; color: var(--ml-text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usuario-celula__zap { font-size: 0.8rem; }
+.usuario-celula__zap:empty { display: none; }
+.select-perfil-usuario { background-color: var(--ml-surface-2); border-color: var(--ml-border-strong); color: var(--ml-text); font-weight: 600; min-width: 0; }
+.select-perfil-usuario:focus { border-color: var(--ml-accent); box-shadow: 0 0 0 3px var(--ml-accent-soft); }
+.vencimento { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.vencimento__data { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.chip-venc { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 0.74rem; font-weight: 650; white-space: nowrap; background: rgba(255, 255, 255, 0.07); color: var(--ml-text-dim); }
+.chip-venc--ok { background: rgba(74, 222, 128, 0.14); color: #86efac; }
+.chip-venc--aviso { background: var(--ml-accent-soft); color: var(--ml-accent); }
+.chip-venc--ruim { background: rgba(248, 113, 113, 0.16); color: #fca5a5; }
+.linha-bloqueada td { background: rgba(248, 113, 113, 0.05); }
+.linha-bloqueada .usuario-celula__nome { text-decoration: line-through; text-decoration-color: rgba(248, 113, 113, 0.6); }
+.acoes-usuario { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.acoes-usuario .btn { white-space: nowrap; }
+
+@media (max-width: 991.98px) {
+    .tabela-usuarios-cartao thead { display: none; }
+    .tabela-usuarios-cartao .table,
+    .tabela-usuarios-cartao tbody,
+    .tabela-usuarios-cartao tr,
+    .tabela-usuarios-cartao td { display: block; width: 100%; }
+    .tabela-usuarios-cartao tr { padding: 10px 6px; border-bottom: 1px solid var(--ml-border-strong); }
+    .tabela-usuarios-cartao td { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0; padding: 6px 12px; text-align: left !important; }
+    .tabela-usuarios-cartao td[data-label]::before { content: attr(data-label); flex: 0 0 90px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ml-text-faint); }
+    .tabela-usuarios-cartao td:first-child::before { display: none; }
+    .tabela-usuarios-cartao td:first-child { padding-top: 10px; }
+    .tabela-usuarios-cartao td .vencimento { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .tabela-usuarios-cartao td[data-label='Ações'] { justify-content: flex-start; }
+    .tabela-usuarios-cartao td[data-label='Ações']::before { display: none; }
+    .acoes-usuario { justify-content: flex-start; }
+    .select-perfil-usuario { max-width: 260px; }
+}
+
 /* ---------- 11. Telas de autenticação ------------------------------------ */
 body.auth-page {
     min-height: 100vh;

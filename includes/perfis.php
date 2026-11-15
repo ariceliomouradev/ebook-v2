@@ -130,6 +130,9 @@ function acessoAindaValido(PDO $pdo): bool
 {
     try {
         if (empty($_SESSION['acesso_registrado'])) {
+            if (contaBloqueada($pdo, (int) $_SESSION['usuario_id'])) { // sessão antiga não escapa do bloqueio
+                return false;
+            }
             $grupo = (int) ($_SESSION['titular_id'] ?? 0) ?: (int) $_SESSION['usuario_id'];
             registrarAcesso($pdo, (int) $_SESSION['usuario_id'], $grupo, (string) ($_SESSION['usuario_perfil'] ?? 'leitor'));
             return true;

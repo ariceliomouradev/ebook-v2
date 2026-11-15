@@ -895,6 +895,11 @@ document.addEventListener('submit', function (e) {
             chamarUsuarios({ action: 'renovar', usuario_id: btnRenovar.dataset.id });
             return;
         }
+        const btnBloquear = e.target.closest('.btn-bloquear-usuario');
+        if (btnBloquear) {
+            chamarUsuarios({ action: btnBloquear.dataset.acao, usuario_id: btnBloquear.dataset.id });
+            return;
+        }
         const btnReset = e.target.closest('.btn-abrir-reset-senha');
         if (btnReset) {
             mostrarAviso('');
@@ -913,6 +918,19 @@ document.addEventListener('submit', function (e) {
             document.getElementById('excluirUsuarioNome').textContent = btnExcluir.dataset.nome;
             mostrarTela('excluir');
         }
+    });
+
+    // Troca de perfil direto na linha. Se falhar, a tabela é redesenhada com o valor real do servidor.
+    modalEl.addEventListener('change', function (e) {
+        const sel = e.target.closest('.select-perfil-usuario');
+        if (!sel) return;
+        if (sel.value === 'admin' && !window.confirm('Dar acesso total (Administrador) a ' + sel.dataset.nome + '?')) {
+            sel.value = sel.dataset.atual;
+            return;
+        }
+        chamarUsuarios({ action: 'mudar_perfil', usuario_id: sel.dataset.id, perfil: sel.value }).then((ok) => {
+            if (!ok) sel.value = sel.dataset.atual;
+        });
     });
 
     function aoEnviar(form, acao) {

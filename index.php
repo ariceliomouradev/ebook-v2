@@ -135,7 +135,7 @@ $tituloPagina = 'Meus Livros';
     $perfilDaSessao = $_SESSION['usuario_perfil'] ?? 'leitor';
     $categoriasTodas = listarCategoriasComContagem($pdo, true);
     if ($perfilDaSessao === 'admin') {
-        $listaUsuarios = $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+        $listaUsuarios = listaDeUsuarios($pdo);
         require_once 'includes/banners.php';
         $bannersH = listarBanners($pdo, 'h');
         $bannersV = listarBanners($pdo, 'v');

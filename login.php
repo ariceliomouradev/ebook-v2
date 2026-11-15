@@ -51,6 +51,8 @@ $tituloPagina = 'Login - Biblioteca';
         if (isset($_GET['erro'])) {
             if ($_GET['erro'] === 'bloqueado') {
                 echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-lock me-1"></i> Muitas tentativas. Aguarde alguns minutos e tente novamente.</div>';
+            } elseif ($_GET['erro'] === 'conta_bloqueada') {
+                echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-user-lock me-1"></i> Seu acesso está bloqueado. Fale com o suporte pelo WhatsApp para regularizar.</div>';
             } elseif ($_GET['erro'] === 'acesso') {
                 echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-user-lock me-1"></i> Sua conta foi aberta em outro aparelho e este acesso foi encerrado. Entre novamente.</div>';
             } elseif ($_GET['erro'] === 'token_invalido') {

@@ -122,5 +122,78 @@ function renovarAcesso(PDO $pdo, int $usuarioId, int $dias = 30): bool
     $base = (!empty($u['acesso_ate']) && strtotime($u['acesso_ate']) > time()) ? strtotime($u['acesso_ate']) : time();
     $novo = date('Y-m-d H:i:s', strtotime("+$dias days", $base));
     $pdo->prepare("UPDATE usuarios SET acesso_ate = ?, acesso_origem = 'pago' WHERE id = ?")->execute([$novo, (int) $u['id']]);
+    try { // renovar também desbloqueia (quem pagou volta a entrar)
+        $pdo->prepare('UPDATE usuarios SET bloqueado = 0 WHERE id = ?')->execute([(int) $u['id']]);
+    } catch (PDOException $e) {
+        // banco sem a migração v1.13
+    }
     return true;
+}
+
+/* ------------------------------- bloqueio e situação na lista do admin ------------------------------- */
+
+/** A conta (ou o titular dela, no caso de dependente) está bloqueada? Banco sem a migração v1.13: nunca. */
+function contaBloqueada(PDO $pdo, int $usuarioId): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT u.bloqueado, u.perfil, t.bloqueado AS bloqueado_titular FROM usuarios u LEFT JOIN usuarios t ON t.id = u.titular_id WHERE u.id = ?');
+        $stmt->execute([$usuarioId]);
+        $r = $stmt->fetch();
+        return $r && $r['perfil'] !== 'admin' && ((int) $r['bloqueado'] === 1 || (int) ($r['bloqueado_titular'] ?? 0) === 1);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/** Bloqueia ou desbloqueia uma conta (nunca um administrador). Ao bloquear, derruba os acessos abertos. */
+function definirBloqueio(PDO $pdo, int $usuarioId, bool $bloquear): bool
+{
+    $stmt = $pdo->prepare('SELECT perfil FROM usuarios WHERE id = ?');
+    $stmt->execute([$usuarioId]);
+    $perfil = $stmt->fetchColumn();
+    if ($perfil === false || $perfil === 'admin') {
+        return false;
+    }
+    $pdo->prepare('UPDATE usuarios SET bloqueado = ? WHERE id = ?')->execute([$bloquear ? 1 : 0, $usuarioId]);
+    if ($bloquear) {
+        // sessoes_ativas: a conta e, se for titular, a família toda (grupo_id = titular)
+        $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ? OR grupo_id = ?')->execute([$usuarioId, $usuarioId]);
+    }
+    return true;
+}
+
+/**
+ * Situação para a coluna "Vencimento" da lista do administrador.
+ * @return array{data: string, texto: string, classe: string}  classe: ok | aviso | ruim | neutro
+ */
+function vencimentoDaLinha(array $u): array
+{
+    if (($u['perfil'] ?? '') === 'admin') {
+        return ['data' => '—', 'texto' => 'Sem limite', 'classe' => 'neutro'];
+    }
+    if (!empty($u['titular_id'])) {
+        return ['data' => '—', 'texto' => 'Segue o titular', 'classe' => 'neutro'];
+    }
+    $s = situacaoDeLinha($u);
+    if (!$s['limitado']) {
+        return ['data' => '—', 'texto' => 'Sem vencimento', 'classe' => 'neutro'];
+    }
+    $data = date('d/m/Y', strtotime($s['ate']));
+    if ($s['vencido']) {
+        $dias = (int) floor((time() - strtotime($s['ate'])) / 86400);
+        return ['data' => $data, 'texto' => $dias <= 0 ? 'Venceu hoje' : 'Venceu há ' . $dias . ($dias === 1 ? ' dia' : ' dias'), 'classe' => 'ruim'];
+    }
+    $rotulo = $s['origem'] === 'teste' ? 'Teste' : 'Pago';
+    $faltam = $s['dias'] === 1 ? '1 dia' : $s['dias'] . ' dias';
+    return ['data' => $data, 'texto' => $rotulo . ' · ' . $faltam, 'classe' => $s['dias'] <= 7 ? 'aviso' : 'ok'];
+}
+
+/** Lista para o modal "Gerenciar usuários" (index.php e api/usuarios_gerenciar.php). */
+function listaDeUsuarios(PDO $pdo): array
+{
+    try {
+        return $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, bloqueado, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+    } catch (PDOException $e) { // banco sem a migração v1.13
+        return array_map(static fn (array $u) => $u + ['bloqueado' => 0], $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll());
+    }
 }

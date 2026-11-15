@@ -70,12 +70,13 @@ require_once __DIR__ . '/../includes/assinatura.php';
 
 // Limite de acessos simultâneos: se outro login derrubou esta sessão, volta para o login.
 if (isset($_SESSION['usuario_id']) && !acessoAindaValido($pdo)) {
+    $bloqueada = contaBloqueada($pdo, (int) $_SESSION['usuario_id']); // derrubada por bloqueio do administrador, não por outro login
     $_SESSION = [];
     session_destroy();
     if (isRequisicaoJson()) {
-        responderJson(['success' => false, 'error' => 'Sua conta foi aberta em outro aparelho.'], 401);
+        responderJson(['success' => false, 'error' => $bloqueada ? 'Seu acesso está bloqueado. Fale com o suporte.' : 'Sua conta foi aberta em outro aparelho.'], 401);
     }
-    header('Location: ' . url('login.php?erro=acesso'));
+    header('Location: ' . url($bloqueada ? 'login.php?erro=conta_bloqueada' : 'login.php?erro=acesso'));
     exit;
 }
 

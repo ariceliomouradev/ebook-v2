@@ -5,6 +5,9 @@
  *   adicionar        nome, email, senha, perfil
  *   redefinir_senha  usuario_id, nova_senha
  *   excluir          usuario_id
+ *   mudar_perfil     usuario_id, perfil   (derruba os acessos abertos da pessoa: o perfil novo vale no próximo login)
+ *   renovar          usuario_id           (+30 dias e desbloqueia)
+ *   bloquear / desbloquear  usuario_id
  * Toda resposta traz `html` (a tabela já renderizada) e, quando há, `mensagem` para o aviso do modal.
  */
 define('CAMINHO_RAIZ', '../');
@@ -13,11 +16,6 @@ require_once '../config/bootstrap.php';
 require_perfil(['admin'], true);
 require_post(true);
 csrf_verify(true);
-
-function listaDeUsuarios(PDO $pdo): array
-{
-    return $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
-}
 
 function responderUsuarios(PDO $pdo, string $mensagem = ''): never
 {
@@ -95,6 +93,68 @@ if ($action === 'renovar') {
         falhar('Não foi possível renovar este acesso.');
     }
     responderUsuarios($pdo, 'Acesso renovado por mais ' . TESTE_DIAS . ' dias.');
+}
+
+if ($action === 'mudar_perfil') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    $perfil = $_POST['perfil'] ?? '';
+    if (!$id || !in_array($perfil, ['leitor', 'contribuidor', 'admin'], true)) {
+        falhar('Dados inválidos ou incompletos. Tente novamente.');
+    }
+    if ($id === (int) $_SESSION['usuario_id']) {
+        falhar('Você não pode mudar o seu próprio perfil.', 403);
+    }
+    $stmt = $pdo->prepare('SELECT nome, perfil, titular_id FROM usuarios WHERE id = ?');
+    $stmt->execute([$id]);
+    $alvo = $stmt->fetch();
+    if (!$alvo) {
+        falhar('Usuário não encontrado.', 404);
+    }
+    if (!empty($alvo['titular_id'])) {
+        falhar('Esta conta é dependente de uma Família: o perfil dela segue o titular.');
+    }
+    if ($alvo['perfil'] === $perfil) {
+        responderUsuarios($pdo);
+    }
+    if ($perfil !== 'contribuidor') {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios WHERE titular_id = ?');
+        $stmt->execute([$id]);
+        if ((int) $stmt->fetchColumn() > 0) {
+            falhar('Esta Família tem contas dependentes. Remova-as antes de mudar o perfil do titular.');
+        }
+    }
+    try {
+        $pdo->prepare('UPDATE usuarios SET perfil = ? WHERE id = ?')->execute([$perfil, $id]);
+        if ($perfil === 'admin') { // administrador não tem vencimento nem bloqueio
+            $pdo->prepare("UPDATE usuarios SET acesso_ate = NULL, acesso_origem = 'cortesia' WHERE id = ?")->execute([$id]);
+            try {
+                $pdo->prepare('UPDATE usuarios SET bloqueado = 0 WHERE id = ?')->execute([$id]);
+            } catch (PDOException $e) {
+                // banco sem a migração v1.13
+            }
+        }
+        $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ?')->execute([$id]); // o perfil novo vale no próximo login
+    } catch (PDOException $e) {
+        error_log('Falha ao mudar perfil: ' . $e->getMessage());
+        falhar('Erro interno do banco de dados.', 500);
+    }
+    responderUsuarios($pdo, $alvo['nome'] . ' agora é ' . rotuloPerfil($perfil) . '. A pessoa precisa entrar de novo para valer o novo perfil.');
+}
+
+if ($action === 'bloquear' || $action === 'desbloquear') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id === (int) $_SESSION['usuario_id']) {
+        falhar('Operação bloqueada: você não pode bloquear a sua própria conta.', 403);
+    }
+    try {
+        if (!definirBloqueio($pdo, $id, $action === 'bloquear')) {
+            falhar('Não foi possível alterar este acesso (administradores não são bloqueados).');
+        }
+    } catch (PDOException $e) {
+        error_log('Falha ao bloquear/desbloquear: ' . $e->getMessage());
+        falhar('Para bloquear, o banco precisa da atualização v1.13 (veja database/migracao_v1.13_bloqueio.sql).', 500);
+    }
+    responderUsuarios($pdo, $action === 'bloquear' ? 'Acesso bloqueado. Quem estava logado foi desconectado.' : 'Acesso liberado de novo.');
 }
 
 if ($action === 'excluir') {
