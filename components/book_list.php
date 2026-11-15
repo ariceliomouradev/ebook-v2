@@ -16,6 +16,8 @@ $progressos = $progressos ?? [];
 $paginaAtual = $paginaAtual ?? 1;
 $ordemAtual = $ordemAtual ?? 'recentes';
 $busca = $busca ?? '';
+$favoritos = $favoritos ?? [];
+$soFavoritos = $soFavoritos ?? false;
 ?>
 <div data-testid="book-grid" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 flex-grow-1 align-content-start" id="gradeLivros">
     <?php foreach ($livros as $livro):
@@ -31,6 +33,10 @@ $busca = $busca ?? '';
              data-autor="<?= e(mb_strtolower($livro['autor'] ?? '')) ?>">
 
             <div class="card card-livro">
+                <?php $ehFavorito = isset($favoritos[(int) $livro['id']]); ?>
+                <button type="button" class="btn-favorito<?= $ehFavorito ? ' is-ativo' : '' ?>" data-id="<?= (int) $livro['id'] ?>" data-testid="btn-favorito" aria-pressed="<?= $ehFavorito ? 'true' : 'false' ?>" aria-label="<?= $ehFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>: <?= e($livro['titulo']) ?>" title="<?= $ehFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>">
+                    <i class="<?= $ehFavorito ? 'fas' : 'far' ?> fa-heart" aria-hidden="true"></i>
+                </button>
                 <div class="img-container">
                     <?php if (!empty($livro['capa_arquivo'])): ?>
                         <img data-testid="book-cover-img" src="<?= $raiz ?>capas/<?= e($livro['capa_arquivo']) ?>" class="capa-img" loading="lazy" alt="Capa do livro <?= e($livro['titulo']) ?>">
@@ -62,10 +68,16 @@ $busca = $busca ?? '';
 </div>
 
 <div data-testid="msg-vazio-banco" class="feedback-centro" id="msgVazioBanco"
-     style="display: <?= (empty($livros) && $busca === '') ? 'flex' : 'none' ?>;">
+     style="display: <?= (empty($livros) && $busca === '' && !$soFavoritos) ? 'flex' : 'none' ?>;">
     <div class="feedback-centro__icone"><i class="fas fa-book-open"></i></div>
     <h4>Sua biblioteca está vazia</h4>
     <p>Adicione o primeiro PDF com o botão "Novo livro" e comece a ler.</p>
+</div>
+
+<div data-testid="msg-sem-favoritos" class="feedback-centro" id="msgSemFavoritos" style="display: <?= (empty($livros) && $soFavoritos && $busca === '') ? 'flex' : 'none' ?>;">
+    <div class="feedback-centro__icone"><i class="far fa-heart"></i></div>
+    <h4>Você ainda não tem favoritos</h4>
+    <p>Toque no coração de um livro para guardá-lo aqui.</p>
 </div>
 
 <div data-testid="msg-pesquisa-vazia" class="feedback-centro" id="msgPesquisaVazia" style="display: <?= (empty($livros) && $busca !== '') ? 'flex' : 'none' ?>;">

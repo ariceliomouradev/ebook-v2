@@ -52,17 +52,43 @@ html, body {
     -webkit-overflow-scrolling: touch;
     /* pan-x/pan-y desliga o zoom nativo do navegador: a pinça é tratada pelo leitor (leitor.js) */
     touch-action: pan-x pan-y;
-    scrollbar-width: thin;
-    scrollbar-color: #2a3040 transparent;
+}
+/* Barra de rolagem da marca (a página do livro rola dentro deste contêiner) */
+#canvas-container::-webkit-scrollbar, .painel-anot__lista::-webkit-scrollbar { width: 12px; height: 12px; }
+#canvas-container::-webkit-scrollbar-track, .painel-anot__lista::-webkit-scrollbar-track { background: #07090d; }
+#canvas-container::-webkit-scrollbar-thumb, .painel-anot__lista::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 12px; border: 3px solid #07090d; }
+#canvas-container::-webkit-scrollbar-thumb:hover, .painel-anot__lista::-webkit-scrollbar-thumb:hover { background: var(--lt-acento); }
+#canvas-container::-webkit-scrollbar-corner { background: #07090d; }
+@supports not selector(::-webkit-scrollbar) {
+    #canvas-container, .painel-anot__lista { scrollbar-width: thin; scrollbar-color: #2a3040 #07090d; }
 }
 
-#the-canvas {
-    display: block;
-    margin: 0 auto; /* centraliza; se a página ficar mais larga que a tela, a rolagem horizontal alcança tudo */
+#canvas-container:focus { outline: none; }
+
+/* Rolagem contínua: as páginas ficam empilhadas. width: max-content + min-width: 100% centraliza as
+   páginas estreitas e, quando a página fica mais larga que a tela (zoom), deixa a rolagem horizontal
+   alcançar as duas bordas. */
+#paginas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px; /* igual a ESPACO_ENTRE_PAGINAS em leitor.js */
+    width: max-content;
+    min-width: 100%;
+    padding: 0 12px;
+    box-sizing: border-box;
+}
+.pagina {
+    flex: none;
     background: #fff;
     border-radius: 2px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
-    transform-origin: 50% 0;
+    overflow: hidden;
+}
+.pagina canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 /* ---------- Progresso -------------------------------------------------------- */
@@ -173,6 +199,8 @@ html, body {
     border: 1px solid var(--lt-borda);
 }
 
+.btn-hud[aria-pressed='true'] { background: var(--lt-acento-suave); color: var(--lt-acento); }
+
 a:focus-visible, button:focus-visible, input:focus-visible {
     outline: 2px solid var(--lt-acento);
     outline-offset: 2px;
@@ -249,6 +277,160 @@ body.inactive .hud-menu { opacity: 0; transform: translateX(-50%) translateY(24p
 body.inactive .hud-topo { opacity: 0; transform: translateY(-16px); pointer-events: none; }
 body.inactive { cursor: none; }
 
+/* ---------- Anotações (marca-texto por área, notas, comentários) ------------------- */
+:root {
+    --anot-amarelo: #ffd84d;
+    --anot-verde: #7ed957;
+    --anot-azul: #5ab0ff;
+    --anot-rosa: #ff7eb6;
+    --anot-laranja: #ffa94d;
+}
+.pagina { position: relative; }
+.camada-anot { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+/* Com a ferramenta de marcar/nota ligada, a camada recebe o dedo/mouse (e não deixa a tela rolar) */
+body.marcando-area .camada-anot, body.marcando-nota .camada-anot { pointer-events: auto; touch-action: none; cursor: crosshair; }
+body.marcando-area, body.marcando-nota { user-select: none; -webkit-user-select: none; }
+
+/* Camada de texto (PDF.js): letras invisíveis por cima da página para dar para selecionar o texto */
+.camada-texto { position: absolute; inset: 0; z-index: 1; overflow: hidden; line-height: 1; text-align: left; pointer-events: none; }
+.camada-texto > span { position: absolute; color: transparent; white-space: pre; cursor: text; transform-origin: 0 0; }
+body.marcando-texto .camada-texto { pointer-events: auto; }
+body.marcando-texto .camada-texto, body.marcando-texto .camada-texto > span { user-select: text; -webkit-user-select: text; }
+.camada-texto ::selection { background: rgba(70, 130, 255, 0.35); }
+
+.anot--texto { inset: 0; width: auto; height: auto; pointer-events: none; }
+.anot-r { position: absolute; pointer-events: auto; cursor: pointer; background: color-mix(in srgb, var(--cor) 60%, transparent); mix-blend-mode: multiply; border-radius: 2px; }
+.anot--texto.anot--comentada .anot-r { border-bottom: 2px solid color-mix(in srgb, var(--cor) 90%, #000); }
+
+.bolha-texto {
+    position: fixed; z-index: 10004; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px;
+    border: 0; border-radius: 999px; background: var(--lt-acento); color: #1a1204; font: inherit; font-weight: 700; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.bolha-texto[hidden] { display: none; }
+.pop-anot__trecho {
+    margin: 0; padding: 6px 10px; border-left: 3px solid var(--lt-acento); color: var(--lt-texto-suave);
+    font-size: 0.82rem; font-style: italic; max-height: 4.2em; overflow: hidden; overflow-wrap: anywhere;
+}
+.pop-anot__trecho[hidden] { display: none; }
+.painel-anot__privado { margin: 0; font-size: 0.78rem; color: var(--lt-texto-suave); }
+.item-anot__trecho { font-style: italic; color: var(--lt-texto-suave); }
+
+.anot { position: absolute; pointer-events: auto; box-sizing: border-box; }
+.anot--area {
+    background: color-mix(in srgb, var(--cor) 55%, transparent);
+    mix-blend-mode: multiply; /* como um marcador de verdade: o texto continua legível */
+    border-radius: 2px;
+    cursor: pointer;
+}
+.anot--area.anot--comentada { outline: 2px solid color-mix(in srgb, var(--cor) 90%, #000); outline-offset: -1px; }
+.anot--rascunho { pointer-events: none; outline: 1px dashed rgba(0, 0, 0, 0.45); }
+.anot--nota {
+    width: 26px; height: 26px; margin: -13px 0 0 -13px;
+    border-radius: 50% 50% 50% 4px;
+    border: 2px solid #fff; background: var(--cor); color: #1a1204;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; padding: 0; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.anot--destaque { animation: anot-pulsa 0.5s ease 3; }
+@keyframes anot-pulsa { 50% { filter: brightness(1.4) saturate(1.5); transform: scale(1.04); } }
+
+.barra-marcador {
+    position: fixed; top: calc(var(--lt-topo) + 8px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    z-index: 10002; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+    max-width: calc(100vw - 16px); overflow-x: auto; scrollbar-width: none;
+    padding: 6px 10px; border-radius: 999px;
+    background: var(--lt-vidro); backdrop-filter: blur(20px) saturate(170%); -webkit-backdrop-filter: blur(20px) saturate(170%);
+    border: 1px solid var(--lt-borda); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.barra-marcador[hidden] { display: none; }
+.barra-marcador::-webkit-scrollbar { display: none; }
+.barra-marcador__sep { width: 1px; height: 22px; background: var(--lt-borda); flex: none; }
+.ferr {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px;
+    border-radius: 999px; border: 1px solid transparent; background: transparent; color: var(--lt-texto);
+    font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.ferr:hover { background: var(--lt-acento-suave); }
+.ferr[aria-pressed='true'] { background: var(--lt-acento); color: #1a1204; }
+.ferr--icone { padding: 0; width: 38px; justify-content: center; }
+.cores { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.cor-bolinha {
+    width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35);
+    background: var(--cor); padding: 0; cursor: pointer; flex: none;
+}
+.cor-bolinha[aria-pressed='true'] { border-color: #fff; box-shadow: 0 0 0 2px var(--lt-acento); transform: scale(1.1); }
+.cor-bolinha--p { width: 22px; height: 22px; }
+
+.btn-hud--badge { position: relative; }
+.hud-badge {
+    position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+    background: var(--lt-acento); color: #1a1204; font-size: 0.68rem; font-weight: 800; line-height: 18px; text-align: center;
+}
+.hud-badge[hidden] { display: none; }
+
+.aviso-anot {
+    position: fixed; left: 50%; bottom: calc(var(--lt-base) + 8px); transform: translateX(-50%); z-index: 10003;
+    padding: 10px 16px; border-radius: 12px; background: #3a1820; color: #ffd7dc; border: 1px solid #7a2c3a; font-size: 0.88rem;
+    max-width: calc(100vw - 24px);
+}
+.aviso-anot[hidden] { display: none; }
+
+.pop-anot {
+    position: fixed; z-index: 10004; width: 300px; max-width: calc(100vw - 24px); padding: 12px;
+    background: #1b1f29; color: var(--lt-texto); border: 1px solid var(--lt-borda); border-radius: 14px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6); display: flex; flex-direction: column; gap: 10px;
+}
+.pop-anot[hidden] { display: none; }
+.pop-anot__topo { display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; }
+.pop-anot__x { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: var(--lt-texto-suave); cursor: pointer; }
+.pop-anot__x:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.pop-anot__texto {
+    width: 100%; resize: vertical; min-height: 84px; padding: 10px 12px; border-radius: 10px;
+    background: #12151c; color: var(--lt-texto); border: 1px solid var(--lt-borda); font: inherit; font-size: 0.92rem;
+}
+.pop-anot__acoes { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pop-anot__salvar { flex: 1; height: 40px; border: 0; border-radius: 10px; background: var(--lt-acento); color: #1a1204; font-weight: 700; cursor: pointer; }
+.pop-anot__apagar { width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(230, 90, 90, 0.4); background: transparent; color: #f0a3a3; cursor: pointer; }
+.pop-anot__apagar:hover { background: rgba(230, 90, 90, 0.14); }
+
+.painel-anot {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 10005; width: 360px; max-width: 100vw;
+    padding: calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+    background: #151922; border-left: 1px solid var(--lt-borda); box-shadow: -16px 0 40px rgba(0, 0, 0, 0.5);
+    display: flex; flex-direction: column; gap: 12px;
+}
+.painel-anot[hidden] { display: none; }
+.painel-anot__topo { display: flex; align-items: center; justify-content: space-between; }
+.painel-anot__topo h2 { margin: 0; font-size: 1.05rem; }
+.painel-anot__filtros { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip-filtro { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--lt-borda); background: transparent; color: var(--lt-texto); font: inherit; font-size: 0.8rem; cursor: pointer; }
+.chip-filtro[aria-pressed='true'] { background: var(--lt-acento); color: #1a1204; border-color: transparent; }
+.painel-anot__lista { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.painel-anot__vazio { color: var(--lt-texto-suave); font-size: 0.9rem; padding: 18px 4px; }
+.item-anot {
+    display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%; padding: 10px 12px;
+    border-radius: 10px; border: 1px solid var(--lt-borda); background: rgba(255, 255, 255, 0.03); color: var(--lt-texto); font: inherit; cursor: pointer;
+}
+.item-anot:hover { background: rgba(255, 255, 255, 0.07); }
+.item-anot__cor { flex: none; width: 12px; height: 12px; margin-top: 5px; border-radius: 50%; background: var(--cor); }
+.item-anot__corpo { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 0.88rem; }
+.item-anot__corpo span { overflow-wrap: anywhere; }
+.item-anot__vazio { color: var(--lt-texto-suave); font-style: italic; }
+
+@media (max-width: 599px) {
+    .barra-marcador { left: 8px; right: 8px; transform: none; max-width: none; justify-content: flex-start; }
+    .ferr span { display: none; }
+    .ferr { padding: 0; width: 38px; justify-content: center; }
+    /* no celular a janelinha de comentário sobe do rodapé */
+    .pop-anot { left: 0 !important; right: 0; bottom: 0; top: auto !important; width: 100%; max-width: none; border-radius: 16px 16px 0 0; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .painel-anot { width: 100vw; }
+}
+
+.btn-hud--favorito.is-ativo { color: #ff5d7a; }
+.btn-hud--favorito.is-ativo:hover { color: #ff7d94; }
+
 /* ---------- Carregando / erro ---------------------------------------------------- */
 .leitor-estado {
     position: fixed;
@@ -313,3 +495,6 @@ body.inactive { cursor: none; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+.btn-hud--topo[aria-pressed='true'] { background: var(--lt-acento); color: #1a1204; border-color: transparent; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

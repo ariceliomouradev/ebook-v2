@@ -50,3 +50,6 @@ database/.dev-credenciais.txt
 
 # Estado e relatórios da importação em lote de acervo
 database/.importacao/
+
+# relatórios locais da análise de livros repetidos
+database/.duplicados/

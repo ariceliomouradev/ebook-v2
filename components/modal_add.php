@@ -46,6 +46,22 @@ if (!defined('ACESSO_PERMITIDO')) {
                         <?php endforeach; ?>
                     </select>
 
+                    <?php if (($_SESSION['usuario_perfil'] ?? '') === 'admin'): ?>
+                    <div class="mt-3">
+                    <fieldset class="vis-campo mb-4" data-testid="novo-visibilidade">
+                        <legend class="text-muted small mb-2">Quem pode ver este livro</legend>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check"><input class="form-check-input" type="checkbox" id="novoVisContribuidor" name="vis_contribuidor" value="1" data-testid="check-vis-contribuidor" checked><label class="form-check-label" for="novoVisContribuidor">Família</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" id="novoVisLeitor" name="vis_leitor" value="1" data-testid="check-vis-leitor" checked><label class="form-check-label" for="novoVisLeitor">Assinantes</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" id="novoVisAdmin" checked disabled><label class="form-check-label" for="novoVisAdmin">Administrador</label></div>
+                        </div>
+                        <label class="text-muted small mt-3 mb-1" for="novoLiberarEm">Liberar em (opcional)</label>
+                        <input type="datetime-local" class="form-control bg-secondary text-light border-0" id="novoLiberarEm" name="liberar_em" data-testid="input-liberar-em">
+                        <div class="form-text text-muted">Sem data, o livro fica disponível assim que salvar. Com data, só você o vê até lá. Desmarque os dois perfis para deixar o livro apenas com o administrador.</div>
+                    </fieldset>
+                    </div>
+                    <?php endif; ?>
+
                 </div>
 
                 <div class="modal-footer border-secondary">

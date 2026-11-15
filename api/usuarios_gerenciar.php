@@ -16,7 +16,7 @@ csrf_verify(true);
 
 function listaDeUsuarios(PDO $pdo): array
 {
-    return $pdo->query('SELECT id, nome, email, perfil, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+    return $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
 }
 
 function responderUsuarios(PDO $pdo, string $mensagem = ''): never
@@ -58,6 +58,9 @@ if ($action === 'adicionar') {
     try {
         $stmt = $pdo->prepare('INSERT INTO usuarios (nome, email, senha, perfil) VALUES (?, ?, ?, ?)');
         $stmt->execute([mb_substr($nome, 0, 100), $email, password_hash($senha, PASSWORD_DEFAULT), $perfil]);
+        if (!empty($_POST['teste']) && $perfil !== 'admin') {
+            $pdo->prepare("UPDATE usuarios SET acesso_ate = DATE_ADD(NOW(), INTERVAL " . (int) TESTE_DIAS . " DAY), acesso_origem = 'teste' WHERE id = ?")->execute([(int) $pdo->lastInsertId()]);
+        }
     } catch (PDOException $e) {
         if ($e->getCode() == 23000) {
             falhar('Este e-mail já está em uso por outro usuário.', 409);
@@ -84,6 +87,14 @@ if ($action === 'redefinir_senha') {
         falhar('Erro interno do banco de dados.', 500);
     }
     responderUsuarios($pdo, 'A senha do usuário foi redefinida com sucesso.');
+}
+
+if ($action === 'renovar') {
+    $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || !renovarAcesso($pdo, $id, TESTE_DIAS)) {
+        falhar('Não foi possível renovar este acesso.');
+    }
+    responderUsuarios($pdo, 'Acesso renovado por mais ' . TESTE_DIAS . ' dias.');
 }
 
 if ($action === 'excluir') {

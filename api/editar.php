@@ -17,13 +17,21 @@ if (!$id || $titulo === '' || $autor === '') {
 $titulo = mb_substr($titulo, 0, 255);
 $autor = mb_substr($autor, 0, 255);
 
+require_once '../includes/repositorios.php';
+$visibilidade = lerVisibilidadeDoFormulario($_POST);
+if (isset($visibilidade['erro'])) {
+    responderJson(['success' => false, 'error' => $visibilidade['erro']], 422);
+}
+
 require_once '../includes/categorias.php';
 $slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] ?? ''));
 $categoriaId = categoriaIdPorSlug($pdo, $slugCategoria); // '' = sem categoria
 
 try {
-    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ?, categoria_id = ? WHERE id = ?");
-    $stmt->execute([$titulo, $autor, $categoriaId, $id]);
+    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ?, categoria_id = ?, visivel_para = ?, liberar_em = ? WHERE id = ?");
+    $stmt->execute([$titulo, $autor, $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $id]);
+    require_once '../includes/duplicados.php';
+    atualizarChavesDoLivro($pdo, (int) $id, $titulo, $autor);
 
     responderJson([
         'success' => true,
@@ -31,6 +39,11 @@ try {
         'titulo' => $titulo,
         'autor' => $autor,
         'categoria' => $categoriaId === null ? '' : $slugCategoria,
+        'visivel_para' => $visibilidade['visivel_para'],
+        'liberar_em' => $visibilidade['liberar_em'],
+        'liberar_em_input' => $visibilidade['liberar_em'] ? date('Y-m-d\TH:i', strtotime($visibilidade['liberar_em'])) : '',
+        'selo' => resumoVisibilidade($visibilidade['visivel_para'], $visibilidade['liberar_em']),
+        'agendado' => $visibilidade['liberar_em'] !== null && strtotime($visibilidade['liberar_em']) > time(),
     ]);
 } catch (PDOException $e) {
     error_log('Falha ao editar livro: ' . $e->getMessage());

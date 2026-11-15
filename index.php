@@ -1,6 +1,12 @@
 <?php
 define('CAMINHO_RAIZ', '');
 require_once 'config/bootstrap.php';
+
+// Quem ainda não entrou vê a página de apresentação (inicio.php) no endereço raiz.
+if (!isset($_SESSION['usuario_id'])) {
+    require __DIR__ . '/inicio.php';
+    exit;
+}
 require_login();
 
 // Controle de cache
@@ -16,8 +22,11 @@ $ordemAtual = $_GET['ordem'] ?? 'recentes';
 $busca = $_GET['busca'] ?? '';
 $categoriaAtual = preg_replace('/[^a-z0-9-]/', '', (string) ($_GET['categoria'] ?? ''));
 $paginaAtual = max(1, (int) ($_GET['pagina'] ?? 1));
+$soFavoritos = ($_GET['favoritos'] ?? '') === '1';
 
-$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoriaAtual);
+$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoriaAtual, $_SESSION['usuario_perfil'], titularDaSessao(), $soFavoritos);
+$favoritos = $resultado['favoritos'];
+$totalFavoritos = contarFavoritos($pdo, (int) $_SESSION['usuario_id'], $_SESSION['usuario_perfil'], titularDaSessao());
 $livros = $resultado['livros'];
 $progressos = $resultado['progressos'];
 $totalLivros = $resultado['totalLivros'];
@@ -25,7 +34,7 @@ $totalPaginas = $resultado['totalPaginas'];
 $paginaAtual = $resultado['paginaAtual'];
 $ordemAtual = $resultado['ordemAtual'];
 $busca = $resultado['busca'];
-$categorias = listarCategoriasComContagem($pdo);
+$categorias = listarCategoriasComContagem($pdo, false, $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], titularDaSessao());
 
 $tituloPagina = 'Meus Livros';
 ?>
@@ -73,15 +82,24 @@ $tituloPagina = 'Meus Livros';
             <div class="col-12 col-xl-10 d-flex flex-column gap-3">
 
                 <?php if ($paginaAtual === 1 && $busca === '' && $categoriaAtual === '') {
-                    $emAndamento = listarEmAndamento($pdo, (int) $_SESSION['usuario_id']);
+                    $emAndamento = listarEmAndamento($pdo, (int) $_SESSION['usuario_id'], 8, $_SESSION['usuario_perfil'], titularDaSessao());
                     include 'components/continuar_lendo.php';
                 } ?>
 
                 <div class="toolbar">
                     <div class="toolbar__titulo">
-                        <h1 id="tituloAcervo"><?= ($busca !== '' || $categoriaAtual !== '') ? 'Resultados' : 'Acervo' ?></h1>
+                        <h1 id="tituloAcervo"><?= $soFavoritos ? 'Favoritos' : (($busca !== '' || $categoriaAtual !== '') ? 'Resultados' : 'Acervo') ?></h1>
                         <span class="toolbar__contagem" aria-live="polite"><b id="totalLivros" data-testid="total-livros"><?= (int) $totalLivros ?></b> <span id="rotuloTotal"><?= $totalLivros === 1 ? 'livro' : 'livros' ?></span></span>
                     </div>
+                    <?php if (($_SESSION['usuario_perfil'] ?? '') === 'leitor' && trocaAtiva() && !ehDependente()):
+                        $vagasIndex = vagasDoAssinante($pdo, (int) $_SESSION['usuario_id']); ?>
+                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalAcervo" data-testid="btn-explorar-acervo">
+                        <i class="fas fa-compass me-1" aria-hidden="true"></i>Explorar acervo <span class="badge text-bg-warning ms-1" data-testid="badge-vagas"><?= (int) $vagasIndex['livres'] ?></span>
+                    </button>
+                    <?php endif; ?>
+                    <button type="button" class="btn-favoritos-filtro<?= $soFavoritos ? ' is-ativo' : '' ?>" id="btnFavoritosFiltro" aria-pressed="<?= $soFavoritos ? 'true' : 'false' ?>" data-testid="btn-favoritos-filtro" title="Mostrar só os meus favoritos">
+                        <i class="fas fa-heart" aria-hidden="true"></i> Favoritos <span class="chip__n" id="totalFavoritos" data-testid="total-favoritos"><?= (int) $totalFavoritos ?></span>
+                    </button>
                     <label class="toolbar__ordem">
                         <span>Ordenar por</span>
                         <select class="form-select bg-dark text-light" id="selectOrdenacao" data-testid="select-ordenacao">
@@ -117,14 +135,15 @@ $tituloPagina = 'Meus Livros';
     $perfilDaSessao = $_SESSION['usuario_perfil'] ?? 'leitor';
     $categoriasTodas = listarCategoriasComContagem($pdo, true);
     if ($perfilDaSessao === 'admin') {
-        $listaUsuarios = $pdo->query('SELECT id, nome, email, perfil, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
+        $listaUsuarios = $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
         require_once 'includes/banners.php';
         $bannersH = listarBanners($pdo, 'h');
         $bannersV = listarBanners($pdo, 'v');
     }
-    if (in_array($perfilDaSessao, ['admin', 'contribuidor'], true)) {
+    if (podeEnviarLivros()) {
         include 'components/modal_add.php';
     }
+    include 'components/modal_perfis.php';
     if ($perfilDaSessao === 'admin') {
         include 'components/modal_edit.php';
         include 'components/modal_usuarios.php';

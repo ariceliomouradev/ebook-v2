@@ -2,6 +2,7 @@
 define('CAMINHO_RAIZ', '');
 define('ACESSO_PERMITIDO', true);
 require_once 'config/bootstrap.php';
+require_once 'includes/cadastro.php';
 
 if (isset($_SESSION['usuario_id'])) {
     redirecionar('index.php');
@@ -50,6 +51,8 @@ $tituloPagina = 'Login - Biblioteca';
         if (isset($_GET['erro'])) {
             if ($_GET['erro'] === 'bloqueado') {
                 echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-lock me-1"></i> Muitas tentativas. Aguarde alguns minutos e tente novamente.</div>';
+            } elseif ($_GET['erro'] === 'acesso') {
+                echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-user-lock me-1"></i> Sua conta foi aberta em outro aparelho e este acesso foi encerrado. Entre novamente.</div>';
             } elseif ($_GET['erro'] === 'token_invalido') {
                 echo '<div class="alert alert-danger py-2 small text-center" data-testid="login-alerta"><i class="fas fa-exclamation-circle me-1"></i> Link de redefinição inválido ou expirado.</div>';
             } else {
@@ -89,6 +92,12 @@ $tituloPagina = 'Login - Biblioteca';
                 Esqueceu sua senha?
             </a>
         </div>
+
+        <p class="text-center small mt-4 mb-0"><a href="<?= url('inicio.php') ?>" class="text-secondary" data-testid="link-voltar-inicio"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Voltar ao início</a></p>
+
+        <?php if (cadastroAberto()): ?>
+        <p class="text-center text-secondary small mt-3 mb-0">Ainda não tem conta? <a href="<?= url('cadastro.php') ?>" data-testid="link-criar-conta">Cadastre-se</a></p>
+        <?php endif; ?>
     </div>
     </div>
 </div>

@@ -3,6 +3,7 @@ define('CAMINHO_RAIZ', '');
 define('ACESSO_PERMITIDO', true);
 require_once 'config/bootstrap.php';
 
+encerrarAcesso($pdo);
 $_SESSION = [];
 
 if (ini_get('session.use_cookies')) {

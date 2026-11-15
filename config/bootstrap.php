@@ -8,6 +8,10 @@ if (!defined('ACESSO_PERMITIDO')) {
 
 require_once __DIR__ . '/app.php';
 
+// Horário de Brasília no PHP, igual ao da sessão do MySQL (config/db.php): a liberação agendada de
+// livros compara a data digitada com o relógio, então os dois lados precisam do mesmo fuso.
+date_default_timezone_set('America/Fortaleza');
+
 $appDebug = filter_var(env('APP_DEBUG', 'false'), FILTER_VALIDATE_BOOLEAN);
 ini_set('display_errors', $appDebug ? '1' : '0');
 ini_set('log_errors', '1');
@@ -60,3 +64,29 @@ header(
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/perfis.php';
+require_once __DIR__ . '/../includes/cadastro.php';
+require_once __DIR__ . '/../includes/assinatura.php';
+
+// Limite de acessos simultâneos: se outro login derrubou esta sessão, volta para o login.
+if (isset($_SESSION['usuario_id']) && !acessoAindaValido($pdo)) {
+    $_SESSION = [];
+    session_destroy();
+    if (isRequisicaoJson()) {
+        responderJson(['success' => false, 'error' => 'Sua conta foi aberta em outro aparelho.'], 401);
+    }
+    header('Location: ' . url('login.php?erro=acesso'));
+    exit;
+}
+
+// Com ASSINATURA_EXIGIDA=true, quem terminou o teste (ou o período pago) só enxerga a tela /assinatura.
+if (isset($_SESSION['usuario_id']) && assinaturaExigida() && ($_SESSION['usuario_perfil'] ?? '') !== 'admin') {
+    $paginaAtual = basename($_SERVER['SCRIPT_NAME'] ?? '');
+    if (!in_array($paginaAtual, ['assinatura.php', 'logout.php'], true) && situacaoAcesso($pdo, (int) $_SESSION['usuario_id'])['vencido']) {
+        if (isRequisicaoJson() || str_contains($_SERVER['SCRIPT_NAME'] ?? '', '/api/')) {
+            responderJson(['success' => false, 'error' => 'O seu período de teste terminou. Fale com o suporte para continuar.'], 402);
+        }
+        header('Location: ' . url('assinatura.php'));
+        exit;
+    }
+}

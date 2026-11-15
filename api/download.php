@@ -3,6 +3,7 @@ define('CAMINHO_RAIZ', '../');
 require_once '../config/bootstrap.php';
 
 require_login();
+require_once '../includes/repositorios.php';
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -14,7 +15,8 @@ $stmt = $pdo->prepare("SELECT nome_arquivo, titulo FROM livros WHERE id = ?");
 $stmt->execute([$id]);
 $livro = $stmt->fetch();
 
-if (!$livro) {
+// Livro oculto para o perfil (ou ainda não liberado) responde como inexistente.
+if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], titularDaSessao())) {
     http_response_code(404);
     die('Livro não encontrado.');
 }

@@ -5,6 +5,7 @@ if (!defined('ACESSO_PERMITIDO')) {
 }
 
 $perfilUsuario = $_SESSION['usuario_perfil'] ?? 'leitor';
+$sitAcesso = isset($pdo) ? situacaoAcesso($pdo, (int) ($_SESSION['usuario_id'] ?? 0)) : situacaoDeLinha([]);
 $nomeCompleto = $_SESSION['usuario_nome'] ?? 'Usuário';
 $primeiroNome = explode(' ', $nomeCompleto)[0];
 $inicial = mb_strtoupper(mb_substr($primeiroNome, 0, 1));
@@ -34,13 +35,12 @@ $mostrarBusca = $mostrarBusca ?? false;
                         style="display: <?= $busca !== '' ? 'flex' : 'none' ?>;" data-testid="btn-limpar-busca">
                     <i class="fas fa-times"></i>
                 </button>
-                <kbd class="busca__atalho" aria-hidden="true">/</kbd>
             </div>
         </div>
         <?php endif; ?>
 
         <div class="app-acoes">
-            <?php if ($perfilUsuario === 'admin' || $perfilUsuario === 'contribuidor'): ?>
+            <?php if (podeEnviarLivros()): ?>
             <button class="btn btn-neon" data-bs-toggle="modal" data-bs-target="#modalUpload"
                 data-testid="btn-novo-livro" aria-label="Adicionar livro">
                 <i class="fas fa-plus" aria-hidden="true"></i><span class="btn-rotulo ms-2">Adicionar</span>
@@ -55,12 +55,35 @@ $mostrarBusca = $mostrarBusca ?? false;
                     <i class="fas fa-chevron-down" aria-hidden="true"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow">
-                    <li><span class="dropdown-item-text small text-secondary">Nível <span class="perfil-etiqueta ms-1"><?= e(strtoupper($perfilUsuario)) ?></span></span></li>
+                    <li><span class="dropdown-item-text small text-secondary">Plano <span class="perfil-etiqueta ms-1"><?= e(mb_strtoupper(rotuloPerfil($perfilUsuario))) ?></span></span></li>
+                    <?php if ($sitAcesso['limitado']): ?>
+                    <li><span class="dropdown-item-text small <?= $sitAcesso['vencido'] ? 'text-warning' : 'text-secondary' ?>" data-testid="menu-acesso"><i class="fas fa-clock me-1" aria-hidden="true"></i><?= e(resumoAcesso($sitAcesso)) ?></span></li>
+                    <?php endif; ?>
                     <li><hr class="dropdown-divider"></li>
 
                     <?php if ($perfilUsuario === 'admin' && !empty($mostrarBusca)): ?>
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalGerenciar" data-testid="btn-abrir-gerenciador"><i class="fas fa-book me-2"></i>Gerenciar livros</button></li>
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalGerenciar" data-abrir-banners data-testid="btn-menu-banners"><i class="fas fa-image me-2"></i>Gerenciar banners</button></li>
+                    <?php endif; ?>
+
+                    <?php if ($perfilUsuario === 'admin' && !empty($mostrarBusca)):
+                        try {
+                            $pendentesAprovacao = (int) $pdo->query("SELECT COUNT(*) FROM livros WHERE publicacao = 'pendente'")->fetchColumn();
+                        } catch (PDOException $e) {
+                            $pendentesAprovacao = 0; // banco ainda sem a migração v1.5
+                        } ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalAprovacoes" data-testid="btn-menu-aprovacoes"><i class="fas fa-clipboard-check me-2"></i>Aprovações <span class="badge text-bg-warning ms-1<?= $pendentesAprovacao ? '' : ' d-none' ?>" data-testid="badge-aprovacoes"><?= (int) $pendentesAprovacao ?></span></button></li>
+                    <?php endif; ?>
+
+                    <?php if ($perfilUsuario === 'leitor' && trocaAtiva() && !ehDependente() && !empty($mostrarBusca)): ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalAcervo" data-testid="btn-menu-acervo"><i class="fas fa-compass me-2"></i>Explorar acervo</button></li>
+                    <?php endif; ?>
+
+                    <?php if (podeEnviarLivros() && $perfilUsuario !== 'admin' && !empty($mostrarBusca)): ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalEnvios" data-testid="btn-menu-envios"><i class="fas fa-cloud-arrow-up me-2"></i>Meus envios</button></li>
+                    <?php endif; ?>
+                    <?php if ($perfilUsuario === 'contribuidor' && !ehDependente() && !empty($mostrarBusca)): ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalFamilia" data-testid="btn-menu-familia"><i class="fas fa-people-roof me-2"></i>Minha família</button></li>
                     <?php endif; ?>
 
                     <?php if ($perfilUsuario === 'admin'): ?>
@@ -76,6 +99,21 @@ $mostrarBusca = $mostrarBusca ?? false;
         </div>
     </div>
 </header>
+
+<?php if ($sitAcesso['limitado'] && ($sitAcesso['vencido'] || $sitAcesso['dias'] <= 7)):
+    $precoDoPlano = formatarReais(precoMensal($sitAcesso['perfil']));
+    $msgSuporte = 'Olá! Quero ' . ($sitAcesso['vencido'] ? 'ativar' : 'continuar com') . ' o plano ' . rotuloPerfil($sitAcesso['perfil']) . ' do Meus Livros (' . $precoDoPlano . '/mês, pagamento por PIX). Meu nome: ' . ($_SESSION['usuario_nome'] ?? ''); ?>
+<div class="aviso-plano<?= $sitAcesso['vencido'] ? ' aviso-plano--vencido' : '' ?>" role="status" data-testid="aviso-plano">
+    <span>
+        <?php if ($sitAcesso['vencido']): ?>
+            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste grátis terminou.' : 'Seu plano venceu.' ?></strong> Para continuar: <?= e($precoDoPlano) ?>/mês, por PIX.
+        <?php else: ?>
+            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste grátis' : 'Seu plano' ?> termina em <?= (int) $sitAcesso['dias'] ?> <?= $sitAcesso['dias'] === 1 ? 'dia' : 'dias' ?>.</strong> Depois: <?= e($precoDoPlano) ?>/mês, por PIX.
+        <?php endif; ?>
+    </span>
+    <a class="btn btn-sm btn-neon" href="<?= e(linkSuporte($msgSuporte)) ?>" target="_blank" rel="noopener" data-testid="aviso-plano-suporte"><i class="fab fa-whatsapp me-1" aria-hidden="true"></i>Falar com o suporte</a>
+</div>
+<?php endif; ?>
 
 <div class="modal fade" id="modalTrocarSenha" tabindex="-1" data-testid="modal-trocar-senha">
     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -139,7 +177,8 @@ $mensagensSucesso = [
     'pwd_reset'    => 'A senha do usuário foi redefinida com sucesso.',
     'user_deleted' => 'Usuário excluído. O acervo de livros dele foi mantido.',
     'pwd_changed'  => 'Senha alterada! Use a nova credencial no próximo acesso.',
-    'sucesso'      => 'Livro cadastrado com sucesso na biblioteca.',
+    'bem_vindo'    => 'Conta criada! Os seus ' . TESTE_DIAS . ' dias grátis já começaram. Explore o acervo e boa leitura.',
+    'sucesso'      => ($_SESSION['usuario_perfil'] ?? '') === 'admin' ? 'Livro cadastrado com sucesso na biblioteca.' : 'Livro guardado na sua biblioteca. Para publicá-lo, peça a aprovação em Meus envios.',
     'excluido'     => 'Livro excluído com sucesso.',
 ];
 $mensagensErro = [
@@ -150,6 +189,9 @@ $mensagensErro = [
     'erro_invalid_data'  => 'Dados inválidos ou incompletos. Tente novamente.',
     'erro_self_delete'   => 'Operação bloqueada: Você não pode excluir a sua própria conta.',
     'erro_arquivo'       => 'Arquivo inválido ou não permitido.',
+    'erro_sem_permissao' => 'Sua conta não pode enviar livros. Peça ao titular da família.',
+    'erro_limite_envios' => 'Você atingiu o limite de livros enviados. Exclua um envio para adicionar outro.',
+    'erro_duplicado'     => 'Este arquivo já existe no acervo.',
 ];
 
 if (isset($mensagensSucesso[$msg])) {

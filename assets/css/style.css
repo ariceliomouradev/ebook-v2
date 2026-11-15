@@ -146,10 +146,20 @@ textarea:focus-visible,
     box-shadow: none;
 }
 
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--ml-surface-3); border-radius: 10px; border: 2px solid var(--ml-bg); }
-::-webkit-scrollbar-thumb:hover { background: #3a435a; }
+/* Barra de rolagem da marca: trilho escuro, alça cinza-azulada que fica âmbar ao passar o mouse.
+   (Chrome/Edge/Safari usam o ::-webkit-scrollbar; o Firefox usa as propriedades padrão logo abaixo.) */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--ml-bg); }
+::-webkit-scrollbar-thumb { background: var(--ml-surface-3); border-radius: 12px; border: 3px solid var(--ml-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--ml-accent); }
+::-webkit-scrollbar-thumb:active { background: var(--ml-accent-press); }
+::-webkit-scrollbar-corner { background: var(--ml-bg); }
+@supports not selector(::-webkit-scrollbar) {
+    * { scrollbar-width: thin; scrollbar-color: var(--ml-surface-3) var(--ml-bg); }
+}
+/* listas rolantes dentro de modais e painéis ficam sobre o fundo da superfície, não do site */
+.modal-content ::-webkit-scrollbar-track, .modal-content::-webkit-scrollbar-track { background: transparent; }
+.modal-content ::-webkit-scrollbar-thumb { border-color: transparent; background-clip: padding-box; }
 
 /* ---------- 3. Re-skin do Bootstrap ------------------------------------- */
 .btn {
@@ -431,6 +441,40 @@ textarea:focus-visible,
     background: rgba(255, 255, 255, 0.03);
     pointer-events: none;
 }
+/* Prévia de PDF dentro do modal (fila de aprovação) */
+.previa-pdf { max-height: 58vh; overflow: auto; background: #1b1e26; text-align: center; }
+.previa-pdf canvas { display: block; margin: 0 auto; max-width: 100%; background: #fff; }
+
+/* Selo de visibilidade do livro (lista do gerenciador) */
+.vis-selo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+.vis-selo--publico { color: #8fe3a8; background: rgba(60, 180, 100, 0.12); border-color: rgba(60, 180, 100, 0.3); }
+.vis-selo--oculto { color: #f0a3a3; background: rgba(230, 90, 90, 0.12); border-color: rgba(230, 90, 90, 0.3); }
+.vis-selo--agendado { color: var(--ml-accent); background: rgba(246, 180, 69, 0.12); border-color: rgba(246, 180, 69, 0.35); }
+.vis-campo { border: 0; padding: 0; margin: 0; }
+.vis-campo legend { float: none; width: auto; padding: 0; font-size: 0.8rem; }
+
+/* Campos de senha: o Edge/IE desenham um olho próprio ao lado do nosso botão de mostrar/ocultar. */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+    display: none;
+}
+
+/* O campo é type="search": o navegador desenha um "×" próprio, que duplicava o nosso botão. */
+#campoBusca::-webkit-search-cancel-button,
+#campoBusca::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
 .busca__limpar {
     width: 30px;
     height: 30px;
@@ -511,6 +555,16 @@ textarea:focus-visible,
     border-radius: 999px;
     padding: 3px 10px;
 }
+
+/* Faixa de aviso do teste grátis / plano */
+.aviso-plano {
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px 18px;
+    padding: 10px 16px; font-size: 0.9rem; text-align: center;
+    background: var(--ml-accent-soft); border-bottom: 1px solid rgba(246, 180, 69, 0.3); color: var(--ml-text);
+}
+.aviso-plano strong { color: var(--ml-accent); }
+.aviso-plano--vencido { background: rgba(248, 113, 113, 0.12); border-bottom-color: rgba(248, 113, 113, 0.35); }
+.aviso-plano--vencido strong { color: var(--ml-danger); }
 
 /* ---------- 5. Layout, banners, seções, barra de ferramentas ------------- */
 .app-main {
@@ -899,6 +953,51 @@ textarea:focus-visible,
     object-position: top center;
     transition: transform 0.6s var(--ml-ease);
 }
+
+/* Coração de favoritos sobre a capa (canto superior esquerdo; o selo "Lido" fica à direita) */
+.btn-favorito {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 5; /* acima do link que cobre o cartão todo */
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(13, 15, 20, 0.62);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s var(--ml-ease), background-color 0.15s var(--ml-ease), color 0.15s var(--ml-ease);
+}
+.btn-favorito:hover { background: rgba(13, 15, 20, 0.85); transform: scale(1.08); }
+.btn-favorito:active { transform: scale(0.92); }
+.btn-favorito.is-ativo { color: #ff5d7a; background: rgba(13, 15, 20, 0.8); }
+.btn-favorito:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
+
+.btn-favoritos-filtro {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--ml-border-strong, rgba(255, 255, 255, 0.14));
+    background: transparent;
+    color: var(--ml-text);
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background-color 0.15s var(--ml-ease), border-color 0.15s var(--ml-ease);
+}
+.btn-favoritos-filtro i { color: #ff5d7a; }
+.btn-favoritos-filtro:hover { background: rgba(255, 255, 255, 0.06); }
+.btn-favoritos-filtro.is-ativo { background: rgba(255, 93, 122, 0.14); border-color: rgba(255, 93, 122, 0.55); }
 
 /* Selo de leitura concluída e barra de progresso sobre a capa */
 .selo-concluido {

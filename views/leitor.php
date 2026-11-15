@@ -2,6 +2,7 @@
 define('CAMINHO_RAIZ', '');
 require_once '../config/bootstrap.php';
 require_login();
+require_once '../includes/repositorios.php';
 
 $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
 if (!$id) {
@@ -17,7 +18,7 @@ $stmt = $pdo->prepare("SELECT id, titulo, nome_arquivo FROM livros WHERE id = ?"
 $stmt->execute([$id]);
 $livro = $stmt->fetch();
 
-if (!$livro) {
+if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], titularDaSessao())) {
     http_response_code(404);
     die('Livro não encontrado.');
 }
@@ -25,6 +26,10 @@ if (!$livro) {
 $stmtProgresso = $pdo->prepare("SELECT progresso FROM leituras WHERE usuario_id = ? AND livro_id = ?");
 $stmtProgresso->execute([$_SESSION['usuario_id'], $id]);
 $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
+
+$stmtFav = $pdo->prepare('SELECT 1 FROM favoritos WHERE usuario_id = ? AND livro_id = ?');
+$stmtFav->execute([$_SESSION['usuario_id'], $id]);
+$ehFavorito = (bool) $stmtFav->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -74,13 +79,25 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
         <span class="hud-titulo__info" id="progressoTexto" data-testid="leitor-progresso-texto" aria-live="polite">Abrindo…</span>
     </div>
 
+    <button data-testid="btn-favorito-leitor" class="btn-hud btn-hud--topo btn-hud--favorito<?= $ehFavorito ? ' is-ativo' : '' ?>" id="btnFavoritoLeitor" type="button"
+            aria-pressed="<?= $ehFavorito ? 'true' : 'false' ?>" aria-label="<?= $ehFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>" title="<?= $ehFavorito ? 'Remover dos favoritos' : 'Adicionar aos favoritos' ?>">
+        <i class="<?= $ehFavorito ? 'fas' : 'far' ?> fa-heart" aria-hidden="true"></i>
+    </button>
+    <button data-testid="btn-anotacoes" class="btn-hud btn-hud--topo btn-hud--badge" id="btnAnotacoes" type="button" title="Minhas anotações" aria-label="Minhas anotações" aria-expanded="false">
+        <i class="fas fa-list-ul" aria-hidden="true"></i><span class="hud-badge" id="contagemAnotacoes" data-testid="contagem-anotacoes" hidden>0</span>
+    </button>
+    <button data-testid="btn-marcador" class="btn-hud btn-hud--topo" id="btnMarcador" type="button" title="Marcar e anotar" aria-label="Marcar texto e anotar" aria-pressed="false">
+        <i class="fas fa-highlighter" aria-hidden="true"></i>
+    </button>
+
     <button data-testid="btn-fullscreen" class="btn-hud btn-hud--topo" id="btnFullscreen" title="Tela Cheia" aria-label="Tela cheia">
         <i class="fas fa-expand" id="iconFull" aria-hidden="true"></i>
     </button>
 </header>
 
-<div id="canvas-container" data-testid="pdf-container">
-    <canvas id="the-canvas" data-testid="pdf-canvas"></canvas>
+<div id="canvas-container" data-testid="pdf-container" tabindex="-1">
+    <!-- uma página atrás da outra (rolagem contínua); o leitor.js cria os espaços e desenha só os que estão perto da tela -->
+    <div id="paginas" data-testid="pdf-paginas"></div>
 </div>
 
 <div class="leitor-estado" id="leitorCarregando" role="status" data-testid="leitor-carregando">
@@ -93,6 +110,69 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
     <p>Não foi possível abrir este livro.</p>
     <a class="btn-voltar" href="<?= url('index.php') ?>"><i class="fas fa-chevron-left" aria-hidden="true"></i><span>Voltar à biblioteca</span></a>
 </div>
+
+<!-- Marcador: escolha a ferramenta e a cor; arraste sobre a página para marcar (serve para PDFs de imagem também) -->
+<div class="barra-marcador" id="barraMarcador" data-testid="barra-marcador" role="toolbar" aria-label="Ferramentas de anotação" hidden>
+    <button type="button" class="ferr" data-ferramenta="rolar" aria-pressed="false" data-testid="ferramenta-rolar" title="Rolar o livro"><i class="fas fa-hand" aria-hidden="true"></i><span>Rolar</span></button>
+    <button type="button" class="ferr" data-ferramenta="texto" aria-pressed="false" data-testid="ferramenta-texto" title="Marcar o texto selecionado"><i class="fas fa-i-cursor" aria-hidden="true"></i><span>Texto</span></button>
+    <button type="button" class="ferr" data-ferramenta="area" aria-pressed="true" data-testid="ferramenta-area" title="Marcar uma área (arraste) — serve para páginas que são imagem"><i class="fas fa-highlighter" aria-hidden="true"></i><span>Área</span></button>
+    <button type="button" class="ferr" data-ferramenta="nota" aria-pressed="false" data-testid="ferramenta-nota" title="Adicionar uma nota (toque)"><i class="fas fa-comment-medical" aria-hidden="true"></i><span>Nota</span></button>
+    <span class="barra-marcador__sep" aria-hidden="true"></span>
+    <span class="cores" role="group" aria-label="Cor da marcação">
+        <button type="button" class="cor-bolinha" data-cor="amarelo" style="--cor: var(--anot-amarelo)" aria-label="Amarelo" aria-pressed="false" title="Amarelo" data-testid="cor-amarelo"></button>
+            <button type="button" class="cor-bolinha" data-cor="verde" style="--cor: var(--anot-verde)" aria-label="Verde" aria-pressed="false" title="Verde" data-testid="cor-verde"></button>
+            <button type="button" class="cor-bolinha" data-cor="azul" style="--cor: var(--anot-azul)" aria-label="Azul" aria-pressed="false" title="Azul" data-testid="cor-azul"></button>
+            <button type="button" class="cor-bolinha" data-cor="rosa" style="--cor: var(--anot-rosa)" aria-label="Rosa" aria-pressed="false" title="Rosa" data-testid="cor-rosa"></button>
+            <button type="button" class="cor-bolinha" data-cor="laranja" style="--cor: var(--anot-laranja)" aria-label="Laranja" aria-pressed="false" title="Laranja" data-testid="cor-laranja"></button>
+    </span>
+    <span class="barra-marcador__sep" aria-hidden="true"></span>
+    <button type="button" class="ferr ferr--icone" id="btnSairMarcador" aria-label="Sair do modo de anotação" title="Sair" data-testid="btn-sair-marcador"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+</div>
+
+<!-- Aparece ao selecionar texto no modo "Texto" -->
+<button type="button" class="bolha-texto" id="bolhaTexto" data-testid="bolha-marcar-texto" hidden><i class="fas fa-highlighter" aria-hidden="true"></i><span>Marcar</span></button>
+
+<div class="aviso-anot" id="avisoAnotacao" role="status" aria-live="polite" hidden></div>
+
+<!-- Janelinha de uma marcação: cor, comentário, salvar/apagar -->
+<div class="pop-anot" id="popAnotacao" data-testid="popover-anotacao" role="dialog" aria-labelledby="popTitulo" hidden>
+    <div class="pop-anot__topo">
+        <strong id="popTitulo">Marcação</strong>
+        <button type="button" class="pop-anot__x" id="btnFecharAnotacao" aria-label="Fechar" data-testid="btn-fechar-anotacao"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <div class="cores" role="group" aria-label="Trocar a cor">
+        <button type="button" class="cor-bolinha" data-cor="amarelo" style="--cor: var(--anot-amarelo)" aria-label="Amarelo" aria-pressed="false" title="Amarelo" data-testid="pop-cor-amarelo"></button>
+            <button type="button" class="cor-bolinha" data-cor="verde" style="--cor: var(--anot-verde)" aria-label="Verde" aria-pressed="false" title="Verde" data-testid="pop-cor-verde"></button>
+            <button type="button" class="cor-bolinha" data-cor="azul" style="--cor: var(--anot-azul)" aria-label="Azul" aria-pressed="false" title="Azul" data-testid="pop-cor-azul"></button>
+            <button type="button" class="cor-bolinha" data-cor="rosa" style="--cor: var(--anot-rosa)" aria-label="Rosa" aria-pressed="false" title="Rosa" data-testid="pop-cor-rosa"></button>
+            <button type="button" class="cor-bolinha" data-cor="laranja" style="--cor: var(--anot-laranja)" aria-label="Laranja" aria-pressed="false" title="Laranja" data-testid="pop-cor-laranja"></button>
+    </div>
+    <blockquote class="pop-anot__trecho" id="popTrecho" data-testid="pop-trecho" hidden></blockquote>
+    <label class="visually-hidden" for="inputComentario">Comentário</label>
+    <textarea id="inputComentario" class="pop-anot__texto" rows="4" maxlength="1000" placeholder="Escreva um comentário (opcional)" data-testid="input-comentario"></textarea>
+    <div class="pop-anot__acoes">
+        <button type="button" class="pop-anot__apagar" id="btnExcluirAnotacao" aria-label="Apagar anotação" title="Apagar" data-testid="btn-excluir-anotacao"><i class="fas fa-trash" aria-hidden="true"></i></button>
+        <button type="button" class="pop-anot__salvar" id="btnSalvarAnotacao" data-testid="btn-salvar-anotacao">Salvar</button>
+    </div>
+</div>
+
+<!-- Painel com todas as anotações do livro -->
+<aside class="painel-anot" id="painelAnotacoes" data-testid="painel-anotacoes" aria-label="Minhas anotações" hidden>
+    <div class="painel-anot__topo">
+        <h2>Minhas anotações</h2>
+        <button type="button" class="pop-anot__x" id="btnFecharPainel" aria-label="Fechar painel" data-testid="btn-fechar-painel"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <p class="painel-anot__privado"><i class="fas fa-lock" aria-hidden="true"></i> Só você vê as suas marcações e comentários.</p>
+    <div class="painel-anot__filtros" role="group" aria-label="Filtrar por cor">
+        <button type="button" class="chip-filtro" data-filtro="" aria-pressed="true">Todas</button>
+        <button type="button" class="cor-bolinha cor-bolinha--p" data-filtro="amarelo" style="--cor: var(--anot-amarelo)" aria-label="Só amarelo" aria-pressed="false" title="Amarelo"></button>
+            <button type="button" class="cor-bolinha cor-bolinha--p" data-filtro="verde" style="--cor: var(--anot-verde)" aria-label="Só verde" aria-pressed="false" title="Verde"></button>
+            <button type="button" class="cor-bolinha cor-bolinha--p" data-filtro="azul" style="--cor: var(--anot-azul)" aria-label="Só azul" aria-pressed="false" title="Azul"></button>
+            <button type="button" class="cor-bolinha cor-bolinha--p" data-filtro="rosa" style="--cor: var(--anot-rosa)" aria-label="Só rosa" aria-pressed="false" title="Rosa"></button>
+            <button type="button" class="cor-bolinha cor-bolinha--p" data-filtro="laranja" style="--cor: var(--anot-laranja)" aria-label="Só laranja" aria-pressed="false" title="Laranja"></button>
+    </div>
+    <div class="painel-anot__lista" id="listaAnotacoes" data-testid="lista-anotacoes"></div>
+</aside>
 
 <nav class="hud-menu" id="menuPrincipal" data-testid="hud-menu" aria-label="Controles de leitura">
     <div class="hud-group hud-group--extremos">
@@ -145,12 +225,15 @@ $progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
     'id'            => (int) $id,
     'url'           => caminhoRaiz() . 'api/download.php?id=' . $id,
     'progressoUrl'  => caminhoRaiz() . 'api/progresso.php?id=' . $id,
+    'anotacoesUrl'  => caminhoRaiz() . 'api/anotacoes.php',
+    'favoritosUrl'  => caminhoRaiz() . 'api/favoritos.php',
     'pagInicial'    => $progressoAtual > 0 ? (int) $progressoAtual : 1,
     'csrfToken'     => csrf_token(),
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
 </script>
 
 <script src="<?= asset('assets/js/leitor.js') ?>"></script>
+<script src="<?= asset('assets/js/anotacoes.js') ?>"></script>
 
 </body>
 </html>

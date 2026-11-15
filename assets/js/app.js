@@ -83,6 +83,7 @@ function estadoAtualDaUrl() {
         ordem: params.get('ordem') || 'recentes',
         pagina: params.get('pagina') || '1',
         categoria: params.get('categoria') || '',
+        favoritos: params.get('favoritos') || '',
     };
 }
 
@@ -91,6 +92,7 @@ function carregarLivros(novoEstadoParcial, options = {}) {
     const params = new URLSearchParams();
     if (estado.busca) params.set('busca', estado.busca);
     if (estado.categoria) params.set('categoria', estado.categoria);
+    if (estado.favoritos) params.set('favoritos', '1');
     params.set('ordem', estado.ordem);
     params.set('pagina', estado.pagina);
 
@@ -110,6 +112,8 @@ function carregarLivros(novoEstadoParcial, options = {}) {
             if (areaPaginacao) areaPaginacao.innerHTML = data.paginacaoHtml;
             atualizarCabecalhoAcervo(data.totalLivros, estado);
             marcarCategoriaAtiva(estado.categoria);
+            marcarFavoritosAtivo(estado.favoritos);
+            if (typeof data.totalFavoritos === 'number') atualizarContagemFavoritos(data.totalFavoritos);
 
             if (!options.semHistorico) {
                 const novaUrl = window.location.pathname + '?' + params.toString();
@@ -135,9 +139,60 @@ function atualizarCabecalhoAcervo(total, estado) {
         if (totalEl) totalEl.textContent = String(total);
         if (rotuloEl) rotuloEl.textContent = total === 1 ? 'livro' : 'livros';
     }
-    if (tituloEl) tituloEl.textContent = estado && (estado.busca || estado.categoria) ? 'Resultados' : 'Acervo';
+    if (tituloEl) tituloEl.textContent = estado && estado.favoritos ? 'Favoritos' : (estado && (estado.busca || estado.categoria) ? 'Resultados' : 'Acervo');
     // O atalho só faz sentido na vitrine; durante busca ou em outra página ele some.
-    if (faixa) faixa.hidden = !!(estado && (estado.busca || estado.categoria || String(estado.pagina) !== '1'));
+    if (faixa) faixa.hidden = !!(estado && (estado.busca || estado.categoria || estado.favoritos || String(estado.pagina) !== '1'));
+}
+
+/** Botão "Favoritos" da barra do acervo: aceso quando só os favoritos estão sendo mostrados. */
+function marcarFavoritosAtivo(valor) {
+    const b = document.getElementById('btnFavoritosFiltro');
+    if (!b) return;
+    const ativo = valor === '1' || valor === true;
+    b.classList.toggle('is-ativo', ativo);
+    b.setAttribute('aria-pressed', String(ativo));
+}
+
+function atualizarContagemFavoritos(total) {
+    const n = document.getElementById('totalFavoritos');
+    if (n) n.textContent = String(total);
+}
+
+/** Coração de um livro: marca/desmarca no servidor; nos "Favoritos", o livro desmarcado sai da lista. */
+function alternarFavorito(botao) {
+    const id = botao.dataset.id;
+    const quer = botao.getAttribute('aria-pressed') !== 'true';
+    const pintar = (ativo) => {
+        botao.classList.toggle('is-ativo', ativo);
+        botao.setAttribute('aria-pressed', String(ativo));
+        const icone = botao.querySelector('i');
+        if (icone) icone.className = (ativo ? 'fas' : 'far') + ' fa-heart';
+        botao.title = ativo ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+    };
+    pintar(quer); // responde na hora; volta atrás se o servidor recusar
+    const fd = new FormData();
+    fd.append('action', 'alternar');
+    fd.append('livro_id', id);
+    fd.append('favorito', quer ? '1' : '0');
+    fd.append('csrf_token', CSRF_TOKEN);
+    fetch(`${BASE_URL}api/favoritos.php`, { method: 'POST', headers: headersComCsrf(), body: fd })
+        .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok || !data.success) {
+                pintar(!quer);
+                mostrarErro((data && data.error) || 'Não foi possível atualizar os favoritos.');
+                return;
+            }
+            atualizarContagemFavoritos(data.total);
+            if (!data.favorito && estadoAtualDaUrl().favoritos === '1') {
+                // na lista de favoritos, tirar o coração tira o livro da lista
+                carregarLivros({}, { semHistorico: true });
+            }
+        })
+        .catch(() => {
+            pintar(!quer);
+            mostrarErro('Falha ao comunicar com o servidor.');
+        });
 }
 
 /** Destaca o chip da categoria escolhida (e mantém o escolhido à vista no trilho). */
@@ -231,6 +286,19 @@ document.addEventListener('click', function (e) {
         const btnLimpar = document.getElementById('btnLimparBusca');
         if (btnLimpar) btnLimpar.style.display = 'none';
         carregarLivros({ busca: '', pagina: '1' });
+        return;
+    }
+
+    const coracao = e.target.closest('.btn-favorito');
+    if (coracao) {
+        e.preventDefault(); // o cartão inteiro é um link para o leitor
+        e.stopPropagation();
+        alternarFavorito(coracao);
+        return;
+    }
+
+    if (e.target.closest('#btnFavoritosFiltro')) {
+        carregarLivros({ favoritos: estadoAtualDaUrl().favoritos === '1' ? '' : '1', pagina: '1' });
         return;
     }
 
@@ -375,12 +443,16 @@ document.getElementById('modalGerenciar')?.addEventListener('show.bs.modal', fun
  * 5. OPERAÇÕES CRUD (EDIÇÃO E EXCLUSÃO VIA AJAX)
  * ============================================================================
  */
-function abrirEdicao(id, titulo, autor, categoria) {
+function abrirEdicao(id, titulo, autor, categoria, vis) {
     document.getElementById('editId').value = id;
     document.getElementById('editTitulo').value = titulo;
     document.getElementById('editAutor').value = autor;
     const selCategoria = document.getElementById('editCategoria');
     if (selCategoria) selCategoria.value = categoria || '';
+    vis = vis || { contribuidor: true, leitor: true, liberarEm: '' };
+    document.getElementById('editVisContribuidor').checked = !!vis.contribuidor;
+    document.getElementById('editVisLeitor').checked = !!vis.leitor;
+    document.getElementById('editLiberarEm').value = vis.liberarEm || '';
 
     document.getElementById('viewLista').style.display = 'none';
     document.getElementById('viewFormulario').style.display = 'block';
@@ -397,13 +469,35 @@ document.addEventListener('click', function (e) {
     const btnEditar = e.target.closest('.btn-editar-livro');
     if (btnEditar) {
         const item = btnEditar.closest('.item-gerenciador');
-        abrirEdicao(item.dataset.id, item.dataset.titulo, item.dataset.autor, item.dataset.categoria);
+        abrirEdicao(item.dataset.id, item.dataset.titulo, item.dataset.autor, item.dataset.categoria, {
+            contribuidor: item.dataset.visContribuidor === '1',
+            leitor: item.dataset.visLeitor === '1',
+            liberarEm: item.dataset.liberarEm || '',
+        });
         return;
     }
 
     if (e.target.closest('#btnVoltarEdicao') || e.target.closest('#btnCancelarEdicao')) {
         cancelarEdicao();
     }
+});
+
+// "Não é repetido": o livro volta a aparecer para Família e Assinantes
+document.addEventListener('click', function (e) {
+    const b = e.target.closest('.btn-nao-repetido');
+    if (!b) return;
+    const fd = new FormData();
+    fd.append('action', 'limpar');
+    fd.append('id', b.dataset.id);
+    fd.append('csrf_token', CSRF_TOKEN);
+    fetch(`${BASE_URL}api/duplicado.php`, { method: 'POST', headers: headersComCsrf(), body: fd })
+        .then((r) => r.json())
+        .then((d) => {
+            if (!d.success) { mostrarErro(d.error || 'Não foi possível alterar.'); return; }
+            b.closest('[data-testid="item-repetido"]')?.remove();
+            bibliotecaAlterada = true;
+        })
+        .catch(() => mostrarErro('Falha ao comunicar com o servidor.'));
 });
 
 document.getElementById('formEditarLivro')?.addEventListener('submit', function (event) {
@@ -436,6 +530,15 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
                 itemGerenciador.setAttribute('data-titulo', data.titulo);
                 itemGerenciador.setAttribute('data-autor', data.autor);
                 itemGerenciador.setAttribute('data-categoria', data.categoria || '');
+                const perfisVis = (data.visivel_para || '').split(',');
+                itemGerenciador.setAttribute('data-vis-contribuidor', perfisVis.includes('contribuidor') ? '1' : '0');
+                itemGerenciador.setAttribute('data-vis-leitor', perfisVis.includes('leitor') ? '1' : '0');
+                itemGerenciador.setAttribute('data-liberar-em', data.liberar_em_input || '');
+                const selo = itemGerenciador.querySelector('[data-testid="item-visibilidade"]');
+                if (selo && data.selo) {
+                    selo.className = `vis-selo ${data.selo.classe} mt-1`;
+                    selo.querySelector('.vis-selo__texto').textContent = data.selo.texto;
+                }
 
                 itemGerenciador.style.backgroundColor = 'rgba(40, 167, 69, 0.2)';
                 setTimeout(() => (itemGerenciador.style.backgroundColor = ''), 1000);
@@ -787,6 +890,11 @@ document.addEventListener('submit', function (e) {
             mostrarTela('lista');
             return;
         }
+        const btnRenovar = e.target.closest('.btn-renovar-usuario');
+        if (btnRenovar) {
+            chamarUsuarios({ action: 'renovar', usuario_id: btnRenovar.dataset.id });
+            return;
+        }
         const btnReset = e.target.closest('.btn-abrir-reset-senha');
         if (btnReset) {
             mostrarAviso('');
@@ -826,5 +934,354 @@ document.addEventListener('submit', function (e) {
     if (new URLSearchParams(window.location.search).get('abrir') === 'usuarios' && window.bootstrap) {
         bootstrap.Modal.getOrCreateInstance(modalEl).show();
         window.history.replaceState({}, '', window.location.pathname); // tira o ?abrir= do endereço
+    }
+})();
+
+/**
+ * ============================================================================
+ * 10. PERFIS: APROVAÇÕES (admin), MEUS ENVIOS e MINHA FAMÍLIA
+ * ============================================================================
+ * Três modais que carregam por AJAX ao abrir. Cada API responde `html` (a lista pronta) e,
+ * quando há, `mensagem` para o aviso do modal.
+ */
+(function () {
+    function avisar(chave, texto, tipo) {
+        const el = document.getElementById(`perfisAviso-${chave}`);
+        if (!el) return;
+        if (!texto) {
+            el.classList.add('d-none');
+            return;
+        }
+        el.className = `alert alert-${tipo || 'success'} py-2 small`;
+        el.textContent = texto;
+    }
+
+    function chamar(url, campos) {
+        const formData = new FormData();
+        Object.entries(campos).forEach(([k, v]) => formData.append(k, v));
+        formData.append('csrf_token', CSRF_TOKEN);
+        return fetch(`${BASE_URL}${url}`, { method: 'POST', headers: headersComCsrf(), body: formData })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+            .catch(() => ({ ok: false, data: { error: 'Falha ao comunicar com o servidor.' } }));
+    }
+
+    function configurar({ modalId, listaId, aviso, url, aoCarregar, pular }) {
+        const modal = document.getElementById(modalId);
+        const lista = document.getElementById(listaId);
+        if (!modal || !lista) return null;
+
+        const executar = (campos, rolar) =>
+            chamar(url, campos).then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    avisar(aviso, (data && data.error) || 'Não foi possível concluir.', 'danger');
+                    return false;
+                }
+                lista.innerHTML = data.html;
+                avisar(aviso, data.mensagem || '', 'success');
+                if (aoCarregar) aoCarregar(data);
+                if (rolar) lista.scrollIntoView({ block: 'nearest' });
+                return true;
+            });
+
+        modal.addEventListener('show.bs.modal', () => {
+            if (pular && pular()) return;
+            lista.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Carregando...</div>';
+            avisar(aviso, '');
+            executar({ action: 'listar' });
+        });
+        return { modal, lista, executar };
+    }
+
+    // --- Aprovações (administrador) ---
+    const emblema = (n) => {
+        document.querySelectorAll('[data-testid="badge-aprovacoes"]').forEach((b) => {
+            b.textContent = n;
+            b.classList.toggle('d-none', !n);
+        });
+    };
+    let filaAlterada = false; // aprovou/negou: a grade do painel recarrega ao fechar a fila
+    let aprovPagina = 1;
+    // depois de aprovar/negar o acervo por trás do modal já mostra o livro liberado e a contagem nova
+    const atualizarAcervoAoFundo = () => carregarLivros({}, { semHistorico: true });
+    function atualizarPaginacaoFila(d) {
+        aprovPagina = d.pagina || 1;
+        const total = d.totalPaginas || 1;
+        const info = document.getElementById('aprovInfo');
+        if (info) info.textContent = d.pendentes ? `Página ${aprovPagina} de ${total} · ${d.pendentes} pedido${d.pendentes === 1 ? '' : 's'}` : 'Nenhum pedido pendente';
+        document.getElementById('aprovAnterior').disabled = aprovPagina <= 1;
+        document.getElementById('aprovProxima').disabled = aprovPagina >= total;
+    }
+    let manterListaAprovacoes = false; // ao voltar da prévia do PDF a fila não recarrega
+    const aprov = configurar({
+        modalId: 'modalAprovacoes', listaId: 'listaAprovacoes', aviso: 'aprovacoes',
+        pular: () => manterListaAprovacoes,
+        url: 'api/aprovacoes.php', aoCarregar: (d) => { emblema(d.pendentes); atualizarPaginacaoFila(d); },
+    });
+    // toda chamada da fila leva a página atual: depois de aprovar, a mesma página é recarregada
+    const executarFila = (campos, rolar) => aprov.executar({ pagina: aprovPagina, ...campos }, rolar);
+    if (aprov) {
+        const irPara = (p) => executarFila({ action: 'listar', pagina: p }).then(() => { aprov.modal.querySelector('.modal-body').scrollTop = 0; });
+        document.getElementById('aprovAnterior').addEventListener('click', () => irPara(aprovPagina - 1));
+        document.getElementById('aprovProxima').addEventListener('click', () => irPara(aprovPagina + 1));
+    }
+    if (aprov) {
+        aprov.lista.addEventListener('click', (e) => {
+            const item = e.target.closest('.item-aprovacao');
+            if (!item) return;
+            const ver = e.target.closest('.btn-aprov-ver');
+            if (ver) {
+                const campoAutor = item.querySelector('.aprov-autor');
+                abrirPrevia(ver.dataset.id, ver.dataset.titulo, campoAutor ? campoAutor.value : '');
+                return;
+            }
+            if (e.target.closest('.btn-aprov-aprovar')) {
+                const autor = item.querySelector('.aprov-autor');
+                executarFila({ action: 'aprovar', id: item.dataset.id, autor: autor ? autor.value : '' }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
+            } else if (e.target.closest('.btn-aprov-negar')) {
+                executarFila({ action: 'negar', id: item.dataset.id }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
+            }
+        });
+    }
+
+    // --- Prévia do PDF (dentro de um modal, sem nova aba e sem download) ---
+    const modalPrevia = document.getElementById('modalPreviaPdf');
+    const modalFila = document.getElementById('modalAprovacoes');
+    let previaDoc = null;
+    let previaPag = 1;
+    let previaCorpoScroll = 0;
+
+    async function desenharPagina() {
+        const canvas = document.getElementById('previaPdfCanvas');
+        const estado = document.getElementById('previaPdfEstado');
+        if (!previaDoc || !canvas) return;
+        const pagina = await previaDoc.getPage(previaPag);
+        const area = document.getElementById('previaPdfArea');
+        const larguraAlvo = Math.min(area.clientWidth - 16, 900);
+        const base = pagina.getViewport({ scale: 1 });
+        const escala = Math.max(0.3, larguraAlvo / base.width);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const vp = pagina.getViewport({ scale: escala * dpr });
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        canvas.style.width = `${vp.width / dpr}px`;
+        canvas.style.height = `${vp.height / dpr}px`;
+        await pagina.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        canvas.classList.remove('d-none');
+        estado.classList.add('d-none');
+        area.scrollTop = 0;
+        document.getElementById('previaPagina').textContent = `${previaPag} / ${previaDoc.numPages}`;
+        document.getElementById('previaAnterior').disabled = previaPag <= 1;
+        document.getElementById('previaProxima').disabled = previaPag >= previaDoc.numPages;
+    }
+
+    let previaId = 0;
+
+    function abrirPrevia(id, titulo, autor) {
+        if (!modalPrevia || !window.pdfjsLib) return;
+        previaId = id;
+        document.getElementById('tituloPreviaPdf').textContent = titulo || 'Prévia';
+        document.getElementById('previaTitulo').value = titulo || '';
+        document.getElementById('previaAutor').value = autor || '';
+        document.getElementById('previaAviso').textContent = '';
+        document.getElementById('previaVisContribuidor').checked = true;
+        document.getElementById('previaVisLeitor').checked = true;
+        document.getElementById('previaLiberarEm').value = '';
+        const estado = document.getElementById('previaPdfEstado');
+        estado.textContent = 'Carregando...';
+        estado.classList.remove('d-none');
+        document.getElementById('previaPdfCanvas').classList.add('d-none');
+        document.getElementById('previaPagina').textContent = '–';
+        previaDoc = null;
+        previaPag = 1;
+        // troca de modal: esconde a fila, mostra a prévia e, ao fechar, a fila volta como estava
+        previaCorpoScroll = modalFila.querySelector('.modal-body').scrollTop;
+        manterListaAprovacoes = true;
+        bootstrap.Modal.getOrCreateInstance(modalFila).hide();
+        modalFila.addEventListener('hidden.bs.modal', function abrir() {
+            modalFila.removeEventListener('hidden.bs.modal', abrir);
+            bootstrap.Modal.getOrCreateInstance(modalPrevia).show();
+            pdfjsLib.getDocument({ url: `${BASE_URL}api/download.php?id=${encodeURIComponent(id)}` }).promise
+                .then((doc) => {
+                    previaDoc = doc;
+                    // se o modal ainda está abrindo (largura 0), o desenho acontece em shown.bs.modal
+                    if (document.getElementById('previaPdfArea').clientWidth > 100) return desenharPagina();
+                })
+                .catch(() => { estado.textContent = 'Não foi possível abrir este PDF.'; estado.classList.remove('d-none'); });
+        });
+    }
+
+    if (modalPrevia) {
+        document.getElementById('previaAnterior').addEventListener('click', () => { if (previaPag > 1) { previaPag--; desenharPagina(); } });
+        document.getElementById('previaProxima').addEventListener('click', () => { if (previaDoc && previaPag < previaDoc.numPages) { previaPag++; desenharPagina(); } });
+        document.getElementById('formPrevia').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const titulo = document.getElementById('previaTitulo').value.trim();
+            const autor = document.getElementById('previaAutor').value.trim();
+            const aviso = document.getElementById('previaAviso');
+            if (!titulo || !autor) {
+                aviso.className = 'small text-danger';
+                aviso.textContent = 'Preencha o título e o autor.';
+                return;
+            }
+            const botao = document.getElementById('previaSalvar');
+            botao.disabled = true;
+            chamar('api/aprovacoes.php', { action: 'editar', id: previaId, titulo, autor, pagina: aprovPagina }).then(({ ok, data }) => {
+                botao.disabled = false;
+                if (!ok || !data.success) {
+                    aviso.className = 'small text-danger';
+                    aviso.textContent = (data && data.error) || 'Não foi possível salvar.';
+                    return;
+                }
+                aprov.lista.innerHTML = data.html; // a fila já mostra o texto novo quando você voltar
+                emblema(data.pendentes);
+                atualizarPaginacaoFila(data);
+                filaAlterada = true;
+                document.getElementById('tituloPreviaPdf').textContent = data.titulo;
+                aviso.className = 'small text-success';
+                aviso.textContent = 'Salvo.';
+            });
+        });
+        document.getElementById('previaAprovar').addEventListener('click', () => {
+            const titulo = document.getElementById('previaTitulo').value.trim();
+            const autor = document.getElementById('previaAutor').value.trim();
+            const aviso = document.getElementById('previaAviso');
+            if (!titulo || !autor) {
+                aviso.className = 'small text-danger';
+                aviso.textContent = 'Preencha o título e o autor.';
+                return;
+            }
+            const botoes = [document.getElementById('previaAprovar'), document.getElementById('previaSalvar')];
+            botoes.forEach((b) => { b.disabled = true; });
+            chamar('api/aprovacoes.php', {
+                action: 'aprovar', id: previaId, titulo, autor, pagina: aprovPagina,
+                definir_visibilidade: 1,
+                vis_contribuidor: document.getElementById('previaVisContribuidor').checked ? 1 : '',
+                vis_leitor: document.getElementById('previaVisLeitor').checked ? 1 : '',
+                liberar_em: document.getElementById('previaLiberarEm').value,
+            }).then(({ ok, data }) => {
+                botoes.forEach((b) => { b.disabled = false; });
+                if (!ok || !data.success) {
+                    aviso.className = 'small text-danger';
+                    aviso.textContent = (data && data.error) || 'Não foi possível aprovar.';
+                    return;
+                }
+                aprov.lista.innerHTML = data.html;
+                avisar('aprovacoes', 'Livro aprovado e publicado.', 'success');
+                emblema(data.pendentes);
+                atualizarPaginacaoFila(data);
+                filaAlterada = true;
+                atualizarAcervoAoFundo();
+                bootstrap.Modal.getOrCreateInstance(modalPrevia).hide(); // volta para a fila
+            });
+        });
+        modalPrevia.addEventListener('shown.bs.modal', () => { if (previaDoc) desenharPagina(); });
+        modalPrevia.addEventListener('keydown', (e) => {
+            if (e.target.closest('input')) return; // as setas dentro dos campos não trocam de página
+            if (e.key === 'ArrowRight') document.getElementById('previaProxima').click();
+            if (e.key === 'ArrowLeft') document.getElementById('previaAnterior').click();
+        });
+        modalPrevia.addEventListener('hidden.bs.modal', () => {
+            if (previaDoc) previaDoc.destroy();
+            previaDoc = null;
+            bootstrap.Modal.getOrCreateInstance(modalFila).show();
+            modalFila.addEventListener('shown.bs.modal', function voltar() {
+                modalFila.removeEventListener('shown.bs.modal', voltar);
+                manterListaAprovacoes = false;
+                modalFila.querySelector('.modal-body').scrollTop = previaCorpoScroll;
+            });
+        });
+    }
+
+    if (modalFila) {
+        modalFila.addEventListener('hidden.bs.modal', () => {
+            if (filaAlterada && !manterListaAprovacoes) {
+                showLoader('Sincronizando biblioteca...');
+                window.location.reload();
+            }
+        });
+    }
+
+    // --- Meus envios (Família titular e Assinante) ---
+    let enviosAlterados = false;
+    const envios = configurar({
+        modalId: 'modalEnvios', listaId: 'listaEnvios', aviso: 'envios', url: 'api/meus_envios.php',
+        aoCarregar: (d) => {
+            const c = document.getElementById('enviosContagem');
+            if (c) c.textContent = d.limite ? `${d.total} de ${d.limite} envios usados.` : `${d.total} livro(s) enviado(s).`;
+        },
+    });
+    if (envios) {
+        envios.modal.addEventListener('hidden.bs.modal', () => {
+            if (enviosAlterados) window.location.reload();
+        });
+        envios.lista.addEventListener('click', (e) => {
+            const pedir = e.target.closest('.btn-envio-solicitar');
+            const excluir = e.target.closest('.btn-envio-excluir');
+            if (pedir) {
+                envios.executar({ action: 'solicitar', id: pedir.dataset.id });
+            } else if (excluir && window.confirm('Excluir este livro da sua biblioteca? Essa ação não pode ser desfeita.')) {
+                envios.executar({ action: 'excluir', id: excluir.dataset.id }).then((ok) => { if (ok) enviosAlterados = true; });
+            }
+        });
+    }
+
+    // --- Explorar acervo (Assinante, troca 1 por 1) ---
+    let acervoPagina = 1;
+    let acervoAlterado = false;
+    let acervoBuscaTimer = null;
+    const acervoBusca = document.getElementById('acervoBusca');
+    const acervo = configurar({
+        modalId: 'modalAcervo', listaId: 'listaAcervo', aviso: 'acervo', url: 'api/acervo.php',
+        aoCarregar: (d) => {
+            acervoPagina = d.pagina || 1;
+            const total = d.totalPaginas || 1;
+            const v = d.vagas || {};
+            document.getElementById('acervoVagas').textContent = `Você tem ${v.livres} vaga${v.livres === 1 ? '' : 's'} livre${v.livres === 1 ? '' : 's'} (${v.usadas} de ${v.total} usadas).`;
+            document.getElementById('acervoInfo').textContent = d.total ? `Página ${acervoPagina} de ${total} · ${d.total} livro${d.total === 1 ? '' : 's'}` : '';
+            document.getElementById('acervoAnterior').disabled = acervoPagina <= 1;
+            document.getElementById('acervoProxima').disabled = acervoPagina >= total;
+            document.querySelectorAll('[data-testid="badge-vagas"]').forEach((b) => { b.textContent = v.livres; });
+        },
+    });
+    if (acervo) {
+        const buscar = (campos) => acervo.executar({ pagina: acervoPagina, busca: acervoBusca.value.trim(), ...campos });
+        acervo.modal.addEventListener('show.bs.modal', () => { acervoBusca.value = ''; });
+        acervo.modal.addEventListener('hidden.bs.modal', () => { if (acervoAlterado) window.location.reload(); });
+        document.getElementById('acervoAnterior').addEventListener('click', () => buscar({ action: 'listar', pagina: acervoPagina - 1 }));
+        document.getElementById('acervoProxima').addEventListener('click', () => buscar({ action: 'listar', pagina: acervoPagina + 1 }));
+        acervoBusca.addEventListener('input', () => {
+            clearTimeout(acervoBuscaTimer);
+            acervoBuscaTimer = setTimeout(() => buscar({ action: 'listar', pagina: 1 }), 300);
+        });
+        acervo.lista.addEventListener('click', (e) => {
+            const b = e.target.closest('.btn-acervo-liberar');
+            if (!b) return;
+            buscar({ action: 'liberar', id: b.dataset.id }).then((ok) => {
+                if (ok) { acervoAlterado = true; carregarLivros({}, { semHistorico: true }); }
+            });
+        });
+    }
+
+    // --- Minha família (titular da Família) ---
+    const familia = configurar({ modalId: 'modalFamilia', listaId: 'listaFamilia', aviso: 'familia', url: 'api/familia.php' });
+    if (familia) {
+        familia.lista.addEventListener('click', (e) => {
+            const remover = e.target.closest('.btn-familia-remover');
+            if (remover && window.confirm(`Remover o acesso de ${remover.dataset.nome}?`)) {
+                familia.executar({ action: 'remover', usuario_id: remover.dataset.id });
+            }
+        });
+        const form = document.getElementById('formFamilia');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                const campos = Object.fromEntries(new FormData(form).entries());
+                familia.executar({ ...campos, action: 'adicionar' }).then((ok) => { if (ok) form.reset(); });
+            });
+        }
     }
 })();

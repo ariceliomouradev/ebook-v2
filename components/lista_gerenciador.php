@@ -16,7 +16,10 @@ $busca = $busca ?? '';
     data-id="<?= (int) $livro['id'] ?>"
     data-titulo="<?= e($livro['titulo']) ?>"
     data-autor="<?= e($livro['autor'] ?? '') ?>"
-    data-categoria="<?= e($livro['categoria'] ?? '') ?>">
+    data-categoria="<?= e($livro['categoria'] ?? '') ?>"
+    data-vis-contribuidor="<?= in_array('contribuidor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
+    data-vis-leitor="<?= in_array('leitor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
+    data-liberar-em="<?= $livro['liberar_em'] ? e(date('Y-m-d\TH:i', strtotime($livro['liberar_em']))) : '' ?>">
 
     <div class="flex-grow-1 w-100" style="min-width: 0;">
         <div data-testid="item-titulo-livro" class="fw-bold text-light fs-5 lh-sm mb-1" style="word-wrap: break-word;">
@@ -25,6 +28,14 @@ $busca = $busca ?? '';
         <div data-testid="item-autor-livro" class="text-muted small">
             <?= e($livro['autor'] ?? '') ?>
         </div>
+        <?php if (!empty($livro['duplicado_de'])): ?>
+        <div class="mt-1" data-testid="item-repetido">
+            <span class="vis-selo vis-selo--oculto"><i class="fas fa-clone" aria-hidden="true"></i> Repetido de #<?= (int) $livro['duplicado_de'] ?> «<?= e($livro['original_titulo'] ?? '') ?>» · escondido de Família e Assinantes</span>
+            <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-nao-repetido" data-id="<?= (int) $livro['id'] ?>" data-testid="btn-nao-repetido">Não é repetido</button>
+        </div>
+        <?php endif; ?>
+        <?php $selo = resumoVisibilidade((string) $livro['visivel_para'], $livro['liberar_em']); ?>
+        <span data-testid="item-visibilidade" class="vis-selo <?= e($selo['classe']) ?> mt-1"><i class="fas fa-eye" aria-hidden="true"></i> <span class="vis-selo__texto"><?= e($selo['texto']) ?></span></span>
     </div>
 
     <div class="d-flex gap-2 w-100 w-md-auto justify-content-end align-self-end align-self-md-center">

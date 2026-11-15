@@ -14,7 +14,8 @@ $inicio = $totalLivros === 0 ? 0 : (($paginaAtual - 1) * ITENS_POR_PAGINA) + 1;
 $fim = min($paginaAtual * ITENS_POR_PAGINA, $totalLivros);
 $qs = 'ordem=' . urlencode($ordemAtual)
     . ($busca !== '' ? '&busca=' . urlencode($busca) : '')
-    . ($categoriaAtual !== '' ? '&categoria=' . urlencode($categoriaAtual) : '');
+    . ($categoriaAtual !== '' ? '&categoria=' . urlencode($categoriaAtual) : '')
+    . (!empty($soFavoritos) ? '&favoritos=1' : '');
 $linkPagina = fn(int $p): string => '?pagina=' . $p . '&' . $qs;
 $numeros = paginasVisiveis($paginaAtual, max(1, $totalPaginas));
 $semAnterior = $paginaAtual <= 1;

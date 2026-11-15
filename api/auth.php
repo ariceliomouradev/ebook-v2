@@ -17,20 +17,14 @@ if (loginBloqueado($pdo, $email, $ip)) {
     redirecionar('login.php?erro=bloqueado');
 }
 
-$stmt = $pdo->prepare("SELECT id, nome, senha, perfil FROM usuarios WHERE email = ? LIMIT 1");
+$stmt = $pdo->prepare("SELECT id, nome, senha, perfil, titular_id FROM usuarios WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $usuario = $stmt->fetch();
 
 if ($usuario && password_verify($senha, $usuario['senha'])) {
     registrarTentativaLogin($pdo, $email, $ip, true);
 
-    session_regenerate_id(true);
-
-    $_SESSION['usuario_id'] = $usuario['id'];
-    $_SESSION['usuario_nome'] = $usuario['nome'];
-    $_SESSION['usuario_perfil'] = $usuario['perfil'];
-    $_SESSION['ultimo_acesso'] = time();
-    unset($_SESSION['csrf_token']); // renova o token junto com o ID de sessão
+    abrirSessaoDoUsuario($pdo, $usuario);
 
     redirecionar('index.php');
 } else {

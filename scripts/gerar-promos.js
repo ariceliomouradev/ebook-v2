@@ -355,6 +355,116 @@ async function pecaBiblioteca(fmt, recursos) {
     return c;
 }
 
+/** Peça "MALU Online Store": vitrine + pedido no WhatsApp, em azul-marinho e ciano da marca. */
+async function pecaMalu(fmt, recursos) {
+    const { w, h } = FORMATOS[fmt];
+    const c = createCanvas(w, h);
+    const g = c.getContext('2d');
+    const fundo = g.createLinearGradient(0, 0, w, h);
+    fundo.addColorStop(0, '#0e2f63');
+    fundo.addColorStop(1, '#071a3d');
+    g.fillStyle = fundo;
+    g.fillRect(0, 0, w, h);
+    brilho(g, fmt === 'h' ? w * 0.8 : w * 0.5, fmt === 'h' ? h * 0.5 : h * 0.62, 560, 'rgba(10,143,196,0.42)');
+    brilho(g, w * 0.08, h * 0.05, 420, 'rgba(56,189,248,0.16)');
+
+    const ic = recursos.iconeMalu;
+    const logoEmLadrilho = (x, y, alt) => {
+        const lg = alt * (ic.width / ic.height);
+        caminhoRedondo(g, x, y, lg + alt * 0.4, alt * 1.25, alt * 0.28);
+        g.fillStyle = '#fff';
+        g.fill();
+        g.drawImage(ic, x + alt * 0.2, y + alt * 0.125, lg, alt);
+        return lg + alt * 0.4;
+    };
+    const CIANO = '#38bdf8';
+    const BTN = '#0a8fc4';
+
+    /** Vitrine de celular estilizada: topo com logo, grade de produtos e botão do WhatsApp. */
+    const celular = (x, y, lar, alt, giro) => {
+        g.save();
+        g.translate(x + lar / 2, y + alt / 2);
+        g.rotate((giro * Math.PI) / 180);
+        g.shadowColor = 'rgba(0,0,0,0.55)';
+        g.shadowBlur = 44;
+        g.shadowOffsetY = 20;
+        caminhoRedondo(g, -lar / 2, -alt / 2, lar, alt, lar * 0.11);
+        g.fillStyle = '#0b1220';
+        g.fill();
+        g.shadowColor = 'transparent';
+        g.strokeStyle = 'rgba(255,255,255,0.2)';
+        g.lineWidth = 3;
+        g.stroke();
+        const m = lar * 0.045;
+        const tx = -lar / 2 + m, ty = -alt / 2 + m, tw = lar - m * 2, th = alt - m * 2;
+        caminhoRedondo(g, tx, ty, tw, th, lar * 0.075);
+        g.fillStyle = '#f4f8fc';
+        g.fill();
+        g.save();
+        caminhoRedondo(g, tx, ty, tw, th, lar * 0.075);
+        g.clip();
+        // cabeçalho da loja
+        g.fillStyle = '#ffffff';
+        g.fillRect(tx, ty, tw, th * 0.15);
+        g.fillStyle = '#0a8fc4';
+        g.fillRect(tx, ty + th * 0.15 - 4, tw, 4);
+        g.drawImage(ic, tx + tw * 0.06, ty + th * 0.028, th * 0.09 * (ic.width / ic.height), th * 0.09);
+        g.fillStyle = '#cbd5e1';
+        caminhoRedondo(g, tx + tw * 0.5, ty + th * 0.06, tw * 0.44, th * 0.03, th * 0.015);
+        g.fill();
+        // produtos
+        const cores = ['#fbcfe8', '#bae6fd', '#fde68a', '#bbf7d0'];
+        const gx = tx + tw * 0.06, gw = (tw * 0.88 - tw * 0.05) / 2;
+        for (let i = 0; i < 4; i++) {
+            const px = gx + (i % 2) * (gw + tw * 0.05);
+            const py = ty + th * 0.19 + Math.floor(i / 2) * th * 0.3;
+            caminhoRedondo(g, px, py, gw, th * 0.27, 10);
+            g.fillStyle = '#fff';
+            g.fill();
+            caminhoRedondo(g, px + 6, py + 6, gw - 12, th * 0.17, 8);
+            g.fillStyle = cores[i];
+            g.fill();
+            g.fillStyle = '#cbd5e1';
+            g.fillRect(px + 10, py + th * 0.205, gw * 0.55, th * 0.012);
+            g.fillStyle = BTN;
+            g.fillRect(px + 10, py + th * 0.23, gw * 0.35, th * 0.014);
+        }
+        // botão do WhatsApp
+        caminhoRedondo(g, tx + tw * 0.06, ty + th * 0.82, tw * 0.88, th * 0.1, th * 0.05);
+        g.fillStyle = '#22c55e';
+        g.fill();
+        g.fillStyle = '#fff';
+        g.font = `800 ${Math.round(th * 0.036)}px ${SANS}`;
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.fillText('Pedir no WhatsApp', tx + tw / 2, ty + th * 0.87);
+        g.restore();
+        g.restore();
+    };
+
+    if (fmt === 'h') {
+        celular(1030, 36, 270, 490, 6);
+        celular(1290, 90, 230, 420, -7);
+        const lgH = logoEmLadrilho(90, 60, 80);
+        texto(g, 'TESTE GRÁTIS POR 7 DIAS · SEM CARTÃO', 90 + lgH + 24, 96, { tamanho: 24, peso: 800, cor: CIANO });
+        texto(g, 'Sua loja online no ar', 90, 186, { tamanho: 78, peso: 800, largura: 900, altura: 1.04 });
+        texto(g, 'Vitrine com seu link, pedido pelo WhatsApp e painel para controlar cada venda.', 90, 304, { tamanho: 34, peso: 500, cor: '#b6c8e4', largura: 840, altura: 1.25 });
+        pilula(g, 'MALU Online Store', 90, 438, { tamanho: 28, fundo: BTN, cor: '#fff' });
+        pilula(g, 'a partir de R$ 39,90/mês', 470, 438, { tamanho: 28, fundo: 'rgba(255,255,255,0.1)', cor: '#fff', borda: 'rgba(255,255,255,0.35)' });
+    } else {
+        const lgV = (100 * (ic.width / ic.height)) + 40;
+        logoEmLadrilho(w / 2 - lgV / 2, 100, 100);
+        texto(g, 'TESTE GRÁTIS POR 7 DIAS', w / 2, 262, { tamanho: 32, peso: 800, cor: CIANO, alinhar: 'center' });
+        texto(g, 'SEM CARTÃO', w / 2, 304, { tamanho: 32, peso: 800, cor: CIANO, alinhar: 'center' });
+        texto(g, 'Sua loja online no ar', w / 2, 372, { tamanho: 84, peso: 800, largura: 520, alinhar: 'center', altura: 1.05 });
+        celular(150, 640, 300, 540, 4);
+        texto(g, 'Vitrine com seu link, pedido pelo WhatsApp e controle de cada venda.', w / 2, 1240, { tamanho: 38, peso: 500, cor: '#b6c8e4', largura: 500, altura: 1.25, alinhar: 'center' });
+        pilula(g, 'MALU Online Store', w / 2, 1396, { tamanho: 34, fundo: BTN, cor: '#fff', alinhar: 'center' });
+        texto(g, 'a partir de R$ 39,90/mês', w / 2, 1500, { tamanho: 32, peso: 700, cor: '#fff', alinhar: 'center' });
+    }
+    return c;
+}
+
 /* --------------------------------- main ----------------------------------- */
 async function main() {
     fs.mkdirSync(SAIDA, { recursive: true });
@@ -386,13 +496,15 @@ async function main() {
         h: await loadImage(path.join(SAIDA, 'fonte', 'biblioteca-arte-h.jpg')),
         v: await loadImage(path.join(SAIDA, 'fonte', 'biblioteca-arte-v.jpg')),
     };
-    const recursos = { capas, icone, capaLivro, arteBiblioteca };
+    const iconeMalu = await loadImage(path.join(SAIDA, 'fonte', 'malu-icone.png'));
+    const recursos = { capas, icone, capaLivro, arteBiblioteca, iconeMalu };
 
     const pecas = [
         ['biblioteca', pecaBiblioteca],
         ['app', pecaApp],
         ['retro', pecaRetro],
         ['livro', pecaLivro],
+        ['malu', pecaMalu],
     ];
     for (const [nome, fn] of pecas) {
         for (const fmt of ['h', 'v']) {

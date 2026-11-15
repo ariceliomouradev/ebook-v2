@@ -284,15 +284,32 @@ ou VPS). Não há etapa de build: envie os arquivos, crie o banco e configure o 
    `https://seu-dominio.com/uploads/arquivo.pdf` também, e `https://seu-dominio.com/login`
    precisa abrir a tela de login (se só `/login.php` funcionar, falta `mod_rewrite`).
 
-**Atualizando uma instalação que já está no ar** (banco criado antes desta versão): não reimporte o schema. No phpMyAdmin, execute em ordem apenas as migrações que faltam,
-[`database/migracao_v1.2_categorias.sql`](database/migracao_v1.2_categorias.sql) (categorias) e
-[`database/migracao_v1.3_banners.sql`](database/migracao_v1.3_banners.sql) (banners, já com as peças padrão). Depois, classifique os livros já cadastrados:
+**Atualizando uma instalação que já está no ar** (banco criado antes desta versão): não reimporte o schema. No phpMyAdmin, execute em ordem apenas as migrações que faltam: [`v1.2_categorias`](database/migracao_v1.2_categorias.sql), [`v1.3_banners`](database/migracao_v1.3_banners.sql) (banners, já com as peças padrão), [`v1.4_visibilidade`](database/migracao_v1.4_visibilidade.sql) (quem vê cada livro e data de liberação), [`v1.5_perfis`](database/migracao_v1.5_perfis.sql) (Família/Assinante, aprovação, acessos simultâneos) e [`v1.6_cadastro`](database/migracao_v1.6_cadastro.sql) (WhatsApp no cadastro) , [`v1.7_troca`](database/migracao_v1.7_troca.sql) (troca 1 por 1 do Assinante) e [`v1.8_anotacoes`](database/migracao_v1.8_anotacoes.sql) e [`v1.9_anotacoes_texto`](database/migracao_v1.9_anotacoes_texto.sql) (marca-texto e comentários no leitor, privados por usuário) e [`v1.10_duplicados`](database/migracao_v1.10_duplicados.sql) (esconde livros repetidos de Família e Assinantes). e [`v1.11_favoritos`](database/migracao_v1.11_favoritos.sql) (coração de favoritos). e [`v1.12_assinatura`](database/migracao_v1.12_assinatura.sql) (teste grátis de 30 dias e mensalidade). Depois da v1.10 rode `php database/analisar_duplicados.php --aplicar` para marcar os repetidos já cadastrados. Depois, classifique os livros já cadastrados:
 ```bash
 php database/categorizar_acervo.php            # simulação: mostra a distribuição
 php database/categorizar_acervo.php --aplicar  # grava (só livros sem categoria)
 ```
 Sem acesso a terminal na hospedagem, rode o comando na sua máquina apontando o `.env` para o banco da hospedagem, ou escolha a categoria pelo editar livro.
 O PHP precisa poder escrever em `banners/` (imagens enviadas no gerenciador de banners são convertidas para WebP e gravadas lá).
+
+Depois da migração v1.5, rode uma vez `php database/preencher_hash.php` (calcula a "impressão digital" de cada PDF para barrar duplicados; demora em acervos grandes). A mesma ferramenta, com `--listar`, mostra os arquivos idênticos.
+
+### Troca 1 por 1 do Assinante (opcional, desligada por padrão)
+
+Com `ASSINANTE_TROCA=true` no `.env`, o Assinante deixa de ver o acervo inteiro: lê os livros que **enviou** e os que **escolheu** em *Explorar acervo*. Ele começa com `ASSINANTE_LIVROS_INICIAIS` vagas (padrão 3) e ganha **+1 vaga a cada livro dele aprovado** pelo administrador. Desligada, o Assinante continua vendo tudo o que foi liberado para o perfil dele.
+
+> Ao ligar, os Assinantes que já existem passam a ver só o que escolherem: avise-os antes e considere dar vagas iniciais suficientes.
+
+### Teste grátis e mensalidade
+
+Quem se cadastra ganha **30 dias grátis**, sem cartão. Depois, **Assinante R$ 10/mês** e **Família R$ 25/mês** (valores em `config/app.php`, `PRECOS_MENSAIS`). O pagamento é por **PIX, combinado direto com o suporte pelo WhatsApp**: defina `SUPORTE_WHATSAPP` no `.env` (só dígitos, com 55). Ao receber, clique em **+30 dias** na linha da pessoa em *Gerenciar usuários*. Contas antigas e administradores não vencem. Por padrão o sistema só avisa; com `ASSINATURA_EXIGIDA=true` quem terminou o teste só vê a tela `/assinatura`.
+
+### Cadastro público (e-mail, senha e WhatsApp)
+
+A tela de entrada tem o link **Cadastre-se** (rota `/cadastro`). Quem se cadastra informa nome, e-mail, WhatsApp (com DDD) e senha forte, vira **Assinante** e já entra. O número é guardado só com dígitos e DDI (ex.: `5585986020364`) e o administrador o vê, com link para o WhatsApp, em *Gerenciar usuários*.
+
+- Proteções: CSRF, campo-isca contra robôs e limite de **5 cadastros por IP por hora**. O e-mail não é confirmado por mensagem (a hospedagem compartilhada costuma não enviar e-mail); confirme pelo WhatsApp se precisar.
+- `CADASTRO_ABERTO=false` no `.env` fecha o cadastro (some o link e só o administrador cria contas).
 
 **Recomendações para produção:**
 

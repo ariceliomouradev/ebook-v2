@@ -62,11 +62,15 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                         <div class="col-12 col-md-6">
                             <label class="text-muted small" for="novoUsuarioPerfil">Nível de acesso</label>
                             <select name="perfil" id="novoUsuarioPerfil" class="form-select bg-secondary text-light border-0" required data-testid="select-perfil-usuario">
-                                <option value="leitor">Leitor (apenas visualiza)</option>
-                                <option value="contribuidor">Contribuidor (pode adicionar PDFs)</option>
+                                <option value="leitor">Assinante (1 acesso, envia PDFs para aprovação)</option>
+                                <option value="contribuidor">Família (até 3 acessos, titular envia PDFs)</option>
                                 <option value="admin">Administrador (acesso total)</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="teste" value="1" id="novoUsuarioTeste" checked data-testid="check-teste-gratis">
+                        <label class="form-check-label" for="novoUsuarioTeste">Começa com <?= (int) TESTE_DIAS ?> dias de teste grátis <span class="text-secondary">(depois <?= e(formatarReais(PRECOS_MENSAIS['leitor'])) ?>/mês Assinante, <?= e(formatarReais(PRECOS_MENSAIS['contribuidor'])) ?>/mês Família). Desmarque para um acesso sem vencimento.</span></label>
                     </div>
                     <div class="d-flex gap-2 mt-4">
                         <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios" data-testid="btn-cancelar-novo-usuario">Cancelar</button>

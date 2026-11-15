@@ -147,12 +147,16 @@ function categoriaIdPorSlug(PDO $pdo, string $slug): ?int
 }
 
 /** Todas as categorias, com a quantidade de livros de cada uma (só as que têm livro, ordenadas por nome). */
-function listarCategoriasComContagem(PDO $pdo, bool $incluirVazias = false): array
+function listarCategoriasComContagem(PDO $pdo, bool $incluirVazias = false, string $perfil = 'admin', int $usuarioId = 0, int $titularId = 0): array
 {
     $having = $incluirVazias ? '' : 'HAVING total > 0';
+    // A contagem só considera os livros que o perfil pode ver (ver condicaoVisibilidade).
+    [$condVis, $paramsVis] = condicaoVisibilidade($perfil, $usuarioId, 'l.', $titularId);
     $sql = "SELECT c.id, c.slug, c.nome, COUNT(l.id) AS total
-              FROM categorias c LEFT JOIN livros l ON l.categoria_id = c.id
+              FROM categorias c LEFT JOIN livros l ON l.categoria_id = c.id" . ($condVis !== '' ? " AND $condVis" : ($perfil === 'admin' ? " AND l.publicacao = 'aprovado'" : '')) . "
              GROUP BY c.id, c.slug, c.nome $having
              ORDER BY (c.slug = 'geral'), total DESC, c.nome";
-    return $pdo->query($sql)->fetchAll();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($paramsVis);
+    return $stmt->fetchAll();
 }
