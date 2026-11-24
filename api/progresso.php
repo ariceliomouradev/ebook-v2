@@ -25,11 +25,17 @@ if (!$pagina || !$total || $pagina < 1 || $total < 1 || $pagina > $total) {
 
 $porcentagem = (int) round(($pagina / $total) * 100);
 
+// EPUB: `posicao` guarda o ponto exato (CFI do epub.js) para voltar à mesma linha; PDF não manda.
+$posicao = $dados['posicao'] ?? null;
+if (!is_string($posicao) || $posicao === '' || strlen($posicao) > 500 || !preg_match('/^[\x20-\x7E]+$/', $posicao)) {
+    $posicao = null;
+}
+
 $stmt = $pdo->prepare(
-    "INSERT INTO leituras (usuario_id, livro_id, progresso, total_paginas, porcentagem)
-     VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE progresso = VALUES(progresso), total_paginas = VALUES(total_paginas), porcentagem = VALUES(porcentagem)"
+    "INSERT INTO leituras (usuario_id, livro_id, progresso, total_paginas, porcentagem, posicao)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE progresso = VALUES(progresso), total_paginas = VALUES(total_paginas), porcentagem = VALUES(porcentagem), posicao = VALUES(posicao)"
 );
-$stmt->execute([$_SESSION['usuario_id'], $livroId, $pagina, $total, $porcentagem]);
+$stmt->execute([$_SESSION['usuario_id'], $livroId, $pagina, $total, $porcentagem, $posicao]);
 
 responderJson(['success' => true]);

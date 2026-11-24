@@ -75,6 +75,10 @@ const CATEGORIAS_PADRAO = [
             'filosofia', 'sociologia', 'historia', 'politica', 'geopolitica', 'sapiens', 'evolucao', 'borboleta', 'calculava', 'realidade',
             'conexoes', 'teoria', 'america latina', 'seneca'],
     ],
+    'infantil' => [
+        'nome' => 'Infantojuvenil',
+        'palavras' => ['infantil', 'infantojuvenil', 'crianca', 'criancas', 'fabula', 'fabulas', 'fadas', 'historinha', 'maluquinho'],
+    ],
     'geral' => [
         'nome' => 'Geral',
         'palavras' => [],

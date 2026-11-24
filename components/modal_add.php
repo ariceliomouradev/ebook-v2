@@ -20,9 +20,10 @@ if (!defined('ACESSO_PERMITIDO')) {
                 <input type="hidden" name="MAX_FILE_SIZE" value="<?= UPLOAD_PDF_TAMANHO_MAX ?>">
                 <div class="modal-body">
 
-                    <label class="text-muted small mb-1">Selecione o arquivo PDF</label>
-                    <input data-testid="input-file-pdf" type="file" class="form-control bg-secondary text-light mb-3 border-0" name="arquivo_pdf"
-                        id="inputFile" required accept="application/pdf">
+                    <label class="text-muted small mb-1" for="inputFile">Selecione o arquivo (PDF ou EPUB)</label>
+                    <input data-testid="input-file-pdf" type="file" class="form-control bg-secondary text-light mb-1 border-0" name="arquivo_pdf"
+                        id="inputFile" required accept="application/pdf,application/epub+zip,.pdf,.epub">
+                    <div class="form-text text-muted mb-3" id="dicaEpub" data-testid="dica-epub" hidden>EPUB: o título, o autor e a capa são lidos do próprio arquivo. Preencha só se quiser trocar.</div>
 
                     <div data-testid="canvas-cover-preview" class="text-center mb-3 p-2" id="previewArea" style="display:none; background: rgba(0,0,0,0.2); border-radius: 8px;">
                         <small class="d-block text-muted mb-2">Prévia da Capa Gerada:</small>

@@ -19,8 +19,28 @@ if (($_SESSION['usuario_perfil'] ?? '') === 'leitor') {
     }
 }
 
-$titulo = trim($_POST['titulo'] ?? '') ?: 'Sem Título';
-$autor  = trim($_POST['autor'] ?? '') ?: 'Autor Desconhecido';
+// O campo do formulário continua se chamando `arquivo_pdf`, mas aceita PDF ou EPUB:
+// o formato vem do conteúdo do arquivo, nunca da extensão informada pelo navegador.
+require_once '../includes/epub.php';
+if (!isset($_FILES['arquivo_pdf']) || $_FILES['arquivo_pdf']['error'] !== UPLOAD_ERR_OK) {
+    redirecionar('index.php?msg=erro_arquivo');
+}
+if ($_FILES['arquivo_pdf']['size'] > UPLOAD_PDF_TAMANHO_MAX) {
+    redirecionar('index.php?msg=erro_arquivo');
+}
+$tmpArquivo = $_FILES['arquivo_pdf']['tmp_name'];
+if (arquivoEhPdfValido($tmpArquivo)) {
+    $formato = 'pdf';
+} elseif (arquivoEhEpubValido($tmpArquivo)) {
+    $formato = 'epub';
+} else {
+    redirecionar('index.php?msg=erro_arquivo');
+}
+// EPUB traz título e autor nos metadados: servem quando o formulário vem em branco.
+$metaEpub = $formato === 'epub' ? epubMetadados($tmpArquivo) : ['titulo' => '', 'autor' => '', 'assuntos' => ''];
+
+$titulo = trim($_POST['titulo'] ?? '') ?: $metaEpub['titulo'] ?: 'Sem Título';
+$autor  = trim($_POST['autor'] ?? '') ?: $metaEpub['autor'] ?: 'Autor Desconhecido';
 $titulo = mb_substr($titulo, 0, 255);
 $autor  = mb_substr($autor, 0, 255);
 
@@ -47,21 +67,10 @@ if (($_SESSION['usuario_perfil'] ?? '') === 'admin') {
 require_once '../includes/categorias.php';
 garantirCategoriasPadrao($pdo);
 $slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] ?? ''));
-$categoriaId = categoriaIdPorSlug($pdo, $slugCategoria) ?? categoriaIdPorSlug($pdo, categoriaSugerida($titulo));
+$categoriaId = categoriaIdPorSlug($pdo, $slugCategoria)
+    ?? categoriaIdPorSlug($pdo, $formato === 'epub' ? categoriaSugeridaEpub($titulo, $metaEpub['assuntos'], $autor) : categoriaSugerida($titulo));
 
-if (!isset($_FILES['arquivo_pdf']) || $_FILES['arquivo_pdf']['error'] !== UPLOAD_ERR_OK) {
-    redirecionar('index.php?msg=erro_arquivo');
-}
-
-if ($_FILES['arquivo_pdf']['size'] > UPLOAD_PDF_TAMANHO_MAX) {
-    redirecionar('index.php?msg=erro_arquivo');
-}
-
-if (!arquivoEhPdfValido($_FILES['arquivo_pdf']['tmp_name'])) {
-    redirecionar('index.php?msg=erro_arquivo');
-}
-
-$novoNomeArquivo = time() . '_' . bin2hex(random_bytes(8)) . '.pdf';
+$novoNomeArquivo = time() . '_' . bin2hex(random_bytes(8)) . '.' . $formato;
 $pdfTarget = '../uploads/' . $novoNomeArquivo;
 
 $hashArquivo = hash_file('sha256', $_FILES['arquivo_pdf']['tmp_name']);
@@ -76,9 +85,18 @@ if (!move_uploaded_file($_FILES['arquivo_pdf']['tmp_name'], $pdfTarget)) {
 
 $capaName = '';
 
-// Capa gerada no cliente (PDF.js) e enviada como Base64. Validamos que o conteúdo
+// EPUB: a capa sai do próprio arquivo (já movido para uploads/).
+if ($formato === 'epub') {
+    $bytes = epubCapaPng($pdfTarget);
+    if ($bytes !== null) {
+        $capaName = pathinfo($novoNomeArquivo, PATHINFO_FILENAME) . '.png';
+        file_put_contents('../capas/' . $capaName, $bytes);
+    }
+}
+
+// PDF: capa gerada no cliente (PDF.js) e enviada como Base64. Validamos que o conteúdo
 // decodificado é de fato uma imagem antes de gravar em disco.
-if (!empty($_POST['capa_base64'])) {
+if ($formato === 'pdf' && !empty($_POST['capa_base64'])) {
     $data = $_POST['capa_base64'];
     if (strpos($data, ',') !== false) {
         [$tipo, $data] = explode(',', $data, 2);
@@ -92,9 +110,9 @@ if (!empty($_POST['capa_base64'])) {
 }
 
 try {
-    $sql = "INSERT INTO livros (titulo, autor, nome_arquivo, capa_arquivo, usuario_id, categoria_id, visivel_para, liberar_em, publicacao, hash_arquivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO livros (titulo, autor, nome_arquivo, formato, capa_arquivo, usuario_id, categoria_id, visivel_para, liberar_em, publicacao, hash_arquivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$titulo, $autor, $novoNomeArquivo, $capaName, $_SESSION['usuario_id'], $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $publicacao, $hashArquivo]);
+    $stmt->execute([$titulo, $autor, $novoNomeArquivo, $formato, $capaName, $_SESSION['usuario_id'], $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $publicacao, $hashArquivo]);
 
     $novoId = (int) $pdo->lastInsertId();
     $capaHash = ($capaName !== '' && isset($bytes) && $bytes !== false) ? hashCapaDeBytes($bytes) : null;

@@ -14,7 +14,7 @@ $paginaVoltar = max(1, (int) ($_GET['origem'] ?? 1));
 $ordemVoltar = $_GET['ordem'] ?? 'recentes';
 $buscaVoltar = $_GET['busca'] ?? '';
 
-$stmt = $pdo->prepare("SELECT id, titulo, nome_arquivo FROM livros WHERE id = ?");
+$stmt = $pdo->prepare("SELECT id, titulo, nome_arquivo, formato FROM livros WHERE id = ?");
 $stmt->execute([$id]);
 $livro = $stmt->fetch();
 
@@ -23,13 +23,21 @@ if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int
     die('Livro não encontrado.');
 }
 
-$stmtProgresso = $pdo->prepare("SELECT progresso FROM leituras WHERE usuario_id = ? AND livro_id = ?");
+$stmtProgresso = $pdo->prepare("SELECT progresso, posicao FROM leituras WHERE usuario_id = ? AND livro_id = ?");
 $stmtProgresso->execute([$_SESSION['usuario_id'], $id]);
-$progressoAtual = (int) ($stmtProgresso->fetchColumn() ?: 1);
+$leitura = $stmtProgresso->fetch() ?: [];
+$progressoAtual = (int) ($leitura['progresso'] ?? 0) ?: 1;
+$posicaoAtual = $leitura['posicao'] ?? null; // EPUB: onde a pessoa parou (CFI)
 
 $stmtFav = $pdo->prepare('SELECT 1 FROM favoritos WHERE usuario_id = ? AND livro_id = ?');
 $stmtFav->execute([$_SESSION['usuario_id'], $id]);
 $ehFavorito = (bool) $stmtFav->fetchColumn();
+
+// EPUB tem leitor próprio (texto que reflui, sem páginas fixas); o resto desta página é o leitor de PDF.
+if (($livro['formato'] ?? 'pdf') === 'epub') {
+    require __DIR__ . '/leitor_epub.php';
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

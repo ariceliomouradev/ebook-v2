@@ -46,6 +46,10 @@ $soFavoritos = $soFavoritos ?? false;
                         </div>
                     <?php endif; ?>
 
+                    <?php if (($livro['formato'] ?? 'pdf') === 'epub'): ?>
+                        <span class="selo-formato" data-testid="book-selo-epub" title="Livro em EPUB">EPUB</span>
+                    <?php endif; ?>
+
                     <?php if ($concluido): ?>
                         <span class="selo-concluido" data-testid="book-selo-concluido"><i class="fas fa-check"></i> Lido</span>
                     <?php endif; ?>
@@ -71,7 +75,7 @@ $soFavoritos = $soFavoritos ?? false;
      style="display: <?= (empty($livros) && $busca === '' && !$soFavoritos) ? 'flex' : 'none' ?>;">
     <div class="feedback-centro__icone"><i class="fas fa-book-open"></i></div>
     <h4>Sua biblioteca está vazia</h4>
-    <p>Adicione o primeiro PDF com o botão "Novo livro" e comece a ler.</p>
+    <p>Adicione o primeiro livro (PDF ou EPUB) com o botão "Novo livro" e comece a ler.</p>
 </div>
 
 <div data-testid="msg-sem-favoritos" class="feedback-centro" id="msgSemFavoritos" style="display: <?= (empty($livros) && $soFavoritos && $busca === '') ? 'flex' : 'none' ?>;">

@@ -11,7 +11,7 @@ if ($id <= 0) {
     die('Livro inválido.');
 }
 
-$stmt = $pdo->prepare("SELECT nome_arquivo, titulo FROM livros WHERE id = ?");
+$stmt = $pdo->prepare("SELECT nome_arquivo, titulo, formato FROM livros WHERE id = ?");
 $stmt->execute([$id]);
 $livro = $stmt->fetch();
 
@@ -32,9 +32,10 @@ $tamanho = filesize($caminho);
 // Nome de arquivo compatível com RFC 6266: ASCII simplificado no `filename` (fallback para
 // navegadores antigos) e UTF-8 completo no `filename*` — nada de percent-encoding cru, que
 // aparecia literalmente no nome do arquivo salvo pelo usuário.
-$nomeBase = $livro['titulo'] . '.pdf';
+$ehEpub = ($livro['formato'] ?? 'pdf') === 'epub';
+$nomeBase = $livro['titulo'] . ($ehEpub ? '.epub' : '.pdf');
 $nomeAscii = preg_replace('/[^\x20-\x7E]/', '_', $nomeBase);
-header('Content-Type: application/pdf');
+header('Content-Type: ' . ($ehEpub ? 'application/epub+zip' : 'application/pdf'));
 header(sprintf(
     'Content-Disposition: inline; filename="%s"; filename*=UTF-8\'\'%s',
     str_replace('"', '', $nomeAscii),

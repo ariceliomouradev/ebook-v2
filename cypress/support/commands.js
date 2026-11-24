@@ -46,6 +46,7 @@ Cypress.Commands.add('semearLivro', (opcoes = {}) => {
     autor: opcoes.autor || `Autor E2E ${sufixo}`,
     emailDono: opcoes.emailDono || usuarios().admin.email,
     comCapa: opcoes.comCapa !== false,
+    formato: opcoes.formato || 'pdf',
   });
 });
 

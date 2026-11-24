@@ -15,7 +15,11 @@ $totalPendentes = $totalPendentes ?? count($pendentes);
             <div class="text-secondary small mt-1">
                 Enviado por <strong><?= e($p['enviado_por'] ?? 'usuário removido') ?></strong>
                 (<?= e(rotuloPerfil((string) $p['perfil_envio'])) ?>) em <?= e(date('d/m/Y H:i', strtotime($p['data_upload']))) ?>
-                · <button type="button" class="btn btn-link btn-sm p-0 align-baseline btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" data-testid="btn-aprov-ver"><i class="fas fa-eye me-1" aria-hidden="true"></i>ver PDF</button>
+                <?php if (($p['formato'] ?? 'pdf') === 'epub'): ?>
+                    · <a class="btn btn-link btn-sm p-0 align-baseline" href="leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" data-testid="btn-aprov-ver-epub"><i class="fas fa-eye me-1" aria-hidden="true"></i>ler EPUB</a>
+                <?php else: ?>
+                    · <button type="button" class="btn btn-link btn-sm p-0 align-baseline btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" data-testid="btn-aprov-ver"><i class="fas fa-eye me-1" aria-hidden="true"></i>ver PDF</button>
+                <?php endif; ?>
             </div>
             <?php if ($dup['exato']): ?>
                 <span class="vis-selo vis-selo--oculto mt-2" data-testid="aprovacao-duplicado"><i class="fas fa-clone" aria-hidden="true"></i> Mesmo arquivo de “<?= e($dup['exato']['titulo']) ?>”</span>

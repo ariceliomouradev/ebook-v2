@@ -626,6 +626,24 @@ document.addEventListener('click', function (e) {
  */
 document.getElementById('inputFile')?.addEventListener('change', async function (e) {
     const file = e.target.files[0];
+
+    // EPUB: não há capa para gerar aqui (o servidor a tira do arquivo) e título/autor podem vir dos metadados.
+    const ehEpub = !!file && (file.type === 'application/epub+zip' || /\.epub$/i.test(file.name));
+    const form = document.getElementById('formNovoLivro');
+    const campoTitulo = form?.querySelector('[name="titulo"]');
+    const campoAutor = form?.querySelector('[name="autor"]');
+    if (campoTitulo) campoTitulo.required = !ehEpub;
+    if (campoAutor) campoAutor.required = !ehEpub;
+    const dicaEpub = document.getElementById('dicaEpub');
+    if (dicaEpub) dicaEpub.hidden = !ehEpub;
+    if (ehEpub) {
+        const area = document.getElementById('previewArea');
+        if (area) area.style.display = 'none';
+        const capa = document.getElementById('capaBase64');
+        if (capa) capa.value = '';
+        return;
+    }
+
     if (!file || file.type !== 'application/pdf') return;
 
     const fileReader = new FileReader();

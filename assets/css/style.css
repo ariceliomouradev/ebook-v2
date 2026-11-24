@@ -1000,6 +1000,24 @@ input[type='password']::-ms-clear {
 .btn-favoritos-filtro.is-ativo { background: rgba(255, 93, 122, 0.14); border-color: rgba(255, 93, 122, 0.55); }
 
 /* Selo de leitura concluída e barra de progresso sobre a capa */
+/* Etiqueta do formato (só EPUB; PDF é o padrão e não leva etiqueta) */
+.selo-formato {
+    position: absolute;
+    left: 9px;
+    bottom: 9px;
+    z-index: 3;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(13, 15, 20, 0.82);
+    border: 1px solid rgba(246, 180, 69, 0.55);
+    color: var(--ml-accent, #f6b445);
+    font-size: 0.62rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    line-height: 1.5;
+    pointer-events: none;
+}
+
 .selo-concluido {
     position: absolute;
     top: 9px;

@@ -144,16 +144,19 @@ module.exports = defineConfig({
          * nome próprio (prefixo e2e_) e insere a linha correspondente. Nunca
          * sobrescreve arquivo existente do acervo real.
          */
-        async 'db:seedLivro'({ titulo, autor, emailDono = null, comCapa = true }) {
+        async 'db:seedLivro'({ titulo, autor, emailDono = null, comCapa = true, formato = 'pdf' }) {
           if (!titulo.startsWith(PREFIXO_TITULO)) {
             throw new Error('Título de teste precisa começar com "' + PREFIXO_TITULO + '": ' + titulo);
           }
+          if (!['pdf', 'epub'].includes(formato)) {
+            throw new Error('Formato de teste desconhecido: ' + formato);
+          }
           const base = 'e2e_' + Date.now() + '_' + Math.random().toString(16).slice(2, 10);
-          const nomePdf = base + '.pdf';
+          const nomePdf = base + '.' + formato; // (o nome da variável vem do tempo só de PDF)
           const nomeCapa = comCapa ? base + '.png' : '';
 
           fs.copyFileSync(
-            path.join(RAIZ, 'cypress', 'fixtures', 'livro-teste.pdf'),
+            path.join(RAIZ, 'cypress', 'fixtures', 'livro-teste.' + formato),
             path.join(DIR_UPLOADS, nomePdf)
           );
           if (comCapa) {
@@ -170,8 +173,8 @@ module.exports = defineConfig({
               donoId = u.length ? u[0].id : null;
             }
             const [res] = await conn.execute(
-              'INSERT INTO livros (titulo, autor, nome_arquivo, capa_arquivo, usuario_id) VALUES (?, ?, ?, ?, ?)',
-              [titulo, autor, nomePdf, nomeCapa, donoId]
+              'INSERT INTO livros (titulo, autor, nome_arquivo, formato, capa_arquivo, usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
+              [titulo, autor, nomePdf, formato, nomeCapa, donoId]
             );
             return { id: res.insertId, titulo, autor, nomeArquivo: nomePdf, capaArquivo: nomeCapa };
           });

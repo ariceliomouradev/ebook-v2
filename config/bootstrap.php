@@ -51,7 +51,10 @@ header(
     "Content-Security-Policy: default-src 'self'; " .
     "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-    "font-src 'self' https://cdnjs.cloudflare.com data:; " .
+    // blob: nas fontes e nos quadros: o leitor de EPUB (epub.js) renderiza cada capítulo num iframe e
+    // entrega as fontes/imagens do livro como blob: (sem script: allowScriptedContent=false).
+    "font-src 'self' https://cdnjs.cloudflare.com data: blob:; " .
+    "frame-src 'self' blob:; " .
     "img-src 'self' data: blob:; " .
     // PDF.js carrega o worker de um CDN de origem diferente da página: internamente ele faz
     // fetch() do script e o reempacota como Blob antes de instanciar o Worker — essa busca é
