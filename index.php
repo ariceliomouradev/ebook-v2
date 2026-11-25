@@ -95,12 +95,10 @@ $tituloPagina = 'Meus Livros';
                         <i class="fas fa-compass me-1" aria-hidden="true"></i>Explorar acervo <span class="badge text-bg-warning ms-1" data-testid="badge-vagas"><?= (int) $vagasIndex['livres'] ?></span>
                     </button>
                     <?php endif; ?>
-                    <button type="button" class="btn-favoritos-filtro<?= $soFavoritos ? ' is-ativo' : '' ?>" id="btnFavoritosFiltro" aria-pressed="<?= $soFavoritos ? 'true' : 'false' ?>" data-testid="btn-favoritos-filtro" title="Mostrar só os meus favoritos">
-                        <i class="fas fa-heart" aria-hidden="true"></i> Favoritos <span class="chip__n" id="totalFavoritos" data-testid="total-favoritos"><?= (int) $totalFavoritos ?></span>
-                    </button>
                     <label class="toolbar__ordem">
-                        <span>Ordenar por</span>
-                        <select class="form-select bg-dark text-light" id="selectOrdenacao" data-testid="select-ordenacao">
+                        <i class="fas fa-arrow-down-wide-short" aria-hidden="true"></i>
+                        <span class="visually-hidden">Ordenar por</span>
+                        <select class="toolbar__select" id="selectOrdenacao" data-testid="select-ordenacao">
                             <option value="recentes" <?= $ordemAtual == 'recentes' ? 'selected' : '' ?>>Mais recentes</option>
                             <option value="antigos" <?= $ordemAtual == 'antigos' ? 'selected' : '' ?>>Mais antigos</option>
                             <option value="az" <?= $ordemAtual == 'az' ? 'selected' : '' ?>>A – Z</option>
@@ -109,7 +107,13 @@ $tituloPagina = 'Meus Livros';
                     </label>
                 </div>
 
-                <?php include 'components/categorias_chips.php'; ?>
+                <div class="filtros">
+                    <button type="button" class="btn-favoritos-filtro<?= $soFavoritos ? ' is-ativo' : '' ?>" id="btnFavoritosFiltro" aria-pressed="<?= $soFavoritos ? 'true' : 'false' ?>" data-testid="btn-favoritos-filtro" title="Mostrar só os meus favoritos">
+                        <i class="fas fa-heart" aria-hidden="true"></i> Favoritos <span class="chip__n" id="totalFavoritos" data-testid="total-favoritos"><?= (int) $totalFavoritos ?></span>
+                    </button>
+                    <span class="filtros__divisor" aria-hidden="true"></span>
+                    <?php include 'components/categorias_chips.php'; ?>
+                </div>
 
                 <div id="areaLivros">
                     <?php include 'components/book_list.php'; ?>

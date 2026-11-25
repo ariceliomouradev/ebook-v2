@@ -694,20 +694,55 @@ input[type='password']::-ms-clear {
     color: var(--ml-text);
     font-variant-numeric: tabular-nums;
 }
+/* Ordenar: um seletor compacto, com o ícone dentro; o rótulo "Ordenar por" fica só para leitor de tela. */
 .toolbar__ordem {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    margin-left: auto;
+    color: var(--ml-text-dim);
+}
+.toolbar__ordem > i {
+    position: absolute;
+    left: 14px;
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+.toolbar__select {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 40px;
+    padding: 0 38px 0 38px;
+    border-radius: 999px;
+    border: 1px solid var(--ml-border-strong);
+    background: rgba(255, 255, 255, 0.03)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23a7b0c0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M3 6l5 5 5-5'/%3E%3C/svg%3E")
+        no-repeat right 14px center;
+    color: var(--ml-text);
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--ml-fast) var(--ml-ease), border-color var(--ml-fast) var(--ml-ease);
+}
+.toolbar__select:hover { background-color: var(--ml-surface-3); }
+.toolbar__select:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
+.toolbar__select option { background: var(--ml-surface); color: var(--ml-text); }
+
+/* Filtros: Favoritos fica fixo à esquerda, junto das categorias (os dois são filtros da lista). */
+.filtros {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--ml-text-faint);
-    font-size: 0.85rem;
-    font-weight: 500;
-    white-space: nowrap;
+    gap: 12px;
+    margin: -2px 0 2px;
 }
-.toolbar__ordem .form-select {
-    min-width: 168px;
-    height: 40px;
-    font-weight: 600;
-    font-size: 0.9rem;
+.filtros .chips { flex: 1 1 auto; min-width: 0; margin: 0; }
+.filtros__divisor {
+    flex: none;
+    width: 1px;
+    height: 22px;
+    background: var(--ml-border-strong);
 }
 
 /* Carrossel de divulgação: troca sozinho, sem setas nem indicadores. */
@@ -1006,17 +1041,18 @@ input[type='password']::-ms-clear {
 .btn-favorito:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
 
 .btn-favoritos-filtro {
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    height: 40px;
-    padding: 0 14px;
+    padding: 8px 14px; /* mesma medida dos chips de categoria */
     border-radius: 999px;
     border: 1px solid var(--ml-border-strong, rgba(255, 255, 255, 0.14));
-    background: transparent;
-    color: var(--ml-text);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ml-text-dim);
     font-weight: 600;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
+    white-space: nowrap;
     cursor: pointer;
     transition: background-color 0.15s var(--ml-ease), border-color 0.15s var(--ml-ease);
 }
@@ -1736,9 +1772,10 @@ body.auth-page {
     .toolbar__titulo h1 {
         font-size: 1.35rem;
     }
-    .toolbar__ordem span {
-        display: none;
+    .toolbar__select {
+        padding-right: 34px;
     }
+    .filtros { gap: 8px; }
     #gradeLivros {
         --bs-gutter-x: 0.9rem;
         --bs-gutter-y: 1.5rem;
