@@ -37,6 +37,14 @@ body.leitor-epub[data-tema='claro'] .hud-topo {
 .epub-fonte { font-weight: 700; font-size: 1.05rem; gap: 1px; }
 .epub-fonte small { font-size: 0.7rem; line-height: 1; }
 
+/* Celular: o leitor de PDF esconde o zoom, mas no EPUB o tamanho da letra é essencial: fica visível */
+@media (max-width: 599px) {
+    body.leitor-epub .hud-group--zoom { display: flex; }
+    body.leitor-epub .hud-menu { gap: 2px; padding: 6px 6px; }
+    body.leitor-epub .hud-menu .btn-hud { width: 40px; }
+    body.leitor-epub .epub-percentual { min-width: 3.6ch; padding: 0 4px; }
+}
+
 /* Sumário (lateral) */
 .painel-sumario {
     position: fixed;

@@ -40,6 +40,7 @@
     let ultimoSalvo = null;     // "pagina|cfi" já enviado
     let temporizador = null;
     let abriu = false;
+    let layoutFixo = false;     // EPUB "pre-paginated": a letra não muda de tamanho
 
     /* ---------- tela de carregando / erro ---------- */
     function mostrarErro() {
@@ -50,6 +51,9 @@
     /* ---------- tema e fonte ---------- */
     function regrasDoTema(t) {
         const c = TEMAS[t];
+        // Livro de layout fixo (ilustrado, página = imagem posicionada): mexer em cor, altura ou fundo dos
+        // elementos o deixa em branco ou desfigurado. Só o fundo da página acompanha o tema.
+        if (layoutFixo) return { 'html, body': { background: c.fundo + ' !important' } };
         return {
             'html, body': { background: c.fundo + ' !important' },
             body: { color: c.texto + ' !important', 'line-height': '1.6' },
@@ -58,7 +62,9 @@
                 'background-color': 'transparent !important',
             },
             a: { color: c.link + ' !important' },
-            'img, svg': { 'max-width': '100% !important', 'max-height': '85vh', height: 'auto' },
+            // só <img>: um <svg> (capas e páginas-imagem de muitos livros) com altura "auto" encolhe a zero e some
+            img: { 'max-width': '100% !important', 'max-height': '85vh', 'object-fit': 'contain' },
+            svg: { 'max-width': '100% !important', 'max-height': '85vh' },
         };
     }
 
@@ -74,9 +80,11 @@
     }
 
     function aplicarFonte() {
-        if (rendition) rendition.themes.fontSize(fonte + '%');
-        $('btnFonteMenos').disabled = fonte <= FONTE_MIN;
-        $('btnFonteMais').disabled = fonte >= FONTE_MAX;
+        if (rendition && !layoutFixo) rendition.themes.fontSize(fonte + '%');
+        $('btnFonteMenos').disabled = layoutFixo || fonte <= FONTE_MIN;
+        $('btnFonteMais').disabled = layoutFixo || fonte >= FONTE_MAX;
+        $('btnFonteMenos').title = $('btnFonteMais').title = layoutFixo ? 'Este livro tem layout fixo: a letra não muda de tamanho' : '';
+        if (!layoutFixo) { $('btnFonteMenos').title = 'Diminuir a letra'; $('btnFonteMais').title = 'Aumentar a letra'; }
     }
 
     /* ---------- progresso ---------- */
@@ -290,6 +298,27 @@
         .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
         .then((buffer) => {
             book = window.ePub(buffer);
+            return book.ready.then(() => abrirLivro());
+        })
+        .then(() => {
+            locaisProntos = true;
+            const atual = rendition.currentLocation();
+            if (atual && atual.start) {
+                aoMudarLocal({
+                    start: atual.start,
+                    atStart: atual.atStart,
+                    atEnd: atual.atEnd,
+                });
+            }
+        })
+        .catch((err) => {
+            console.error('Falha ao abrir o EPUB:', err);
+            if (!abriu) mostrarErro();
+        });
+
+    function abrirLivro() {
+        {
+            layoutFixo = !!(book.packaging && book.packaging.metadata && book.packaging.metadata.layout === 'pre-paginated');
             rendition = book.renderTo('epubViewer', {
                 width: '100%',
                 height: '100%',
@@ -327,22 +356,8 @@
                 $('epubViewer').focus();
                 atualizarTextoProgresso();
                 // medir o livro (para a % e a barra): roda em segundo plano, o texto já está na tela
-                return book.ready.then(() => book.locations.generate(1200));
+                return book.locations.generate(1200);
             });
-        })
-        .then(() => {
-            locaisProntos = true;
-            const atual = rendition.currentLocation();
-            if (atual && atual.start) {
-                aoMudarLocal({
-                    start: atual.start,
-                    atStart: atual.atStart,
-                    atEnd: atual.atEnd,
-                });
-            }
-        })
-        .catch((err) => {
-            console.error('Falha ao abrir o EPUB:', err);
-            if (!abriu) mostrarErro();
-        });
+        }
+    }
 })();
