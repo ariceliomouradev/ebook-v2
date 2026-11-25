@@ -50,7 +50,10 @@ header('Referrer-Policy: strict-origin-when-cross-origin');
 header(
     "Content-Security-Policy: default-src 'self'; " .
     "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
-    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+    // blob: também em estilos e mídia: o epub.js troca os <link rel=stylesheet> do livro por blob:, e sem isso
+    // os livros com CSS próprio (quase todos os ilustrados) abrem sem formatação, com textos e botões soltos.
+    "style-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " .
+    "media-src 'self' blob:; " .
     // blob: nas fontes e nos quadros: o leitor de EPUB (epub.js) renderiza cada capítulo num iframe e
     // entrega as fontes/imagens do livro como blob: (sem script: allowScriptedContent=false).
     "font-src 'self' https://cdnjs.cloudflare.com data: blob:; " .
