@@ -129,6 +129,75 @@ function carregarLivros(novoEstadoParcial, options = {}) {
         });
 }
 
+/**
+ * "Mostrar mais": pede só a próxima página e a põe no fim da grade (os livros já na tela não são redesenhados).
+ * A URL ganha ?pagina=N (replaceState) para que recarregar ou voltar do leitor traga tudo até a página N.
+ */
+let carregandoMais = false;
+function mostrarMais(botao) {
+    if (carregandoMais) return;
+    const proxima = Number(botao.dataset.proxima) || 2;
+    const estado = estadoAtualDaUrl();
+    const params = new URLSearchParams();
+    if (estado.busca) params.set('busca', estado.busca);
+    if (estado.categoria) params.set('categoria', estado.categoria);
+    if (estado.favoritos) params.set('favoritos', '1');
+    params.set('ordem', estado.ordem);
+    params.set('pagina', String(proxima));
+    const textoOriginal = botao.innerHTML;
+    carregandoMais = true;
+    botao.classList.add('is-carregando');
+    botao.setAttribute('aria-busy', 'true');
+    botao.textContent = 'Carregando…';
+
+    fetch(`${BASE_URL}api/buscar.php?${params.toString()}&anexar=1`, { headers: headersComCsrf() })
+        .then((r) => { if (!r.ok) throw new Error('falha'); return r.json(); })
+        .then((data) => {
+            if (!data.success) throw new Error('falha');
+            const modelo = document.createElement('template');
+            modelo.innerHTML = data.gradeHtml;
+            const novos = [...modelo.content.querySelectorAll('#gradeLivros > .col')];
+            const grade = document.getElementById('gradeLivros');
+            if (grade) novos.forEach((c) => grade.appendChild(c));
+            const areaPaginacao = document.getElementById('areaPaginacao');
+            if (areaPaginacao) areaPaginacao.innerHTML = data.paginacaoHtml;
+            atualizarCabecalhoAcervo(data.totalLivros, Object.assign({}, estado, { pagina: '1' }));
+            params.set('pagina', String(data.paginaAtual));
+            window.history.replaceState({}, '', window.location.pathname + '?' + params.toString());
+            const primeiro = novos[0] && novos[0].querySelector('.stretched-link');
+            if (primeiro) primeiro.focus({ preventScroll: true }); // teclado continua de onde os livros novos começam
+        })
+        .catch(() => {
+            botao.innerHTML = textoOriginal;
+            botao.classList.remove('is-carregando');
+            botao.removeAttribute('aria-busy');
+            mostrarErro('Não foi possível carregar mais livros. Tente de novo.');
+        })
+        .finally(() => { carregandoMais = false; });
+}
+
+/** Botão flutuante "Voltar ao topo": aparece depois de uns 2 telas de rolagem. */
+function iniciarVoltarAoTopo() {
+    const botao = document.getElementById('btnTopo');
+    if (!botao) return;
+    let ticking = false;
+    const atualizar = () => {
+        ticking = false;
+        botao.classList.toggle('is-visivel', window.scrollY > window.innerHeight * 1.2);
+    };
+    window.addEventListener('scroll', () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(atualizar); }
+    }, { passive: true });
+    atualizar();
+}
+function voltarAoTopo() {
+    const reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduzir ? 'auto' : 'smooth' });
+    const marca = document.getElementById('tituloAcervo') || document.body;
+    if (marca.focus) { marca.setAttribute('tabindex', '-1'); marca.focus({ preventScroll: true }); }
+}
+iniciarVoltarAoTopo();
+
 /** Atualiza título, contagem e a faixa 'Continue lendo' conforme a busca/página atual. */
 function atualizarCabecalhoAcervo(total, estado) {
     const totalEl = document.getElementById('totalLivros');
@@ -369,11 +438,15 @@ document.addEventListener('click', function (e) {
         return;
     }
 
-    const linkPagina = e.target.closest('#areaPaginacao a.btn-page');
-    if (linkPagina && !linkPagina.classList.contains('disabled')) {
+    const maisLivros = e.target.closest('#btnMostrarMais');
+    if (maisLivros) {
         e.preventDefault();
-        const url = new URL(linkPagina.href, window.location.href);
-        carregarLivros({ pagina: url.searchParams.get('pagina') || '1' });
+        mostrarMais(maisLivros);
+        return;
+    }
+
+    if (e.target.closest('[data-acao="topo"], #btnTopo')) {
+        voltarAoTopo();
     }
 });
 

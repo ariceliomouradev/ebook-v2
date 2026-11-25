@@ -1326,111 +1326,111 @@ input[type='password']::-ms-clear {
     background: var(--ml-success) !important;
 }
 
-/* ---------- 8. Paginação (controle segmentado, no estilo iOS) ------------- */
-.pagination-container {
+/* ---------- 8. Mostrar mais (progresso + botão) e voltar ao topo ---------- */
+.mais {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    padding: 8px 0 12px;
+    padding: 22px 0 28px;
     margin-top: auto;
     width: 100%;
 }
-.pagination-resumo {
+.mais__resumo {
     margin: 0;
-    font-size: 0.8rem;
-    color: var(--ml-text-faint);
-    font-variant-numeric: tabular-nums;
-}
-.pagination-resumo b,
-.pagination-resumo span {
-    color: var(--ml-text-dim);
-    font-weight: 600;
-}
-.seg {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    padding: 3px;
-    border-radius: 14px;
-    background: rgba(118, 118, 128, 0.24); /* o cinza translúcido dos controles do iOS */
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
-    max-width: 100%;
-}
-.seg__numeros {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-}
-.btn-page {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 38px;
-    height: 34px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 11px;
-    background: transparent;
-    color: var(--ml-text);
-    font-size: 0.92rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    text-decoration: none;
-    transition: background-color var(--ml-fast) var(--ml-ease), color var(--ml-fast) var(--ml-ease), transform var(--ml-fast) var(--ml-ease);
-}
-.btn-page:hover:not(.disabled):not(.active) {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-.btn-page:active:not(.disabled):not(.active) {
-    transform: scale(0.96);
-}
-.seg__seta {
-    min-width: 36px;
-    padding: 0;
-    color: var(--ml-text-dim);
-    font-size: 0.8rem;
-}
-.btn-page.disabled {
-    opacity: 0.3;
-    cursor: default;
-    pointer-events: none;
-}
-/* A página atual é o "polegar" levantado do controle segmentado. */
-.btn-page.active {
-    background: #636366;
-    color: #fff;
-    font-weight: 700;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
-    pointer-events: none;
-}
-.page-ellipsis {
-    color: var(--ml-text-faint);
-    padding: 0 4px;
-    user-select: none;
-}
-.page-current-display {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 6px;
-    min-width: 92px;
-    padding: 0 8px;
-    text-align: center;
-}
-.page-num-main {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1;
-}
-.page-total-sub {
     font-size: 0.85rem;
     color: var(--ml-text-dim);
+    font-variant-numeric: tabular-nums;
 }
+.mais__resumo b,
+.mais__resumo span:not(.visually-hidden) {
+    color: var(--ml-text);
+    font-weight: 600;
+}
+.mais__barra {
+    width: min(260px, 70%);
+    height: 4px;
+    border-radius: 999px;
+    background: var(--ml-border-strong);
+    overflow: hidden;
+}
+.mais__barra i {
+    display: block;
+    height: 100%;
+    min-width: 4px;
+    border-radius: inherit;
+    background: var(--ml-accent);
+    transition: width 0.4s var(--ml-ease);
+}
+.mais__botao,
+.mais__topo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 26px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--ml-fast) var(--ml-ease), transform var(--ml-fast) var(--ml-ease), border-color var(--ml-fast) var(--ml-ease);
+}
+.mais__botao {
+    border: 0;
+    background: var(--ml-accent);
+    color: var(--ml-accent-ink);
+}
+.mais__botao:hover { filter: brightness(1.06); color: var(--ml-accent-ink); }
+.mais__botao:active { transform: scale(0.97); }
+.mais__botao.is-carregando { opacity: 0.7; pointer-events: none; }
+.mais__topo {
+    border: 1px solid var(--ml-border-strong);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ml-text);
+}
+.mais__topo:hover { background: var(--ml-surface-3); }
+.mais__botao:focus-visible,
+.mais__topo:focus-visible,
+.btn-topo:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 3px; }
+
+/* Botão flutuante: só depois de rolar bastante. */
+.btn-topo {
+    position: fixed;
+    right: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--ml-border-strong);
+    background: var(--ml-surface-3);
+    color: var(--ml-text);
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    box-shadow: var(--ml-shadow-sm, 0 6px 18px rgba(0, 0, 0, 0.35));
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity var(--ml-fast) var(--ml-ease), transform var(--ml-fast) var(--ml-ease), background-color var(--ml-fast) var(--ml-ease);
+}
+.btn-topo.is-visivel { opacity: 1; transform: none; pointer-events: auto; }
+.btn-topo:hover { background: var(--ml-accent); color: var(--ml-accent-ink); border-color: var(--ml-accent); }
+@media (max-width: 575px) {
+    .btn-topo { width: 44px; padding: 0; justify-content: center; }
+    .btn-topo span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .btn-topo, .mais__barra i { transition: none; }
+}
+
 /* ---------- 9. Estados vazios, loader, toasts ---------------------------- */
 .feedback-centro {
     flex-grow: 1;

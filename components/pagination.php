@@ -1,74 +1,55 @@
 <?php
+/**
+ * Rodapé da lista: "Mostrar mais" com progresso (substitui a paginação por números).
+ * Entrada: $paginaAtual (= páginas já carregadas), $totalLivros, $ordemAtual, $busca, $categoriaAtual, $soFavoritos.
+ * O clique é tratado por assets/js/app.js (AJAX); o href é o fallback sem JavaScript.
+ */
 if (!defined('ACESSO_PERMITIDO')) {
     define('ACESSO_PERMITIDO', true);
 }
 
-$totalPaginas = isset($totalPaginas) ? (int) $totalPaginas : 1;
-$paginaAtual = isset($paginaAtual) ? (int) $paginaAtual : 1;
+$paginaAtual = isset($paginaAtual) ? max(1, (int) $paginaAtual) : 1;
 $totalLivros = isset($totalLivros) ? (int) $totalLivros : 0;
 $ordemAtual = isset($ordemAtual) ? $ordemAtual : 'recentes';
 $busca = isset($busca) ? $busca : '';
 $categoriaAtual = isset($categoriaAtual) ? $categoriaAtual : '';
 
-$inicio = $totalLivros === 0 ? 0 : (($paginaAtual - 1) * ITENS_POR_PAGINA) + 1;
-$fim = min($paginaAtual * ITENS_POR_PAGINA, $totalLivros);
+$vistos = min($paginaAtual * ITENS_POR_PAGINA, $totalLivros);
+$restante = max(0, $totalLivros - $vistos);
+$proximos = min(ITENS_POR_PAGINA, $restante);
+$percentual = $totalLivros > 0 ? (int) floor($vistos * 100 / $totalLivros) : 0;
 $qs = 'ordem=' . urlencode($ordemAtual)
     . ($busca !== '' ? '&busca=' . urlencode($busca) : '')
     . ($categoriaAtual !== '' ? '&categoria=' . urlencode($categoriaAtual) : '')
     . (!empty($soFavoritos) ? '&favoritos=1' : '');
-$linkPagina = fn(int $p): string => '?pagina=' . $p . '&' . $qs;
-$numeros = paginasVisiveis($paginaAtual, max(1, $totalPaginas));
-$semAnterior = $paginaAtual <= 1;
-$semProxima = $paginaAtual >= $totalPaginas || $totalPaginas <= 1;
+$linkMais = '?pagina=' . ($paginaAtual + 1) . '&' . $qs;
+$fmt = static fn(int $n): string => number_format($n, 0, ',', '.');
 ?>
 
-<nav data-testid="pagination-container" class="pagination-container" aria-label="Paginação da biblioteca">
+<nav data-testid="pagination-container" class="mais" id="paginationNav" aria-label="Carregar mais livros"
+     data-pagina-atual="<?= $paginaAtual ?>" data-total-livros="<?= $totalLivros ?>">
 
-    <?php /* Texto discreto acima do controle, como nas listas do iOS ("1–10 de 1.402"). */ ?>
-    <p data-testid="pagination-status-info" class="pagination-resumo">
-        Exibindo <?= $inicio ?>–<b data-testid="pagination-status-current"><?= $fim ?></b>
-        de <span data-testid="pagination-status-total"><?= $totalLivros ?></span> livros
+    <?php if ($totalLivros > 0): ?>
+    <p data-testid="pagination-status-info" class="mais__resumo" aria-live="polite">
+        <?php if ($restante > 0): ?>
+            Você viu <b data-testid="pagination-status-current"><?= $fmt($vistos) ?></b> de <span data-testid="pagination-status-total"><?= $fmt($totalLivros) ?></span> <?= $totalLivros === 1 ? 'livro' : 'livros' ?>
+        <?php else: ?>
+            Você viu todos os <b data-testid="pagination-status-current"><?= $fmt($vistos) ?></b> <?= $vistos === 1 ? 'livro' : 'livros' ?>
+        <?php endif; ?>
     </p>
 
-    <div class="pagination-nav seg" id="paginationNav" data-pagina-atual="<?= $paginaAtual ?>" data-total-paginas="<?= $totalPaginas ?>">
-        <a data-testid="btn-page-prev" href="<?= $linkPagina(max(1, $paginaAtual - 1)) ?>"
-           class="btn-page seg__seta <?= $semAnterior ? 'disabled' : '' ?>"
-           title="Anterior" aria-label="Página anterior"
-           <?= $semAnterior ? 'aria-disabled="true" tabindex="-1"' : '' ?>>
-            <i class="fas fa-chevron-left"></i>
-        </a>
-
-        <?php /* Celular: só "5 de 70". Em telas maiores quem informa a posição são os números. */ ?>
-        <div class="page-current-display d-md-none">
-            <span data-testid="page-current-num" class="page-num-main"><?= $paginaAtual ?></span>
-            <span data-testid="page-total-num" class="page-total-sub">de <?= max(1, $totalPaginas) ?></span>
-        </div>
-
-        <?php if ($totalPaginas > 1): ?>
-        <div class="page-numbers seg__numeros d-none d-md-flex" data-testid="pagination-numeros">
-            <?php foreach ($numeros as $n): ?>
-                <?php if ($n === null): ?>
-                    <span class="page-ellipsis" aria-hidden="true">&hellip;</span>
-                <?php elseif ($n === $paginaAtual): ?>
-                    <span data-testid="btn-page-atual" class="btn-page btn-page-num active" aria-current="page" aria-label="Página <?= $n ?>, atual"><?= $n ?></span>
-                <?php else: ?>
-                    <a data-testid="btn-page-num" href="<?= $linkPagina($n) ?>" class="btn-page btn-page-num" aria-label="Ir para a página <?= $n ?>"><?= $n ?></a>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </div>
-        <?php else: ?>
-        <?php /* Uma só página: sem números, mas a posição continua legível em telas maiores. */ ?>
-        <div class="page-current-display d-none d-md-block">
-            <span class="page-num-main">1</span>
-            <span class="page-total-sub">de 1</span>
-        </div>
-        <?php endif; ?>
-
-        <a data-testid="btn-page-next" href="<?= $linkPagina(min(max(1, $totalPaginas), $paginaAtual + 1)) ?>"
-           class="btn-page seg__seta <?= $semProxima ? 'disabled' : '' ?>"
-           title="Próxima" aria-label="Próxima página"
-           <?= $semProxima ? 'aria-disabled="true" tabindex="-1"' : '' ?>>
-            <i class="fas fa-chevron-right"></i>
-        </a>
+    <div class="mais__barra" role="progressbar" aria-label="Livros vistos" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $percentual ?>">
+        <i style="width: <?= $percentual ?>%"></i>
     </div>
+    <?php endif; ?>
+
+    <?php if ($restante > 0): ?>
+    <a data-testid="btn-mostrar-mais" id="btnMostrarMais" href="<?= e($linkMais) ?>" class="mais__botao" data-proxima="<?= $paginaAtual + 1 ?>">
+        Mostrar mais <?= $fmt($proximos) ?> <?= $proximos === 1 ? 'livro' : 'livros' ?>
+    </a>
+    <?php elseif ($totalLivros > ITENS_POR_PAGINA): ?>
+    <button type="button" class="mais__topo" data-acao="topo" data-testid="btn-topo-fim">
+        <i class="fas fa-arrow-up" aria-hidden="true"></i> Voltar ao topo
+    </button>
+    <?php endif; ?>
 </nav>

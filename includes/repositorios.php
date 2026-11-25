@@ -149,7 +149,7 @@ function listarLivrosParaGerenciar(PDO $pdo, string $busca, int $pagina): array
  * (antes a busca era feita só no DOM da página atual, então nunca encontrava livros
  * fora da página exibida).
  */
-function listarLivrosPaginados(PDO $pdo, string $ordemAtual, string $busca, int $paginaAtual, int $usuarioId, string $categoria = '', string $perfil = 'leitor', int $titularId = 0, bool $soFavoritos = false): array
+function listarLivrosPaginados(PDO $pdo, string $ordemAtual, string $busca, int $paginaAtual, int $usuarioId, string $categoria = '', string $perfil = 'leitor', int $titularId = 0, bool $soFavoritos = false, bool $acumular = false): array
 {
     $ordemAtual = ordenacaoValida($ordemAtual);
     $sqlOrdem = ORDENS_PERMITIDAS[$ordemAtual];
@@ -190,13 +190,23 @@ function listarLivrosPaginados(PDO $pdo, string $ordemAtual, string $busca, int 
     if ($paginaAtual > $totalPaginas) {
         $paginaAtual = $totalPaginas;
     }
-    $offset = ($paginaAtual - 1) * ITENS_POR_PAGINA;
+    // "Mostrar mais": com $acumular, a resposta traz da página 1 até a $paginaAtual (quem recarrega ou volta do leitor
+    // na página N reencontra tudo o que já tinha visto). Teto de 25 páginas para a página não virar um monstro.
+    $porPagina = ITENS_POR_PAGINA;
+    if ($acumular) {
+        $paginaAtual = min($paginaAtual, 25);
+        $limite = $paginaAtual * $porPagina;
+        $offset = 0;
+    } else {
+        $limite = $porPagina;
+        $offset = ($paginaAtual - 1) * $porPagina;
+    }
 
     $stmt = $pdo->prepare("SELECT * FROM livros $whereSql ORDER BY $sqlOrdem LIMIT :limite OFFSET :offset");
     foreach ($parametros as $chave => $valor) {
         $stmt->bindValue($chave, $valor, PDO::PARAM_STR);
     }
-    $stmt->bindValue(':limite', ITENS_POR_PAGINA, PDO::PARAM_INT);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
     $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $livros = $stmt->fetchAll();

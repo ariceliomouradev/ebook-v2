@@ -24,7 +24,7 @@ $categoriaAtual = preg_replace('/[^a-z0-9-]/', '', (string) ($_GET['categoria'] 
 $paginaAtual = max(1, (int) ($_GET['pagina'] ?? 1));
 $soFavoritos = ($_GET['favoritos'] ?? '') === '1';
 
-$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoriaAtual, $_SESSION['usuario_perfil'], titularDaSessao(), $soFavoritos);
+$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoriaAtual, $_SESSION['usuario_perfil'], titularDaSessao(), $soFavoritos, true);
 $favoritos = $resultado['favoritos'];
 $totalFavoritos = contarFavoritos($pdo, (int) $_SESSION['usuario_id'], $_SESSION['usuario_perfil'], titularDaSessao());
 $livros = $resultado['livros'];
@@ -126,6 +126,10 @@ $tituloPagina = 'Meus Livros';
 
         </div>
     </main>
+
+    <button type="button" class="btn-topo" id="btnTopo" data-testid="btn-topo" aria-label="Voltar ao topo" title="Voltar ao topo">
+        <i class="fas fa-arrow-up" aria-hidden="true"></i><span>Topo</span>
+    </button>
 
     <?php
     // Os modais só existem no HTML de quem pode usá-los: leitor não recebe nenhum dos dois.

@@ -10,8 +10,10 @@ $busca = $_GET['busca'] ?? '';
 $categoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_GET['categoria'] ?? ''));
 $paginaAtual = max(1, (int) ($_GET['pagina'] ?? 1));
 $soFavoritos = ($_GET['favoritos'] ?? '') === '1';
+// anexar=1: "Mostrar mais" pede só a página N, que o JS põe no fim da grade. Sem isso, traz da página 1 até a N.
+$soEstaPagina = ($_GET['anexar'] ?? '') === '1';
 
-$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoria, $_SESSION['usuario_perfil'], titularDaSessao(), $soFavoritos);
+$resultado = listarLivrosPaginados($pdo, $ordemAtual, $busca, $paginaAtual, $_SESSION['usuario_id'], $categoria, $_SESSION['usuario_perfil'], titularDaSessao(), $soFavoritos, !$soEstaPagina);
 $favoritos = $resultado['favoritos'];
 $livros = $resultado['livros'];
 $progressos = $resultado['progressos'];
