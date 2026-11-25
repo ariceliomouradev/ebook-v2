@@ -139,10 +139,10 @@ foreach ($arquivos as $arq) {
 
     try {
         $pdo->prepare(
-            "INSERT INTO livros (titulo, autor, nome_arquivo, formato, capa_arquivo, usuario_id, categoria_id, visivel_para, publicacao, hash_arquivo)
-             VALUES (?, ?, ?, 'epub', ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO livros (titulo, autor, sinopse, nome_arquivo, formato, capa_arquivo, usuario_id, categoria_id, visivel_para, publicacao, hash_arquivo)
+             VALUES (?, ?, ?, ?, 'epub', ?, ?, ?, ?, ?, ?)"
         )->execute([
-            mb_substr($titulo, 0, 255), mb_substr($autor, 0, 255), $nome, $capaNome, $donoId, categoriaIdPorSlug($pdo, $slug),
+            mb_substr($titulo, 0, 255), mb_substr($autor, 0, 255), ($meta['sinopse'] ?? '') !== '' ? $meta['sinopse'] : null, $nome, $capaNome, $donoId, categoriaIdPorSlug($pdo, $slug),
             $pendente ? '' : 'contribuidor,leitor', $pendente ? 'pendente' : 'aprovado', $hash,
         ]);
     } catch (PDOException $e) {

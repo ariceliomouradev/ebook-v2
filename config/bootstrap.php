@@ -17,7 +17,8 @@ ini_set('display_errors', $appDebug ? '1' : '0');
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
 
-if (session_status() === PHP_SESSION_NONE) {
+// A API REST (api/v1) define API_SEM_SESSAO: ela autentica por Bearer token e jamais lê/cria cookie de sessão.
+if (!defined('API_SEM_SESSAO') && session_status() === PHP_SESSION_NONE) {
     // O PHP apaga o arquivo da sessão após session.gc_maxlifetime (padrão ~24 min) e a hospedagem
     // compartilhada limpa a pasta temporária com o valor dela: quem lia um livro longo voltava ao login.
     // Por isso a sessão fica numa pasta própria, com a vida igual à inatividade permitida.

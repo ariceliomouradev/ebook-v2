@@ -144,7 +144,14 @@
         if (!loc || !loc.start) return;
         if (window.mlAtividade) window.mlAtividade(); // virar página é atividade: mantém o login (assets/js/sessao.js)
         cfiAtual = loc.start.cfi;
-        if (locaisProntos) {
+        if (layoutFixo) {
+            // Livro de páginas-imagem (quadrinhos, infantis): quase não tem texto, então a medida por caracteres
+            // (locations) dá 1 ou 2 pontos e a leitura aparecia como 100% logo no começo. Aqui o progresso é a
+            // posição da página na ordem do livro (página N de M).
+            const total = (book.spine && (book.spine.length || (book.spine.items && book.spine.items.length))) || 0;
+            const indice = typeof loc.start.index === 'number' ? loc.start.index : 0;
+            fracao = total > 0 ? Math.min(1, (indice + 1) / total) : null;
+        } else if (locaisProntos) {
             fracao = loc.atEnd ? 1 : book.locations.percentageFromCfi(cfiAtual);
         }
         atualizarTextoProgresso();
@@ -397,8 +404,9 @@
                 $('leitorCarregando').hidden = true;
                 $('epubViewer').focus();
                 atualizarTextoProgresso();
-                // medir o livro (para a % e a barra): roda em segundo plano, o texto já está na tela
-                return book.locations.generate(1200);
+                // medir o livro (para a % e a barra): roda em segundo plano, o texto já está na tela.
+                // Layout fixo não precisa: o progresso vem da página (acima) e medir caracteres só atrapalhava.
+                return layoutFixo ? undefined : book.locations.generate(1200);
             });
         }
     }

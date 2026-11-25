@@ -84,6 +84,11 @@ if (!defined('ACESSO_PERMITIDO')) {
                             <input data-testid="input-editar-autor" type="text" name="autor" id="editAutor"
                                 class="form-control bg-secondary text-light border-0" required maxlength="255">
                         </div>
+                        <div class="mb-3">
+                            <label class="text-muted small" for="editSinopse">Sinopse <span class="text-secondary">(aparece na API e nos aplicativos)</span></label>
+                            <textarea data-testid="input-editar-sinopse" name="sinopse" id="editSinopse" rows="4" maxlength="4000"
+                                class="form-control bg-secondary text-light border-0" placeholder="Resumo do livro (opcional)"></textarea>
+                        </div>
                         <div class="mb-4">
                             <label class="text-muted small" for="editCategoria">Categoria</label>
                             <select data-testid="select-editar-categoria" name="categoria" id="editCategoria" class="form-select bg-secondary text-light border-0">

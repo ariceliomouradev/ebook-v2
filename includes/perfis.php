@@ -152,6 +152,20 @@ function acessoAindaValido(PDO $pdo): bool
     return true;
 }
 
+/** Apaga os tokens da API de um usuário (todos, ou todos menos um). Banco sem a migração v1.21: ignora. */
+function revogarTokensDaApi(PDO $pdo, int $usuarioId, ?int $manterId = null): void
+{
+    try {
+        if ($manterId !== null) {
+            $pdo->prepare('DELETE FROM api_tokens WHERE usuario_id = ? AND id <> ?')->execute([$usuarioId, $manterId]);
+        } else {
+            $pdo->prepare('DELETE FROM api_tokens WHERE usuario_id = ?')->execute([$usuarioId]);
+        }
+    } catch (PDOException $e) {
+        // sem a tabela de tokens: nada a revogar
+    }
+}
+
 function encerrarAcesso(PDO $pdo): void
 {
     try {

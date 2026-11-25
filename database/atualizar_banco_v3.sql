@@ -110,6 +110,25 @@ CREATE TABLE IF NOT EXISTS `livros_abertos` (
   KEY `idx_livros_abertos_dia` (`dia`),
   CONSTRAINT `fk_livros_abertos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `livros` ADD COLUMN `sinopse` text DEFAULT NULL AFTER `autor`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'livros' AND COLUMN_NAME = 'sinopse');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+CREATE TABLE IF NOT EXISTS `api_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `usuario_id` int(11) NOT NULL,
+  `access_hash` char(64) NOT NULL,
+  `refresh_hash` char(64) NOT NULL,
+  `access_expira` datetime NOT NULL,
+  `refresh_expira` datetime NOT NULL,
+  `aparelho` varchar(80) DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ultimo_uso` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_api_access` (`access_hash`),
+  UNIQUE KEY `uq_api_refresh` (`refresh_hash`),
+  KEY `idx_api_usuario` (`usuario_id`),
+  CONSTRAINT `fk_api_tokens_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 -- banner quadrado (v1.16): novo formato 'q', começando com as peças verticais já cadastradas
 ALTER TABLE `banners` MODIFY `formato` enum('h','v','q') NOT NULL;
 INSERT INTO `banners` (`formato`, `arquivo`, `alt`, `link`, `ordem`)

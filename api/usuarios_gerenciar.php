@@ -91,6 +91,7 @@ if ($action === 'redefinir_senha') {
     try {
         $pdo->prepare('UPDATE usuarios SET senha = ?, trocar_senha = 1, reset_token = NULL, reset_expires = NULL WHERE id = ?')->execute([password_hash($temporaria, PASSWORD_DEFAULT), $id]);
         $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ?')->execute([$id]); // quem estava logado precisa entrar de novo com a temporária
+        revogarTokensDaApi($pdo, (int) $id);
     } catch (PDOException $e) {
         error_log('Falha ao redefinir senha: ' . $e->getMessage());
         falhar('Para usar senha temporária, o banco precisa da atualização v1.14 (veja database/migracao_v1.14_senha_temporaria.sql).', 500);
@@ -187,6 +188,7 @@ if ($action === 'mudar_perfil') {
             }
         }
         $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ?')->execute([$id]); // o perfil novo vale no próximo login
+        revogarTokensDaApi($pdo, (int) $id);
     } catch (PDOException $e) {
         error_log('Falha ao mudar perfil: ' . $e->getMessage());
         falhar('Erro interno do banco de dados.', 500);

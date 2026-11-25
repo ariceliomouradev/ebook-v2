@@ -101,10 +101,20 @@ function epubDc(SimpleXMLElement $xml, string $nome, bool $todos = false): strin
     return implode('; ', $textos);
 }
 
-/** @return array{titulo: string, autor: string, idioma: string, assuntos: string} vazios quando não há. */
+/** Texto limpo de uma sinopse (HTML/entidades do dc:description viram texto simples, em parágrafos curtos). */
+function epubLimparSinopse(string $bruto): string
+{
+    $t = html_entity_decode(strip_tags(preg_replace('~<\s*(br|/p|/div|/li)\s*/?>~i', "\n", $bruto) ?? $bruto), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $t = preg_replace("/[ \t\x{00A0}]+/u", ' ', $t) ?? $t;
+    $t = preg_replace("/\s*\n\s*/", "\n", trim($t)) ?? $t;
+    $t = preg_replace("/\n{3,}/", "\n\n", $t) ?? $t;
+    return in_array(mb_strtolower($t), ['null', 'none', 'n/a', '-'], true) ? '' : mb_substr($t, 0, 4000);
+}
+
+/** @return array{titulo: string, autor: string, idioma: string, assuntos: string, sinopse: string} vazios quando não há. */
 function epubMetadados(string $caminho): array
 {
-    $vazio = ['titulo' => '', 'autor' => '', 'idioma' => '', 'assuntos' => ''];
+    $vazio = ['titulo' => '', 'autor' => '', 'idioma' => '', 'assuntos' => '', 'sinopse' => ''];
     $z = new ZipArchive();
     if ($z->open($caminho) !== true) {
         return $vazio;
@@ -119,6 +129,7 @@ function epubMetadados(string $caminho): array
         'autor'  => mb_substr(epubDc($pacote['xml'], 'creator', true), 0, 255),
         'idioma' => strtolower(substr(epubDc($pacote['xml'], 'language'), 0, 12)),
         'assuntos' => mb_substr(epubDc($pacote['xml'], 'subject', true), 0, 500),
+        'sinopse' => epubLimparSinopse(epubDc($pacote['xml'], 'description')),
     ];
 }
 

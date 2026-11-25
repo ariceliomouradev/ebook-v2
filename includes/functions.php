@@ -281,9 +281,16 @@ function registrarPedidoReset(PDO $pdo, string $ip, string $email): void
     $ins->execute([resetMarcaEmail($email), $ip]);
 }
 
+/** Gasta o tempo de um password_verify de verdade (bcrypt custo 10) quando o e-mail não existe: o tempo não revela quem tem conta. */
+function gastarTempoDeSenha(string $senha): void
+{
+    password_verify($senha, '$2y$10$15cHAc6.oNxp0SHRvadsXuR2rSUfr7KhUrp2t5QFEwbzTEDWEzgma');
+}
+
 /** Derruba os acessos abertos de um usuário (depois de redefinir/trocar a senha). $manter = sessão que continua. */
 function encerrarOutrosAcessos(PDO $pdo, int $usuarioId, ?string $manter = null): void
 {
+    revogarTokensDaApi($pdo, $usuarioId); // trocar/redefinir a senha também derruba os aplicativos que usam a API
     try {
         if ($manter !== null) {
             $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ? AND session_id <> ?')->execute([$usuarioId, $manter]);

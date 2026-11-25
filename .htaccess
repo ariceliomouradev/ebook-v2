@@ -48,6 +48,11 @@ Options -Indexes
     RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
     RewriteRule ^(.*)$ - [E=BASE:%1]
 
+    # --- API REST v1: tudo em /api/v1/... vai para o front controller (e o cabeçalho Authorization chega ao PHP) ---
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteRule ^api/v1(/.*)?$ api/v1/index.php [L,QSA]
+
     # --- 1. Endereço antigo (.php) redireciona para o limpo -------------------
     # A condição REDIRECT_STATUS garante que isto só vale para a requisição que
     # chegou do navegador, nunca para a reescrita interna da regra 2 — sem ela o

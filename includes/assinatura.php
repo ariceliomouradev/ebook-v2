@@ -158,6 +158,7 @@ function definirBloqueio(PDO $pdo, int $usuarioId, bool $bloquear): bool
     if ($bloquear) {
         // sessoes_ativas: a conta e, se for titular, a família toda (grupo_id = titular)
         $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ? OR grupo_id = ?')->execute([$usuarioId, $usuarioId]);
+        revogarTokensDaApi($pdo, $usuarioId); // o bloqueio vale também para os aplicativos que usam a API
     }
     return true;
 }

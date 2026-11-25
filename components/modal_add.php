@@ -39,6 +39,9 @@ if (!defined('ACESSO_PERMITIDO')) {
                     <input data-testid="input-book-author" type="text" class="form-control bg-secondary text-light border-0" name="autor"
                         placeholder="Nome do Autor" required maxlength="255">
 
+                    <label class="text-muted small mt-3 mb-1" for="novaSinopse">Sinopse <span class="text-secondary">(opcional; no EPUB vem do arquivo)</span></label>
+                    <textarea data-testid="input-book-sinopse" id="novaSinopse" name="sinopse" rows="3" maxlength="4000" class="form-control bg-secondary text-light border-0" placeholder="Resumo do livro"></textarea>
+
                     <label class="text-muted small mt-3 mb-1" for="novaCategoria">Categoria</label>
                     <select data-testid="select-categoria-livro" id="novaCategoria" name="categoria" class="form-select bg-secondary text-light border-0">
                         <option value="">Detectar automaticamente</option>

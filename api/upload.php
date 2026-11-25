@@ -37,10 +37,16 @@ if (arquivoEhPdfValido($tmpArquivo)) {
     redirecionar('index.php?msg=erro_arquivo');
 }
 // EPUB traz título e autor nos metadados: servem quando o formulário vem em branco.
-$metaEpub = $formato === 'epub' ? epubMetadados($tmpArquivo) : ['titulo' => '', 'autor' => '', 'assuntos' => ''];
+$metaEpub = $formato === 'epub' ? epubMetadados($tmpArquivo) : ['titulo' => '', 'autor' => '', 'assuntos' => '', 'sinopse' => ''];
 
 $titulo = trim($_POST['titulo'] ?? '') ?: $metaEpub['titulo'] ?: 'Sem Título';
 $autor  = trim($_POST['autor'] ?? '') ?: $metaEpub['autor'] ?: 'Autor Desconhecido';
+// Sinopse: a digitada no formulário ou, no EPUB, a descrição que vem no próprio arquivo.
+$sinopse = mb_substr(trim((string) ($_POST['sinopse'] ?? '')), 0, 4000);
+if ($sinopse === '') {
+    $sinopse = (string) ($metaEpub['sinopse'] ?? '');
+}
+$sinopse = $sinopse === '' ? null : $sinopse;
 $titulo = mb_substr($titulo, 0, 255);
 $autor  = mb_substr($autor, 0, 255);
 
@@ -116,9 +122,9 @@ if ($formato === 'pdf' && !empty($_POST['capa_base64'])) {
 }
 
 try {
-    $sql = "INSERT INTO livros (titulo, autor, nome_arquivo, formato, capa_arquivo, usuario_id, categoria_id, visivel_para, liberar_em, publicacao, hash_arquivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO livros (titulo, autor, sinopse, nome_arquivo, formato, capa_arquivo, usuario_id, categoria_id, visivel_para, liberar_em, publicacao, hash_arquivo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$titulo, $autor, $novoNomeArquivo, $formato, $capaName, $_SESSION['usuario_id'], $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $publicacao, $hashArquivo]);
+    $stmt->execute([$titulo, $autor, $sinopse, $novoNomeArquivo, $formato, $capaName, $_SESSION['usuario_id'], $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $publicacao, $hashArquivo]);
 
     $novoId = (int) $pdo->lastInsertId();
     $capaHash = ($capaName !== '' && isset($bytes) && $bytes !== false) ? hashCapaDeBytes($bytes) : null;

@@ -16,6 +16,8 @@ if (!$id || $titulo === '' || $autor === '') {
 
 $titulo = mb_substr($titulo, 0, 255);
 $autor = mb_substr($autor, 0, 255);
+$sinopse = mb_substr(trim((string) ($_POST['sinopse'] ?? '')), 0, 4000);
+$sinopse = $sinopse === '' ? null : $sinopse;
 
 require_once '../includes/repositorios.php';
 $visibilidade = lerVisibilidadeDoFormulario($_POST);
@@ -28,8 +30,8 @@ $slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] 
 $categoriaId = categoriaIdPorSlug($pdo, $slugCategoria); // '' = sem categoria
 
 try {
-    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ?, categoria_id = ?, visivel_para = ?, liberar_em = ? WHERE id = ?");
-    $stmt->execute([$titulo, $autor, $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $id]);
+    $stmt = $pdo->prepare("UPDATE livros SET titulo = ?, autor = ?, sinopse = ?, categoria_id = ?, visivel_para = ?, liberar_em = ? WHERE id = ?");
+    $stmt->execute([$titulo, $autor, $sinopse, $categoriaId, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $id]);
     require_once '../includes/duplicados.php';
     atualizarChavesDoLivro($pdo, (int) $id, $titulo, $autor);
 
@@ -38,6 +40,7 @@ try {
         'id' => $id,
         'titulo' => $titulo,
         'autor' => $autor,
+        'sinopse' => $sinopse ?? '',
         'categoria' => $categoriaId === null ? '' : $slugCategoria,
         'visivel_para' => $visibilidade['visivel_para'],
         'liberar_em' => $visibilidade['liberar_em'],

@@ -458,8 +458,10 @@ document.getElementById('modalGerenciar')?.addEventListener('show.bs.modal', fun
  * 5. OPERAÇÕES CRUD (EDIÇÃO E EXCLUSÃO VIA AJAX)
  * ============================================================================
  */
-function abrirEdicao(id, titulo, autor, categoria, vis) {
+function abrirEdicao(id, titulo, autor, categoria, vis, sinopse) {
     document.getElementById('editId').value = id;
+    const campoSinopse = document.getElementById('editSinopse');
+    if (campoSinopse) campoSinopse.value = sinopse || '';
     document.getElementById('editTitulo').value = titulo;
     document.getElementById('editAutor').value = autor;
     const selCategoria = document.getElementById('editCategoria');
@@ -488,7 +490,7 @@ document.addEventListener('click', function (e) {
             contribuidor: item.dataset.visContribuidor === '1',
             leitor: item.dataset.visLeitor === '1',
             liberarEm: item.dataset.liberarEm || '',
-        });
+        }, item.dataset.sinopse || '');
         return;
     }
 
@@ -544,6 +546,7 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
                 itemGerenciador.querySelector('[data-testid="item-autor-livro"]').innerText = data.autor;
                 itemGerenciador.setAttribute('data-titulo', data.titulo);
                 itemGerenciador.setAttribute('data-autor', data.autor);
+                itemGerenciador.setAttribute('data-sinopse', data.sinopse || '');
                 itemGerenciador.setAttribute('data-categoria', data.categoria || '');
                 const perfisVis = (data.visivel_para || '').split(',');
                 itemGerenciador.setAttribute('data-vis-contribuidor', perfisVis.includes('contribuidor') ? '1' : '0');

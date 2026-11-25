@@ -16,6 +16,7 @@ $busca = $busca ?? '';
     data-id="<?= (int) $livro['id'] ?>"
     data-titulo="<?= e($livro['titulo']) ?>"
     data-autor="<?= e($livro['autor'] ?? '') ?>"
+    data-sinopse="<?= e($livro['sinopse'] ?? '') ?>"
     data-categoria="<?= e($livro['categoria'] ?? '') ?>"
     data-vis-contribuidor="<?= in_array('contribuidor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
     data-vis-leitor="<?= in_array('leitor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
