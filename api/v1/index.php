@@ -32,7 +32,14 @@ if ($metodo === 'OPTIONS') {
 
 $uri = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
 $pos = strpos($uri, '/api/v1');
-$rota = '/' . trim($pos === false ? '' : substr($uri, $pos + 7), '/');
+if ($pos === false) {
+    // Chegou por /api ou por um caminho que não existe dentro de /api (ex.: /api/usuarios): responde em JSON, nunca em HTML.
+    if (preg_match('#/api/?$#', $uri)) {
+        apiResponder(['nome' => 'Meus Livros API', 'versao_atual' => 'v1', 'base' => apiBase() . '/api/v1', 'inicio' => apiBase() . '/api/v1', 'docs' => 'docs/API.md']);
+    }
+    apiErro(404, 'rota_nao_encontrada', 'Esta rota não existe. A API de livros fica em /api/v1 (veja GET /api/v1 para a lista de rotas).', ['base' => apiBase() . '/api/v1']);
+}
+$rota = '/' . trim(substr($uri, $pos + 7), '/');
 
 /** Responde 405 com o cabeçalho Allow quando o caminho existe mas o método não. */
 function apiMetodoNaoPermitido(array $permitidos): never

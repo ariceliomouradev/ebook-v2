@@ -52,6 +52,11 @@ Options -Indexes
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
     RewriteRule ^api/v1(/.*)?$ api/v1/index.php [L,QSA]
+    # /api e qualquer caminho de /api que não exista como arquivo responde em JSON (e não com a página 404 em HTML da hospedagem)
+    RewriteRule ^api/?$ api/v1/index.php [L,QSA]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/.+$ api/v1/index.php [L,QSA]
 
     # --- 1. Endereço antigo (.php) redireciona para o limpo -------------------
     # A condição REDIRECT_STATUS garante que isto só vale para a requisição que
