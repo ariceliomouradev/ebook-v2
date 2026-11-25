@@ -70,7 +70,7 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                     </div>
                     <div class="form-check mt-3">
                         <input class="form-check-input" type="checkbox" name="teste" value="1" id="novoUsuarioTeste" checked data-testid="check-teste-gratis">
-                        <label class="form-check-label" for="novoUsuarioTeste">Começa com <?= (int) TESTE_DIAS ?> dias de teste grátis <span class="text-secondary">(depois, o Pro custa <?= e(formatarReais(PRECOS_MENSAIS['contribuidor'])) ?>/mês; o Grátis não é cobrado). Desmarque para um acesso sem vencimento.</span></label>
+                        <label class="form-check-label" for="novoUsuarioTeste">Começa com <?= (int) TESTE_DIAS ?> dias de teste <span class="text-secondary">(depois, o Pro custa <?= e(formatarReais(PRECOS_MENSAIS['contribuidor'])) ?>/mês; o Grátis não é cobrado). Desmarque para um acesso sem vencimento.</span></label>
                     </div>
                     <div class="d-flex gap-2 mt-4">
                         <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios" data-testid="btn-cancelar-novo-usuario">Cancelar</button>
@@ -125,8 +125,8 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                         <div class="col-12 col-md-3" id="editarBlocoTipo">
                             <label class="text-muted small" for="editarTipo">Tipo de acesso</label>
                             <select id="editarTipo" name="tipo" class="form-select bg-secondary text-light border-0" data-testid="select-editar-tipo">
-                                <option value="teste">Teste grátis</option>
-                                <option value="pago">Pago</option>
+                                <option value="teste">Teste (período de avaliação)</option>
+                                <option value="pago">Pro pago</option>
                                 <option value="cortesia">Cortesia</option>
                             </select>
                         </div>

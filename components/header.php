@@ -118,9 +118,9 @@ $mostrarBusca = $mostrarBusca ?? false;
 <div class="aviso-plano<?= $sitAcesso['vencido'] ? ' aviso-plano--vencido' : '' ?>" role="status" data-testid="aviso-plano">
     <span>
         <?php if ($sitAcesso['vencido']): ?>
-            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste grátis terminou.' : 'Seu plano venceu.' ?></strong> Para continuar: <?= e($precoDoPlano) ?>/mês, por PIX.
+            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste terminou.' : 'Seu plano Pro venceu.' ?></strong> Para continuar: <?= e($precoDoPlano) ?>/mês, por PIX.
         <?php else: ?>
-            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste grátis' : 'Seu plano' ?> termina em <?= (int) $sitAcesso['dias'] ?> <?= $sitAcesso['dias'] === 1 ? 'dia' : 'dias' ?>.</strong> Depois: <?= e($precoDoPlano) ?>/mês, por PIX.
+            <strong><?= $sitAcesso['origem'] === 'teste' ? 'Seu teste' : 'Seu plano Pro' ?> termina em <?= (int) $sitAcesso['dias'] ?> <?= $sitAcesso['dias'] === 1 ? 'dia' : 'dias' ?>.</strong> Depois: <?= e($precoDoPlano) ?>/mês, por PIX.
         <?php endif; ?>
     </span>
     <a class="btn btn-sm btn-neon" href="<?= e(linkSuporte($msgSuporte)) ?>" target="_blank" rel="noopener" data-testid="aviso-plano-suporte"><i class="fab fa-whatsapp me-1" aria-hidden="true"></i>Falar com o suporte</a>
@@ -201,7 +201,7 @@ $mensagensErro = [
     'erro_invalid_data'  => 'Dados inválidos ou incompletos. Tente novamente.',
     'erro_self_delete'   => 'Operação bloqueada: Você não pode excluir a sua própria conta.',
     'erro_arquivo'       => 'Arquivo inválido ou não permitido.',
-    'erro_sem_permissao' => 'Sua conta não pode enviar livros. Peça ao titular da família.',
+    'erro_sem_permissao' => 'Sua conta não pode enviar livros. Peça ao titular do plano Pro.',
     'erro_limite_envios' => 'Você atingiu o limite de livros enviados. Exclua um envio para adicionar outro.',
     'erro_duplicado'     => 'Este arquivo já existe no acervo.',
 ];

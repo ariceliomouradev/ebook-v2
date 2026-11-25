@@ -78,19 +78,19 @@ function situacaoAcesso(PDO $pdo, int $usuarioId): array
     }
 }
 
-/** Texto curto: "Teste grátis: faltam 12 dias" / "Plano ativo até 15/12/2026". */
+/** Texto curto: "Teste: faltam 12 dias" / "Pro ativo até 15/12/2026". */
 function resumoAcesso(array $s): string
 {
     if (!$s['limitado']) {
         return '';
     }
     if ($s['vencido']) {
-        return $s['origem'] === 'teste' ? 'Teste grátis terminou' : 'Plano vencido';
+        return $s['origem'] === 'teste' ? 'Teste terminou' : 'Pro vencido';
     }
     if ($s['origem'] === 'teste') {
-        return 'Teste grátis: ' . ($s['dias'] === 1 ? 'falta 1 dia' : 'faltam ' . $s['dias'] . ' dias');
+        return 'Teste: ' . ($s['dias'] === 1 ? 'falta 1 dia' : 'faltam ' . $s['dias'] . ' dias');
     }
-    return 'Plano ativo até ' . date('d/m/Y', strtotime($s['ate']));
+    return 'Pro ativo até ' . date('d/m/Y', strtotime($s['ate']));
 }
 
 /** Para a lista do administrador (linha da tabela usuarios). */
@@ -183,7 +183,7 @@ function vencimentoDaLinha(array $u): array
         $dias = (int) floor((time() - strtotime($s['ate'])) / 86400);
         return ['data' => $data, 'texto' => $dias <= 0 ? 'Venceu hoje' : 'Venceu há ' . $dias . ($dias === 1 ? ' dia' : ' dias'), 'classe' => 'ruim'];
     }
-    $rotulo = $s['origem'] === 'teste' ? 'Teste' : 'Pago';
+    $rotulo = $s['origem'] === 'teste' ? 'Teste' : 'Pro';
     $faltam = $s['dias'] === 1 ? '1 dia' : $s['dias'] . ' dias';
     return ['data' => $data, 'texto' => $rotulo . ' · ' . $faltam, 'classe' => $s['dias'] <= 7 ? 'aviso' : 'ok'];
 }

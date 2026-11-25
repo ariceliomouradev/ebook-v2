@@ -52,7 +52,7 @@ $tituloPagina = 'Continue lendo - Meus Livros';
     <div class="login-card" data-testid="assinatura-container">
         <div class="auth-marca-mobile"><img src="assets/icons/icon-192.png" alt="" width="44" height="44"> Meus Livros</div>
         <div class="mb-4">
-            <h1 class="h3 text-light mb-2" data-testid="assinatura-titulo"><?= $eTeste ? 'Seu teste grátis terminou.' : 'Seu plano venceu.' ?></h1>
+            <h1 class="h3 text-light mb-2" data-testid="assinatura-titulo"><?= $eTeste ? 'Seu teste terminou.' : 'Seu plano Pro venceu.' ?></h1>
             <p class="text-secondary mb-0">Para continuar lendo, ative o plano <strong class="text-light"><?= e(rotuloPerfil($perfil)) ?></strong>: <strong class="text-info"><?= e($preco) ?> por mês</strong>.</p>
         </div>
 
