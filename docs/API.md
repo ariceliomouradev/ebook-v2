@@ -34,8 +34,8 @@ curl -s -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" -d '{"r
 
 | Método e rota | O que faz |
 |---|---|
-| `GET /status` | saúde do serviço (sem login) |
-| `GET /` | lista de rotas (sem login) |
+| `GET /status` | `{"status":"ok"}` para monitoramento (sem login) |
+| `GET /` | sem token: só o nome da API. Com token: a lista de rotas |
 | `POST /auth/token` | `{email, senha, aparelho?}` → tokens. Aceita JSON ou formulário |
 | `POST /auth/refresh` | `{refresh_token}` → novo par de tokens |
 | `POST /auth/logout` | revoga o token atual (`?todos=1` revoga todos os aparelhos) |

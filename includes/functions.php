@@ -9,9 +9,56 @@ function e(?string $valor): string
     return htmlspecialchars($valor ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Quem está abrindo o endereço é uma PESSOA no navegador (digitou a URL, clicou num link) e não um aplicativo?
+ * Navegador em navegação envia Sec-Fetch-Mode: navigate / Sec-Fetch-Dest: document e Accept com text/html; Postman, curl,
+ * aplicativos e os fetch() do próprio site (que mandam X-Requested-With, Authorization ou Accept: application/json) não.
+ */
+function requisicaoDeNavegador(): bool
+{
+    $modo = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_MODE'] ?? ''));
+    $destino = strtolower((string) ($_SERVER['HTTP_SEC_FETCH_DEST'] ?? ''));
+    $accept = strtolower((string) ($_SERVER['HTTP_ACCEPT'] ?? ''));
+    if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== '' || ($_SERVER['HTTP_AUTHORIZATION'] ?? '') !== '' || str_contains($accept, 'application/json')) {
+        return false;
+    }
+    return $modo === 'navigate' || $destino === 'document' || str_contains($accept, 'text/html');
+}
+
+/**
+ * Página de erro amigável (HTML) no lugar de JSON para quem abre um endereço de api/ no navegador: nada de códigos,
+ * nomes de rotas ou mensagens técnicas na tela. O status HTTP é mantido.
+ */
+function paginaErroAmigavel(int $status): never
+{
+    [$titulo, $texto] = match (true) {
+        $status === 401 => ['Acesso restrito', 'Para ver esta página é preciso entrar no sistema.'],
+        $status === 403 => ['Sem acesso', 'A sua conta não tem permissão para ver esta página.'],
+        $status === 404 => ['Página não encontrada', 'O endereço que você tentou abrir não existe ou mudou de lugar.'],
+        $status === 405 => ['Acesso não permitido', 'Esta página não pode ser aberta desta forma.'],
+        $status === 429 => ['Calma, são muitas tentativas', 'Aguarde alguns minutos e tente de novo.'],
+        $status >= 500 => ['Algo deu errado', 'Tivemos um problema do nosso lado. Tente de novo em instantes.'],
+        default => ['Não foi possível abrir', 'Volte ao início e tente de novo.'],
+    };
+    $inicio = (function_exists('urlBaseDoSistema') ? urlBaseDoSistema() : null) ?? '';
+    $inicio = $inicio === '' ? '/' : $inicio . '/';
+    http_response_code($status);
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo '<!DOCTYPE html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>' . htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') . ' - Meus Livros</title>'
+        . '<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0d0f14;color:#eceff4;font-family:system-ui,sans-serif;text-align:center;padding:24px}'
+        . 'main{max-width:420px}.n{font-size:4.5rem;font-weight:800;color:#f6b445;line-height:1;margin:0 0 .4rem}h1{font-size:1.4rem;margin:0 0 .6rem}p{color:#a7b0c0;line-height:1.55;margin:0 0 1.4rem}a{display:inline-block;background:#f6b445;color:#1a1204;font-weight:700;padding:.7rem 1.4rem;border-radius:12px;text-decoration:none}</style></head>'
+        . '<body><main><p class="n">' . (int) $status . '</p><h1>' . htmlspecialchars($titulo, ENT_QUOTES, 'UTF-8') . '</h1><p>' . htmlspecialchars($texto, ENT_QUOTES, 'UTF-8') . '</p>'
+        . '<a href="' . htmlspecialchars($inicio, ENT_QUOTES, 'UTF-8') . '">Ir para o início</a></main></body></html>';
+    exit;
+}
+
 /** Responde a requisição atual em JSON e encerra a execução. */
 function responderJson(array $dados, int $status = 200): void
 {
+    if ($status >= 400 && requisicaoDeNavegador()) {
+        paginaErroAmigavel($status);
+    }
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($dados, JSON_UNESCAPED_UNICODE);

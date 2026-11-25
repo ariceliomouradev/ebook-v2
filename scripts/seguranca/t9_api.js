@@ -232,6 +232,26 @@ async function entrar(email, senha = SENHA) {
   sql("UPDATE usuarios SET senha='$2y$10$kEiueqHKJB8NppVKaKhSD.R4D67vJ0lrVFPX8nJkaIfPwxqp0njG.' WHERE email='contribuidor@e2e.test'");
   limpa();
 
+  console.log('== pessoa no navegador não vê JSON técnico ==');
+  const navegador = { accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' };
+  for (const [rota, esperado] of [['/../usuarios', 404], ['/', 404], ['/status', 404], ['/livros', 401], ['/me', 401], [`/livros/${pub}/arquivo`, 401], ['/livros/999999', 401]]) {
+    const r = await chamar('GET', rota.startsWith('/../') ? '/../' + rota.slice(4) : rota, { headers: navegador });
+    const html = (r.headers.get('content-type') || '').includes('text/html') && /<!DOCTYPE html>/.test(r.text);
+    ver(r.status === esperado && html && !/"erro"|codigo|rota_nao|Bearer|\{"/.test(r.text), `navegador em /api/v1${rota}: ${esperado} em HTML amigável, sem JSON`, `(status ${r.status})`);
+  }
+  const semUa = await new Client('x').req(BASE + 'api/usuarios', { headers: navegador });
+  ver(semUa.status === 404 && /<!DOCTYPE html>/.test(semUa.text) && !/"erro"/.test(semUa.text), 'navegador em /api/usuarios (caminho inexistente): 404 em HTML');
+  const legado = await new Client('x').req(BASE + 'api/buscar.php', { headers: navegador });
+  ver(legado.status === 401 && /<!DOCTYPE html>/.test(legado.text) && !/Sess/.test(legado.text), 'navegador em endpoint antigo do site sem login: 401 em HTML amigável');
+  const comoApp = await new Client('x').req(BASE + 'api/usuarios', { headers: { accept: '*/*' } });
+  ver(comoApp.status === 404 && J(comoApp).erro?.codigo === 'rota_nao_encontrada' && !('base' in (J(comoApp).erro || {})), 'aplicativo/Postman (Accept */*) continua recebendo JSON padronizado');
+  const raizSem = J(await chamar('GET', '/'));
+  ver(raizSem.nome === 'Meus Livros API' && !raizSem.rotas, 'raiz da API sem token: só o nome (sem lista de rotas)');
+  ver(Array.isArray(J(await chamar('GET', '/', { token: (await entrar('leitor@e2e.test')).token })).rotas), 'raiz da API com token: lista de rotas');
+  ver(JSON.stringify(J(await chamar('GET', '/status'))) === '{"status":"ok"}', '/status devolve só {"status":"ok"} (sem versão nem hora)');
+  const siteAjax = await new Client('x').req(BASE + 'api/buscar.php', { headers: { accept: '*/*', 'x-requested-with': 'XMLHttpRequest' } });
+  ver(siteAjax.status === 401 && J(siteAjax).success === false, 'chamadas AJAX do próprio site continuam recebendo JSON');
+
   console.log('== limpeza ==');
   sql("DELETE FROM livros WHERE titulo LIKE '[E2E] API%'");
   sql('DELETE FROM api_tokens WHERE usuario_id IN (' + Object.values(uid).join(',') + ')');

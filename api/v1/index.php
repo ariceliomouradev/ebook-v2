@@ -34,10 +34,13 @@ $uri = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH
 $pos = strpos($uri, '/api/v1');
 if ($pos === false) {
     // Chegou por /api ou por um caminho que não existe dentro de /api (ex.: /api/usuarios): responde em JSON, nunca em HTML.
-    if (preg_match('#/api/?$#', $uri)) {
-        apiResponder(['nome' => 'Meus Livros API', 'versao_atual' => 'v1', 'base' => apiBase() . '/api/v1', 'inicio' => apiBase() . '/api/v1', 'docs' => 'docs/API.md']);
+    if (requisicaoDeNavegador()) {
+        paginaErroAmigavel(404);
     }
-    apiErro(404, 'rota_nao_encontrada', 'Esta rota não existe. A API de livros fica em /api/v1 (veja GET /api/v1 para a lista de rotas).', ['base' => apiBase() . '/api/v1']);
+    if (preg_match('#/api/?$#', $uri)) {
+        apiResponder(['nome' => 'Meus Livros API', 'versao_atual' => 'v1']);
+    }
+    apiErro(404, 'rota_nao_encontrada', 'Rota não encontrada.');
 }
 $rota = '/' . trim(substr($uri, $pos + 7), '/');
 
@@ -65,6 +68,13 @@ try {
     /* ---------- públicas ---------- */
     if ($rota === '/') {
         if ($metodo !== 'GET') apiMetodoNaoPermitido(['GET']);
+        if (requisicaoDeNavegador()) {
+            paginaErroAmigavel(404);
+        }
+        if (apiTokenDoCabecalho() === '') {
+            apiResponder(['nome' => 'Meus Livros API', 'versao' => API_VERSAO]); // sem credencial: só o nome (a lista de rotas exige token)
+        }
+        apiAutenticar($pdo);
         apiResponder([
             'nome'   => 'Meus Livros API',
             'versao' => API_VERSAO,
@@ -79,7 +89,10 @@ try {
     if ($rota === '/status') {
         if ($metodo !== 'GET') apiMetodoNaoPermitido(['GET']);
         $pdo->query('SELECT 1');
-        apiResponder(['status' => 'ok', 'versao' => API_VERSAO, 'hora' => date('c')]);
+        if (requisicaoDeNavegador()) {
+            paginaErroAmigavel(404); // verificação de saúde é para sistemas de monitoramento, não para a tela de ninguém
+        }
+        apiResponder(['status' => 'ok']);
     }
 
     /* ---------- autenticação ---------- */
@@ -320,7 +333,7 @@ try {
         }
     }
 
-    apiErro(404, 'rota_nao_encontrada', 'Rota não encontrada. Veja GET /api/v1 para a lista de rotas.');
+    apiErro(404, 'rota_nao_encontrada', 'Rota não encontrada.');
 } catch (PDOException $e) {
     error_log('API v1: erro de banco: ' . $e->getMessage());
     apiErro(500, 'erro_interno', 'Erro interno. Tente novamente em instantes.');

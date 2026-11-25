@@ -36,6 +36,9 @@ function apiErro(int $status, string $codigo, string $mensagem, array $extra = [
     if ($status === 401) {
         header('WWW-Authenticate: Bearer realm="meus-livros-api"');
     }
+    if (requisicaoDeNavegador()) {
+        paginaErroAmigavel($status); // pessoa no navegador: página amigável, nunca JSON técnico
+    }
     apiResponder(['erro' => ['codigo' => $codigo, 'mensagem' => $mensagem] + $extra], $status);
 }
 
