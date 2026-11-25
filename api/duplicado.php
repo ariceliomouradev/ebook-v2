@@ -1,6 +1,6 @@
 <?php
 /**
- * Marca/desmarca um livro como repetido (só administrador). Repetido = escondido de Família e Assinantes;
+ * Marca/desmarca um livro como repetido (só administrador). Repetido = escondido de Pro e Grátis;
  * o administrador continua vendo e nada é apagado. Ações (POST + CSRF, JSON):
  *   limpar  id             "não é repetido": volta a aparecer para todos
  *   marcar  id, original   "é repetido do livro `original`"

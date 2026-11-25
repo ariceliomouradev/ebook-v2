@@ -1,8 +1,8 @@
 <?php
 /**
- * "Explorar acervo" do Assinante (troca 1 por 1; só com ASSINANTE_TROCA=true).
+ * "Explorar acervo" do Grátis (troca 1 por 1; só com ASSINANTE_TROCA=true).
  * Ações (POST + CSRF, JSON; a resposta traz `html`, `vagas` e a paginação):
- *   listar   busca, pagina   livros publicados para Assinantes que ele ainda não tem
+ *   listar   busca, pagina   livros publicados para Grátis que ele ainda não tem
  *   liberar  id              usa uma vaga para ler o livro (as vagas crescem a cada envio aprovado)
  */
 define('CAMINHO_RAIZ', '../');

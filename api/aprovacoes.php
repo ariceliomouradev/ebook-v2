@@ -1,11 +1,11 @@
 <?php
 /**
- * Fila de aprovação de livros enviados por Família e Assinantes (só administrador).
+ * Fila de aprovação de livros enviados por Pro e Grátis (só administrador).
  * Ações (POST + CSRF, JSON; a resposta traz `html` da fila e `pendentes`):
  *   listar   pagina (a fila vem paginada: APROVACOES_POR_VEZ por página)
  *   aprovar  id, titulo e autor (opcionais: corrigem antes de publicar) e, se vier definir_visibilidade=1,
- *            vis_contribuidor / vis_leitor / liberar_em (para quem e quando liberar; sem isso: Família e Assinantes, já)
- *            publica o livro para Família e Assinantes (ajuste depois em Gerenciar livros)
+ *            vis_contribuidor / vis_leitor / liberar_em (para quem e quando liberar; sem isso: Pro e Grátis, já)
+ *            publica o livro para Pro e Grátis (ajuste depois em Gerenciar livros)
  *   editar   id, titulo, autor   corrige título e autor (usado na prévia do PDF)
  *   negar    id, motivo (opcional)
  * Um livro cujo arquivo já existe no acervo não pode ser aprovado.
@@ -78,7 +78,7 @@ if ($acao === 'aprovar') {
         ->execute([$titulo, $autor, $visibilidade['visivel_para'], $visibilidade['liberar_em'], $id]);
     atualizarChavesDoLivro($pdo, (int) $id, $titulo, $autor);
     $original = marcarDuplicadoSePreciso($pdo, (int) $id);
-    responderFila($pdo, $original ? 'Livro aprovado, mas parece repetido de outro: ele fica escondido de Família e Assinantes (veja Gerenciar livros).' : 'Livro aprovado e publicado.');
+    responderFila($pdo, $original ? 'Livro aprovado, mas parece repetido de outro: ele fica escondido de Pro e Grátis (veja Gerenciar livros).' : 'Livro aprovado e publicado.');
 }
 
 if ($acao === 'editar') {

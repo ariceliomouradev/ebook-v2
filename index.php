@@ -75,11 +75,9 @@ $tituloPagina = 'Meus Livros';
 
     <main id="conteudo" class="container app-main flex-grow-1">
 
-        <?php include 'components/banner_horizontal.php'; ?>
-
         <div class="row g-4 main-row">
 
-            <div class="col-12 col-xl-10 d-flex flex-column gap-3">
+            <div class="col-12 d-flex flex-column gap-3" style="min-width: 0;">
 
                 <?php if ($paginaAtual === 1 && $busca === '' && $categoriaAtual === '') {
                     $emAndamento = listarEmAndamento($pdo, (int) $_SESSION['usuario_id'], 8, $_SESSION['usuario_perfil'], titularDaSessao());
@@ -123,8 +121,6 @@ $tituloPagina = 'Meus Livros';
 
             </div>
 
-            <?php include 'components/sidebar.php'; ?>
-
         </div>
     </main>
 
@@ -137,8 +133,7 @@ $tituloPagina = 'Meus Livros';
     if ($perfilDaSessao === 'admin') {
         $listaUsuarios = listaDeUsuarios($pdo);
         require_once 'includes/banners.php';
-        $bannersH = listarBanners($pdo, 'h');
-        $bannersV = listarBanners($pdo, 'v');
+        $bannersQ = listarBanners($pdo, 'q');
     }
     if (podeEnviarLivros()) {
         include 'components/modal_add.php';
@@ -168,7 +163,8 @@ $tituloPagina = 'Meus Livros';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
     <script src="<?= asset('assets/js/app.js') ?>"></script>
-    <script src="<?= asset('assets/js/promo.js') ?>"></script>
+    <script src="<?= asset('assets/js/sessao.js') ?>"></script>
+    <?php $momento = 'biblioteca'; include 'components/anuncio_modal.php'; ?>
 
 </body>
 </html>

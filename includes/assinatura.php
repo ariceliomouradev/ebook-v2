@@ -3,7 +3,7 @@
  * Teste grátis e mensalidade.
  *
  *   - Quem se cadastra ganha TESTE_DIAS (30) de teste grátis, sem cartão: usuarios.acesso_ate = fim do teste.
- *   - Depois, Assinante paga PRECOS_MENSAIS['leitor'] (R$ 10) por mês e Família PRECOS_MENSAIS['contribuidor'] (R$ 25).
+ *   - Grátis não paga (PRECOS_MENSAIS['leitor'] = 0, com anúncios); o Pro paga PRECOS_MENSAIS['contribuidor'] (R$ 25) por mês e não vê anúncios.
  *   - O pagamento é por PIX e combinado direto com o suporte pelo WhatsApp (SUPORTE_WHATSAPP). Ao receber, o
  *     administrador clica em "+30 dias" em Gerenciar usuários (acesso_origem passa a 'pago').
  *   - acesso_ate NULL = sem vencimento (administrador, contas antigas e cortesias).

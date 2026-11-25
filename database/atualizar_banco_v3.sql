@@ -94,6 +94,23 @@ SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `livros` ADD COLUMN `formato` e
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `leituras` ADD COLUMN `posicao` varchar(500) DEFAULT NULL AFTER `porcentagem`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'leituras' AND COLUMN_NAME = 'posicao');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+-- banner quadrado (v1.16): novo formato 'q', começando com as peças verticais já cadastradas
+ALTER TABLE `banners` MODIFY `formato` enum('h','v','q') NOT NULL;
+INSERT INTO `banners` (`formato`, `arquivo`, `alt`, `link`, `ordem`)
+SELECT 'q', `arquivo`, `alt`, `link`, `ordem` FROM `banners` WHERE `formato` = 'v'
+AND NOT EXISTS (SELECT 1 FROM (SELECT 1 FROM `banners` WHERE `formato` = 'q') AS ja);
+-- banners quadrados de venda (v1.17)
+DELETE FROM `banners` WHERE `formato` = 'q' AND `arquivo` LIKE 'assets/promo/%-v.webp';
+
+INSERT INTO `banners` (`formato`, `arquivo`, `alt`, `link`, `ordem`)
+SELECT 'q', n.arquivo, n.alt, n.link, n.ordem FROM (
+  SELECT 'assets/promo/q-pro-leia.webp' AS arquivo, 'Meus Livros Pro: leia sem anúncios, com mais de 1.500 livros em qualquer tela, por R$ 25 por mês' AS alt, 'https://wa.me/5585986920243?text=Ol%C3%A1%21%20Quero%20assinar%20o%20plano%20Pro%20do%20Meus%20Livros.' AS link, 1 AS ordem UNION ALL
+  SELECT 'assets/promo/q-retro.webp', 'Topete Game Retrô: os clássicos na TV Box, no celular, no Game Stick e no projetor', NULL, 2 UNION ALL
+  SELECT 'assets/promo/q-pro-familia.webp', 'Meus Livros Pro: 3 pessoas, 1 plano, sem anúncios, por R$ 25 por mês', 'https://wa.me/5585986920243?text=Ol%C3%A1%21%20Quero%20o%20plano%20Pro%20para%20a%20minha%20fam%C3%ADlia.', 3 UNION ALL
+  SELECT 'assets/promo/q-livro.webp', 'Livro Criação de Sites e Sistemas Web: O Manual Definitivo, de Aricelio Moura', NULL, 4 UNION ALL
+  SELECT 'assets/promo/q-malu.webp', 'MALU Online Store: sua loja online no ar, com pedido pelo WhatsApp, a partir de R$ 39,90 por mês', NULL, 5
+) AS n
+WHERE NOT EXISTS (SELECT 1 FROM `banners` b WHERE b.`formato` = 'q' AND b.`arquivo` = n.arquivo);
 
 -- ---------- índices ----------
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `livros` ADD KEY `idx_livros_categoria` (`categoria_id`)', 'DO 0') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'livros' AND INDEX_NAME = 'idx_livros_categoria');

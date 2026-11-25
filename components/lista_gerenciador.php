@@ -30,7 +30,7 @@ $busca = $busca ?? '';
         </div>
         <?php if (!empty($livro['duplicado_de'])): ?>
         <div class="mt-1" data-testid="item-repetido">
-            <span class="vis-selo vis-selo--oculto"><i class="fas fa-clone" aria-hidden="true"></i> Repetido de #<?= (int) $livro['duplicado_de'] ?> «<?= e($livro['original_titulo'] ?? '') ?>» · escondido de Família e Assinantes</span>
+            <span class="vis-selo vis-selo--oculto"><i class="fas fa-clone" aria-hidden="true"></i> Repetido de #<?= (int) $livro['duplicado_de'] ?> «<?= e($livro['original_titulo'] ?? '') ?>» · escondido de Pro e Grátis</span>
             <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-nao-repetido" data-id="<?= (int) $livro['id'] ?>" data-testid="btn-nao-repetido">Não é repetido</button>
         </div>
         <?php endif; ?>

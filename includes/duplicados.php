@@ -8,7 +8,7 @@
  *   3. capa visualmente igual + título parecido     -> é o mesmo livro
  *
  * Quem decide o que fazer é o administrador: o sistema só marca `livros.duplicado_de` (esconde o repetido
- * de Família e Assinantes) e sinaliza na fila de aprovação. Nada é apagado automaticamente.
+ * de Pro e Grátis) e sinaliza na fila de aprovação. Nada é apagado automaticamente.
  */
 
 const CAPA_DISTANCIA_IGUAL = 5;   // bits diferentes (de 64) para duas capas valerem como "a mesma"
@@ -206,7 +206,7 @@ function atualizarChavesDoLivro(PDO $pdo, int $id, string $titulo, ?string $auto
 }
 
 /**
- * Depois de publicar um livro: se ele repete outro já publicado, esconde-o de Família e Assinantes
+ * Depois de publicar um livro: se ele repete outro já publicado, esconde-o de Pro e Grátis
  * (duplicado_de) em vez de apagar. Devolve o id do original, ou null.
  */
 function marcarDuplicadoSePreciso(PDO $pdo, int $id): ?int

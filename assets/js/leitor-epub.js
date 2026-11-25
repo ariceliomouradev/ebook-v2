@@ -29,7 +29,13 @@
         try { localStorage.setItem('ml-epub-' + chave, String(valor)); } catch (e) { /* sem storage */ }
     }
 
-    let tema = TEMAS[lerPref('tema', 'escuro')] ? lerPref('tema', 'escuro') : 'escuro';
+    // o tema é o mesmo do resto do sistema (localStorage 'ml-tema': escuro | claro | papel); aqui 'papel' se chama 'sepia'
+    const PARA_SISTEMA = { escuro: 'escuro', claro: 'claro', sepia: 'papel' };
+    const DO_SISTEMA = { escuro: 'escuro', claro: 'claro', papel: 'sepia' };
+    function temaDoSistema() {
+        try { return DO_SISTEMA[localStorage.getItem('ml-tema')] || 'escuro'; } catch (e) { return 'escuro'; }
+    }
+    let tema = temaDoSistema();
     let fonte = Math.min(FONTE_MAX, Math.max(FONTE_MIN, parseInt(lerPref('fonte', '100'), 10) || 100));
 
     let book = null;
@@ -136,6 +142,7 @@
 
     function aoMudarLocal(loc) {
         if (!loc || !loc.start) return;
+        if (window.mlAtividade) window.mlAtividade(); // virar página é atividade: mantém o login (assets/js/sessao.js)
         cfiAtual = loc.start.cfi;
         if (locaisProntos) {
             fracao = loc.atEnd ? 1 : book.locations.percentageFromCfi(cfiAtual);
@@ -254,7 +261,7 @@
     $('btnTema').addEventListener('click', () => {
         const nomes = Object.keys(TEMAS);
         tema = nomes[(nomes.indexOf(tema) + 1) % nomes.length];
-        gravarPref('tema', tema);
+        try { localStorage.setItem('ml-tema', PARA_SISTEMA[tema]); } catch (e) { /* sem storage */ }
         aplicarTema();
     });
 

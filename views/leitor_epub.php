@@ -121,6 +121,8 @@ $posicaoAtual = $posicaoAtual ?? null;
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
 </script>
 
+<script src="<?= asset('assets/js/sessao.js') ?>"></script>
+<?php $momento = 'leitor'; include __DIR__ . '/../components/anuncio_modal.php'; ?>
 <script src="<?= asset('assets/js/leitor-epub.js') ?>"></script>
 
 </body>

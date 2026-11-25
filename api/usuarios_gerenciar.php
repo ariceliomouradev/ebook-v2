@@ -164,7 +164,7 @@ if ($action === 'mudar_perfil') {
         falhar('Usuário não encontrado.', 404);
     }
     if (!empty($alvo['titular_id'])) {
-        falhar('Esta conta é dependente de uma Família: o perfil dela segue o titular.');
+        falhar('Esta conta é dependente de um plano Pro: o perfil dela segue o titular.');
     }
     if ($alvo['perfil'] === $perfil) {
         responderUsuarios($pdo);
@@ -173,7 +173,7 @@ if ($action === 'mudar_perfil') {
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM usuarios WHERE titular_id = ?');
         $stmt->execute([$id]);
         if ((int) $stmt->fetchColumn() > 0) {
-            falhar('Esta Família tem contas dependentes. Remova-as antes de mudar o perfil do titular.');
+            falhar('Este Pro tem contas dependentes. Remova-as antes de mudar o perfil do titular.');
         }
     }
     try {

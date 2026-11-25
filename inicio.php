@@ -98,13 +98,13 @@ $ano = date('Y');
                 <p class="heroi__lead">Todos os seus PDFs numa biblioteca só, no celular, no tablet e no computador. O livro abre exatamente onde você parou.</p>
                 <div class="heroi__acoes">
                     <?php if ($cadastroAberto): ?>
-                        <a class="btn btn--ambar btn--grande" href="<?= e($urlCadastro) ?>" data-testid="home-cta-cadastrar">Começar <?= (int) TESTE_DIAS ?> dias grátis</a>
+                        <a class="btn btn--ambar btn--grande" href="<?= e($urlCadastro) ?>" data-testid="home-cta-cadastrar">Começar grátis</a>
                         <a class="btn btn--contorno btn--grande" href="<?= e($urlEntrar) ?>" data-testid="home-cta-entrar">Entrar</a>
                     <?php else: ?>
                         <a class="btn btn--ambar btn--grande" href="<?= e($urlEntrar) ?>" data-testid="home-cta-entrar">Entrar</a>
                     <?php endif; ?>
                 </div>
-                <p class="heroi__prova"><strong><?= (int) TESTE_DIAS ?> dias grátis</strong>, sem cartão. Depois, a partir de <?= e($precoAssinante) ?> por mês.<?php if ($acervoArredondado > 0): ?> <span class="heroi__acervo">+<?= number_format($acervoArredondado, 0, ',', '.') ?> livros prontos para ler.</span><?php endif; ?></p>
+                <p class="heroi__prova"><strong>Comece grátis</strong>, sem cartão. O plano Pro, sem anúncios, custa <?= e($precoFamilia) ?> por mês.<?php if ($acervoArredondado > 0): ?> <span class="heroi__acervo">+<?= number_format($acervoArredondado, 0, ',', '.') ?> livros prontos para ler.</span><?php endif; ?></p>
             </div>
 
             <!-- o produto de verdade: telas reais do app no tablet e no celular (animação em CSS) -->
@@ -222,29 +222,30 @@ $ano = date('Y');
             <h2 id="tituloPlanos" class="titulo-secao">Escolha como ler.</h2>
             <div class="planos">
                 <article class="plano">
-                    <h3>Assinante</h3>
-                    <p class="plano__preco"><strong><?= e($precoAssinante) ?></strong><span>/mês</span><small><?= (int) TESTE_DIAS ?> dias grátis para começar</small></p>
+                    <h3>Grátis</h3>
+                    <p class="plano__preco"><strong><?= e($precoAssinante) ?></strong><span>/mês</span><small>Com anúncios</small></p>
                     <ul>
                         <li><i class="fas fa-check" aria-hidden="true"></i> 1 acesso por vez</li>
                         <li><i class="fas fa-check" aria-hidden="true"></i> Envie até 10 PDFs</li>
                         <li><i class="fas fa-check" aria-hidden="true"></i> Marcações e favoritos só seus</li>
                     </ul>
                     <?php if ($cadastroAberto): ?>
-                        <a class="btn btn--ambar btn--bloco" href="<?= e($urlCadastro) ?>">Começar <?= (int) TESTE_DIAS ?> dias grátis</a>
+                        <a class="btn btn--ambar btn--bloco" href="<?= e($urlCadastro) ?>">Começar grátis</a>
                     <?php else: ?>
                         <a class="btn btn--ambar btn--bloco" href="<?= e($urlEntrar) ?>">Entrar</a>
                     <?php endif; ?>
                 </article>
                 <article class="plano plano--familia">
-                    <h3>Família</h3>
+                    <h3>Pro</h3>
                     <p class="plano__preco"><strong><?= e($precoFamilia) ?></strong><span>/mês</span><small><?= (int) TESTE_DIAS ?> dias grátis para começar</small></p>
                     <ul>
+                        <li><i class="fas fa-check" aria-hidden="true"></i> Sem anúncios</li>
                         <li><i class="fas fa-check" aria-hidden="true"></i> Até 3 pessoas ao mesmo tempo</li>
                         <li><i class="fas fa-check" aria-hidden="true"></i> O titular envia os livros</li>
                         <li><i class="fas fa-check" aria-hidden="true"></i> Cada um com as suas marcações</li>
                     </ul>
                     <?php if ($cadastroAberto): ?>
-                        <a class="btn btn--contorno btn--bloco" href="<?= e($urlCadastro) ?>">Quero o plano Família</a>
+                        <a class="btn btn--contorno btn--bloco" href="<?= e($urlCadastro) ?>">Quero o plano Pro</a>
                     <?php else: ?>
                         <a class="btn btn--contorno btn--bloco" href="<?= e($urlEntrar) ?>">Entrar</a>
                     <?php endif; ?>
@@ -261,7 +262,7 @@ $ano = date('Y');
             <h2 id="tituloFecho">Comece a ler hoje.<small><?= (int) TESTE_DIAS ?> dias grátis, sem cartão.</small></h2>
             <div class="fecho__acoes">
                 <?php if ($cadastroAberto): ?>
-                    <a class="btn btn--ambar btn--grande" href="<?= e($urlCadastro) ?>">Começar <?= (int) TESTE_DIAS ?> dias grátis</a>
+                    <a class="btn btn--ambar btn--grande" href="<?= e($urlCadastro) ?>">Começar grátis</a>
                 <?php endif; ?>
                 <a class="btn btn--contorno btn--grande" href="<?= e($urlEntrar) ?>">Entrar</a>
             </div>

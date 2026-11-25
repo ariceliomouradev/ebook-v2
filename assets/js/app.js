@@ -497,7 +497,7 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// "Não é repetido": o livro volta a aparecer para Família e Assinantes
+// "Não é repetido": o livro volta a aparecer para Pro e Grátis
 document.addEventListener('click', function (e) {
     const b = e.target.closest('.btn-nao-repetido');
     if (!b) return;
@@ -1334,7 +1334,7 @@ document.addEventListener('submit', function (e) {
         });
     }
 
-    // --- Meus envios (Família titular e Assinante) ---
+    // --- Meus envios (Pro titular e Grátis) ---
     let enviosAlterados = false;
     const envios = configurar({
         modalId: 'modalEnvios', listaId: 'listaEnvios', aviso: 'envios', url: 'api/meus_envios.php',
@@ -1358,7 +1358,7 @@ document.addEventListener('submit', function (e) {
         });
     }
 
-    // --- Explorar acervo (Assinante, troca 1 por 1) ---
+    // --- Explorar acervo (Grátis, troca 1 por 1) ---
     let acervoPagina = 1;
     let acervoAlterado = false;
     let acervoBuscaTimer = null;
@@ -1395,7 +1395,7 @@ document.addEventListener('submit', function (e) {
         });
     }
 
-    // --- Minha família (titular da Família) ---
+    // --- Acessos do Pro (titular do Pro) ---
     const familia = configurar({ modalId: 'modalFamilia', listaId: 'listaFamilia', aviso: 'familia', url: 'api/familia.php' });
     if (familia) {
         familia.lista.addEventListener('click', (e) => {

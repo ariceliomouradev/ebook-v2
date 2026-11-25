@@ -1,11 +1,11 @@
 <?php
 /**
- * "Minha família": o titular da Família cria contas extras (dependentes) para quem mora com ele.
+ * "Acessos do Pro": o titular do Pro cria contas extras (dependentes) para quem mora com ele.
  * Ações (POST + CSRF, JSON; a resposta traz `html`):
  *   listar
  *   adicionar  nome, email, senha   (até LIMITE_DEPENDENTES)
  *   remover    usuario_id
- * Os dependentes só leem: enxergam o que o titular enviou e o acervo liberado para a Família.
+ * Os dependentes só leem: enxergam o que o titular enviou e o acervo liberado para o Pro.
  */
 define('CAMINHO_RAIZ', '../');
 require_once '../config/bootstrap.php';

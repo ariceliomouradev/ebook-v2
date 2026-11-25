@@ -12,7 +12,7 @@
  *   - título/autor/idioma vêm dos metadados do EPUB; a capa é extraída do próprio arquivo;
  *   - sem autor identificado, o livro entra como "Autor Desconhecido" e fica pendente (só o administrador vê);
  *   - repetido de um livro já publicado (mesmo título e autor, mesma capa...) entra marcado como duplicado:
- *     fica escondido de Família e Assinantes, nada é apagado;
+ *     fica escondido de Pro e Grátis, nada é apagado;
  *   - o dono dos livros é o primeiro administrador;
  *   - --idioma padrão: pt (códigos de 2 letras dos metadados: pt, es, en...);
  *   - categoria: includes/categorias_epub.php (autor/editora, palavras fortes, regras do sistema). O que nada

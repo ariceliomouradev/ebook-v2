@@ -62,15 +62,15 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                         <div class="col-12 col-md-6">
                             <label class="text-muted small" for="novoUsuarioPerfil">Nível de acesso</label>
                             <select name="perfil" id="novoUsuarioPerfil" class="form-select bg-secondary text-light border-0" required data-testid="select-perfil-usuario">
-                                <option value="leitor">Assinante (1 acesso, envia PDFs para aprovação)</option>
-                                <option value="contribuidor">Família (até 3 acessos, titular envia PDFs)</option>
+                                <option value="leitor">Grátis (1 acesso, com anúncios, envia livros para aprovação)</option>
+                                <option value="contribuidor">Pro (sem anúncios, até 3 acessos, titular envia livros)</option>
                                 <option value="admin">Administrador (acesso total)</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-check mt-3">
                         <input class="form-check-input" type="checkbox" name="teste" value="1" id="novoUsuarioTeste" checked data-testid="check-teste-gratis">
-                        <label class="form-check-label" for="novoUsuarioTeste">Começa com <?= (int) TESTE_DIAS ?> dias de teste grátis <span class="text-secondary">(depois <?= e(formatarReais(PRECOS_MENSAIS['leitor'])) ?>/mês Assinante, <?= e(formatarReais(PRECOS_MENSAIS['contribuidor'])) ?>/mês Família). Desmarque para um acesso sem vencimento.</span></label>
+                        <label class="form-check-label" for="novoUsuarioTeste">Começa com <?= (int) TESTE_DIAS ?> dias de teste grátis <span class="text-secondary">(depois, o Pro custa <?= e(formatarReais(PRECOS_MENSAIS['contribuidor'])) ?>/mês; o Grátis não é cobrado). Desmarque para um acesso sem vencimento.</span></label>
                     </div>
                     <div class="d-flex gap-2 mt-4">
                         <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios" data-testid="btn-cancelar-novo-usuario">Cancelar</button>
@@ -131,7 +131,7 @@ $dicaSenha = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e símbo
                             </select>
                         </div>
                     </div>
-                    <p class="small text-secondary mt-3 mb-0 d-none" id="editarSemVencimento">Administradores e contas dependentes de uma Família não têm vencimento próprio.</p>
+                    <p class="small text-secondary mt-3 mb-0 d-none" id="editarSemVencimento">Administradores e contas dependentes de um plano Pro não têm vencimento próprio.</p>
                     <div class="d-flex gap-2 mt-4">
                         <button type="button" class="btn btn-secondary flex-fill btn-cancelar-usuarios" data-testid="btn-cancelar-editar-usuario">Cancelar</button>
                         <button type="submit" class="btn btn-neon flex-fill" data-testid="btn-salvar-editar-usuario"><i class="fas fa-save me-2"></i>Salvar</button>

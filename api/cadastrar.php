@@ -1,6 +1,6 @@
 <?php
 /**
- * Cadastro público: nome, e-mail, WhatsApp e senha. Cria uma conta de Assinante e já entra.
+ * Cadastro público: nome, e-mail, WhatsApp e senha. Cria uma conta Grátis e já entra.
  * Falhas voltam para cadastro?erro=... (a tela explica). Campo "site" é isca para robôs.
  */
 define('CAMINHO_RAIZ', '../');

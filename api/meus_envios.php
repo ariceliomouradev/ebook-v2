@@ -5,7 +5,7 @@
  *   listar
  *   solicitar  id   pede a publicação; se o arquivo já existe no acervo, é negado na hora
  *   excluir    id   apaga um envio que ainda não foi aprovado
- * Só quem envia livros (titular da Família e Assinante); o administrador usa o gerenciador.
+ * Só quem envia livros (titular do Pro e Grátis); o administrador usa o gerenciador.
  */
 define('CAMINHO_RAIZ', '../');
 require_once '../config/bootstrap.php';

@@ -10,7 +10,7 @@
  * Posições são frações de 0 a 1 da página (independem do zoom).
  *
  * PRIVACIDADE: toda consulta filtra por usuario_id da sessão. Ninguém lê, edita ou apaga a anotação de
- * outra pessoa, nem o administrador, nem a Família do titular: cada usuário só enxerga as próprias.
+ * outra pessoa, nem o administrador, nem o Pro do titular: cada usuário só enxerga as próprias.
  */
 define('CAMINHO_RAIZ', '../');
 require_once '../config/bootstrap.php';

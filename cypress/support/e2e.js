@@ -14,6 +14,19 @@ before(() => {
 });
 
 /**
+ * O anúncio quadrado abre sobre a tela (Administrador e Grátis) e interceptaria os cliques dos demais specs.
+ * Fica escondido por padrão; o spec 12 liga com globalThis.__comAnuncio = true.
+ */
+Cypress.on('window:before:load', (win) => {
+  if (globalThis.__comAnuncio) return;
+  win.document.addEventListener('DOMContentLoaded', () => {
+    const estilo = win.document.createElement('style');
+    estilo.textContent = '.anuncio { display: none !important; }';
+    win.document.head.appendChild(estilo);
+  });
+});
+
+/**
  * O PDF.js emite rejeições assíncronas quando o worker do CDN demora ou quando
  * um documento é abortado por navegação — isso não é falha da aplicação, então
  * não derruba o teste. Qualquer outro erro não tratado continua falhando.

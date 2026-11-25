@@ -65,7 +65,7 @@ $tituloPagina = 'Continue lendo - Meus Livros';
         <a class="btn btn-info w-100 py-2" href="<?= e(linkSuporte($mensagem)) ?>" target="_blank" rel="noopener" data-testid="assinatura-whatsapp">
             <i class="fab fa-whatsapp me-2" aria-hidden="true"></i>Falar com o suporte
         </a>
-        <p class="text-center text-secondary small mt-3 mb-0">Planos: Assinante <?= e(formatarReais(precoMensal('leitor'))) ?>/mês, Família <?= e(formatarReais(precoMensal('contribuidor'))) ?>/mês.</p>
+        <p class="text-center text-secondary small mt-3 mb-0">Planos: Grátis (com anúncios) <?= e(formatarReais(precoMensal('leitor'))) ?>/mês, Pro (sem anúncios) <?= e(formatarReais(precoMensal('contribuidor'))) ?>/mês.</p>
         <p class="text-center mt-4 mb-0 small"><a href="<?= url('logout.php') ?>" class="text-secondary" data-testid="assinatura-sair">Sair</a></p>
     </div>
     </div>

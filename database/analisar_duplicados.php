@@ -1,7 +1,7 @@
 <?php
 /**
  * Acha livros repetidos no acervo (mesmo livro em arquivos diferentes) e, se você mandar, ESCONDE os
- * repetidos de Família e Assinantes. Não apaga nada.
+ * repetidos de Pro e Grátis. Não apaga nada.
  *
  *   php database/analisar_duplicados.php              só analisa e grava o relatório
  *   php database/analisar_duplicados.php --aplicar    marca os repetidos (livros.duplicado_de) nos grupos "certos"
@@ -140,7 +140,7 @@ $linhaLivro = static function (array $l, bool $original) use ($fmt): string {
         $l['leituras'] ? ", lido por {$l['leituras']}" : '', $l['anotacoes'] ? ", {$l['anotacoes']} anotações" : '');
 };
 $md = "# Relatório de livros repetidos\n\nGerado em " . date('d/m/Y H:i') . ". Acervo publicado: $n livros.\n\n";
-$md .= '## Grupos certos (' . count($gruposCertos) . ")\n\nSerão marcados como repetidos (escondidos de Família e Assinantes) com `--aplicar`.\n\n";
+$md .= '## Grupos certos (' . count($gruposCertos) . ")\n\nSerão marcados como repetidos (escondidos de Pro e Grátis) com `--aplicar`.\n\n";
 $aMarcar = [];
 foreach ($gruposCertos as $k => $g) {
     $orig = escolherOriginal($livros, $g);
@@ -179,7 +179,7 @@ if ($aplicar) {
     foreach ($aMarcar as $dup => $orig) {
         $up->execute([$orig, $dup]);
     }
-    echo 'Aplicado: ' . count($aMarcar) . " livro(s) marcados como repetidos (escondidos de Família e Assinantes).\n";
+    echo 'Aplicado: ' . count($aMarcar) . " livro(s) marcados como repetidos (escondidos de Pro e Grátis).\n";
 } else {
     echo "Nada foi alterado. Rode com --aplicar para esconder os repetidos dos grupos certos.\n";
 }

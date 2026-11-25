@@ -20,8 +20,7 @@ $action = $_POST['action'] ?? '';
 
 function respostaComLista(PDO $pdo, array $extra = []): never
 {
-    $bannersH = listarBanners($pdo, 'h');
-    $bannersV = listarBanners($pdo, 'v');
+    $bannersQ = listarBanners($pdo, 'q');
     ob_start();
     include __DIR__ . '/../components/banners_gerenciador.php';
     $html = ob_get_clean();

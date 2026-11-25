@@ -41,7 +41,7 @@ function condicaoVisibilidade(string $perfil, int $usuarioId, string $alias = ''
     if ($perfil === 'admin') {
         return ['', []];
     }
-    // Troca 1 por 1: o Assinante só enxerga do acervo o que escolheu (tabela desbloqueios).
+    // Troca 1 por 1: o Grátis só enxerga do acervo o que escolheu (tabela desbloqueios).
     $soEscolhidos = ($perfil === 'leitor' && trocaAtiva())
         ? " AND {$alias}id IN (SELECT livro_id FROM desbloqueios WHERE usuario_id = :vis_u)"
         : '';
@@ -85,8 +85,8 @@ function resumoVisibilidade(string $visivelPara, ?string $liberarEm): array
     $alvo = match (true) {
         count($perfis) === 0 => 'Só administrador',
         count($perfis) === 2 => 'Todos os perfis',
-        $perfis[0] === 'contribuidor' => 'Só Família',
-        default => 'Só Assinantes',
+        $perfis[0] === 'contribuidor' => 'Só Pro',
+        default => 'Só Grátis',
     };
     $agendado = $liberarEm !== null && strtotime($liberarEm) > time();
     if ($agendado) {

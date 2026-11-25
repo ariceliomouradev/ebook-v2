@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `tentativas_login` (
 -- ---------- Banners do carrossel (h = faixa horizontal, v = lateral vertical) ---------
 CREATE TABLE IF NOT EXISTS `banners` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `formato` enum('h','v') NOT NULL,
+  `formato` enum('h','v','q') NOT NULL,
   `arquivo` varchar(255) NOT NULL,
   `alt` varchar(200) NOT NULL DEFAULT '',
   `link` varchar(500) DEFAULT NULL,
@@ -207,7 +207,12 @@ SELECT * FROM (
   SELECT 'v', 'assets/promo/app-v.webp',   'Meus Livros: toda a sua biblioteca de PDFs em qualquer tela', 2 UNION ALL
   SELECT 'v', 'assets/promo/retro-v.webp', 'Topete Game Retrô: os clássicos na TV Box, no celular, no Game Stick e no projetor', 3 UNION ALL
   SELECT 'v', 'assets/promo/livro-v.webp', 'Livro Criação de Sites e Sistemas Web: O Manual Definitivo, de Aricelio Moura', 4 UNION ALL
-  SELECT 'v', 'assets/promo/malu-v.webp', 'MALU Online Store: sua loja online no ar, com pedido pelo WhatsApp', 5
+  SELECT 'v', 'assets/promo/malu-v.webp', 'MALU Online Store: sua loja online no ar, com pedido pelo WhatsApp', 5 UNION ALL
+  SELECT 'q', 'assets/promo/q-pro-leia.webp', 'Meus Livros Pro: leia sem anúncios, com mais de 1.500 livros em qualquer tela, por R$ 25 por mês', 1 UNION ALL
+  SELECT 'q', 'assets/promo/q-retro.webp', 'Topete Game Retrô: os clássicos na TV Box, no celular, no Game Stick e no projetor', 2 UNION ALL
+  SELECT 'q', 'assets/promo/q-pro-familia.webp', 'Meus Livros Pro: 3 pessoas, 1 plano, sem anúncios, por R$ 25 por mês', 3 UNION ALL
+  SELECT 'q', 'assets/promo/q-livro.webp', 'Livro Criação de Sites e Sistemas Web: O Manual Definitivo, de Aricelio Moura', 4 UNION ALL
+  SELECT 'q', 'assets/promo/q-malu.webp', 'MALU Online Store: sua loja online no ar, com pedido pelo WhatsApp, a partir de R$ 39,90 por mês', 5
 ) AS padrao
 WHERE NOT EXISTS (SELECT 1 FROM `banners`);
 

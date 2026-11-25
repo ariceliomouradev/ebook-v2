@@ -54,3 +54,6 @@ database/.importacao_epub/
 
 # relatórios locais da análise de livros repetidos
 database/.duplicados/
+
+# Sessões do PHP (pasta própria, criada em runtime)
+/sessoes/

@@ -18,8 +18,23 @@ ini_set('log_errors', '1');
 error_reporting(E_ALL);
 
 if (session_status() === PHP_SESSION_NONE) {
+    // O PHP apaga o arquivo da sessão após session.gc_maxlifetime (padrão ~24 min) e a hospedagem
+    // compartilhada limpa a pasta temporária com o valor dela: quem lia um livro longo voltava ao login.
+    // Por isso a sessão fica numa pasta própria, com a vida igual à inatividade permitida.
+    $pastaSessoes = __DIR__ . '/../sessoes';
+    if (!is_dir($pastaSessoes)) {
+        @mkdir($pastaSessoes, 0700, true);
+        @file_put_contents($pastaSessoes . '/.htaccess', "Require all denied\n");
+    }
+    if (is_dir($pastaSessoes) && is_writable($pastaSessoes)) {
+        ini_set('session.save_path', $pastaSessoes);
+    }
+    ini_set('session.gc_maxlifetime', (string) (SESSAO_INATIVIDADE_MAX_SEGUNDOS + 3600));
+    ini_set('session.gc_probability', '1');
+    ini_set('session.gc_divisor', '100');
     session_set_cookie_params([
-        'lifetime' => 0,
+        // cookie persistente, renovado a cada requisição: o celular não perde o login ao fechar o navegador
+        'lifetime' => SESSAO_INATIVIDADE_MAX_SEGUNDOS,
         'path'     => '/',
         'domain'   => '',
         'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',

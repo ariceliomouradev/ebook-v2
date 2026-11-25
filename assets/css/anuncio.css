@@ -1,0 +1,66 @@
+/* Anúncio quadrado sobre a tela (components/anuncio_modal.php). Autônomo: funciona na biblioteca e nos leitores. */
+.anuncio {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    background: rgba(4, 5, 10, 0.72);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+.anuncio[hidden] { display: none; }
+
+.anuncio__caixa {
+    position: relative;
+    width: min(92vw, 520px, 80vh);
+    aspect-ratio: 1 / 1;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #11141b;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    animation: anuncio-entra 0.22s ease-out;
+}
+@keyframes anuncio-entra { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .anuncio__caixa { animation: none; } }
+
+/* arte de qualquer proporção aparece inteira, sobre ela mesma desfocada (sem cortes) */
+.anuncio__arte { position: absolute; inset: 0; display: block; background-size: cover; background-position: center; }
+.anuncio__arte::before { content: ''; position: absolute; inset: 0; background: var(--fundo) center / cover; filter: blur(22px) brightness(0.7); transform: scale(1.15); }
+.anuncio__arte img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
+.anuncio__arte[hidden] { display: none; }
+
+.anuncio__fechar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.anuncio__fechar:hover { background: rgba(0, 0, 0, 0.85); }
+.anuncio__fechar:focus-visible { outline: 2px solid #f6b445; outline-offset: 2px; }
+
+.anuncio__selo {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    z-index: 2;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #e8eaf0;
+    font: 600 0.68rem/1.4 system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

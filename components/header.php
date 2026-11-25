@@ -48,6 +48,18 @@ $mostrarBusca = $mostrarBusca ?? false;
             <?php endif; ?>
 
             <div class="dropdown">
+                <button type="button" class="btn-tema dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Escolher o tema da tela" title="Tema" data-testid="btn-tema">
+                    <i class="fas fa-moon" data-tema-icone aria-hidden="true"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow menu-tema" data-testid="menu-tema">
+                    <li><span class="dropdown-item-text small text-secondary">Tema</span></li>
+                    <li><button type="button" class="dropdown-item" data-tema-opcao="claro" aria-pressed="false" data-testid="tema-claro"><i class="fas fa-sun me-2" aria-hidden="true"></i>Claro<i class="fas fa-check ms-auto tema-ok" aria-hidden="true"></i></button></li>
+                    <li><button type="button" class="dropdown-item" data-tema-opcao="escuro" aria-pressed="false" data-testid="tema-escuro"><i class="fas fa-moon me-2" aria-hidden="true"></i>Escuro<i class="fas fa-check ms-auto tema-ok" aria-hidden="true"></i></button></li>
+                    <li><button type="button" class="dropdown-item" data-tema-opcao="papel" aria-pressed="false" data-testid="tema-papel"><i class="fas fa-book-open me-2" aria-hidden="true"></i>Papel<i class="fas fa-check ms-auto tema-ok" aria-hidden="true"></i></button></li>
+                </ul>
+            </div>
+
+            <div class="dropdown">
                 <button class="menu-usuario dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
                         aria-label="Menu da conta de <?= e($primeiroNome) ?>" data-testid="btn-user-menu">
                     <span class="avatar" aria-hidden="true"><?= e($inicial) ?></span>
@@ -83,7 +95,7 @@ $mostrarBusca = $mostrarBusca ?? false;
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalEnvios" data-testid="btn-menu-envios"><i class="fas fa-cloud-arrow-up me-2"></i>Meus envios</button></li>
                     <?php endif; ?>
                     <?php if ($perfilUsuario === 'contribuidor' && !ehDependente() && !empty($mostrarBusca)): ?>
-                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalFamilia" data-testid="btn-menu-familia"><i class="fas fa-people-roof me-2"></i>Minha família</button></li>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalFamilia" data-testid="btn-menu-familia"><i class="fas fa-people-roof me-2"></i>Acessos do Pro</button></li>
                     <?php endif; ?>
 
                     <?php if ($perfilUsuario === 'admin'): ?>

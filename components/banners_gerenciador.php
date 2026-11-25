@@ -2,7 +2,7 @@
 /**
  * Conteúdo do gerenciador de banners (modal "Gerenciar banners", só admin).
  * Renderizado na abertura do painel e devolvido por api/manage_banners.php após cada ação.
- * Entradas: $bannersH, $bannersV (listas de banners, já ordenadas).
+ * Entrada: $bannersQ (banners quadrados, já ordenados).
  */
 if (!defined('ACESSO_PERMITIDO')) {
     header('Location: ' . (defined('CAMINHO_RAIZ') ? CAMINHO_RAIZ : '../') . 'index.php');
@@ -15,33 +15,18 @@ if (!defined('ACESSO_PERMITIDO')) {
 $raizBanners = '';
 
 $formatos = [
-    'h' => [
-        'titulo' => 'Faixa horizontal',
-        'dica'   => 'Aparece no topo, em celulares e tablets. Tamanho ideal: 1600 × 560 px.',
-        'icone'  => 'fa-arrows-alt-h',
-        'lista'  => $bannersH ?? [],
-    ],
-    'v' => [
-        'titulo' => 'Lateral vertical',
-        'dica'   => 'Aparece ao lado do acervo, em telas largas. Tamanho ideal: 600 × 1600 px.',
-        'icone'  => 'fa-arrows-alt-v',
-        'lista'  => $bannersV ?? [],
+    'q' => [
+        'titulo' => 'Banner quadrado (anúncio)',
+        'dica'   => 'Abre sobre a tela ao entrar no sistema, ao abrir um livro e ao sair dele, sempre com botão de fechar. Hoje aparece para o Administrador e para o plano Grátis. Tamanho ideal: 1080 × 1080 px.',
+        'icone'  => 'fa-square',
+        'lista'  => $bannersQ ?? [],
     ],
 ];
-$qtdH = count($formatos['h']['lista']);
-$qtdV = count($formatos['v']['lista']);
 ?>
-<?php if ($qtdH !== $qtdV): ?>
-    <div class="alert alert-warning py-2 small mb-4" role="status" data-testid="banners-aviso-quantidade">
-        <i class="fas fa-exclamation-triangle me-1"></i>
-        A faixa horizontal tem <b><?= $qtdH ?></b> e a lateral tem <b><?= $qtdV ?></b>.
-        Mantenha a mesma quantidade nos dois formatos para os mesmos anúncios aparecerem em qualquer tela.
-    </div>
-<?php endif; ?>
 
-<div class="row g-4">
+<div class="row g-4 justify-content-center">
 <?php foreach ($formatos as $fmt => $dados): $lista = $dados['lista']; $total = count($lista); ?>
-    <div class="col-12 col-xl-6">
+    <div class="col-12 col-xl-8">
         <section class="bm-secao" aria-labelledby="bmTitulo-<?= $fmt ?>" data-testid="banners-secao-<?= $fmt ?>">
             <header class="bm-secao__topo">
                 <h6 id="bmTitulo-<?= $fmt ?>" class="mb-0"><i class="fas <?= $dados['icone'] ?> text-info me-2"></i><?= $dados['titulo'] ?></h6>
@@ -53,7 +38,7 @@ $qtdV = count($formatos['v']['lista']);
                 <p class="bm-vazio" data-testid="banners-vazio-<?= $fmt ?>">Nenhum banner neste formato. Adicione o primeiro abaixo.</p>
             <?php endif; ?>
 
-            <ol class="bm-lista bm-lista--<?= $fmt ?>">
+            <ol class="bm-lista bm-lista--h">
                 <?php foreach ($lista as $i => $b): ?>
                     <li class="bm-item" data-testid="banner-item" data-id="<?= (int) $b['id'] ?>" data-formato="<?= $fmt ?>">
                         <div class="bm-item__miniatura">
@@ -72,11 +57,11 @@ $qtdV = count($formatos['v']['lista']);
                         <div class="bm-item__acoes">
                             <button type="button" class="btn btn-sm btn-outline-secondary btn-mover-banner" data-id="<?= (int) $b['id'] ?>" data-direcao="up"
                                     aria-label="Mover banner <?= $i + 1 ?> para antes" data-testid="btn-mover-banner-cima" <?= $i === 0 ? 'disabled' : '' ?>>
-                                <i class="fas fa-arrow-<?= $fmt === 'h' ? 'left' : 'up' ?>"></i>
+                                <i class="fas fa-arrow-left"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary btn-mover-banner" data-id="<?= (int) $b['id'] ?>" data-direcao="down"
                                     aria-label="Mover banner <?= $i + 1 ?> para depois" data-testid="btn-mover-banner-baixo" <?= $i === $total - 1 ? 'disabled' : '' ?>>
-                                <i class="fas fa-arrow-<?= $fmt === 'h' ? 'right' : 'down' ?>"></i>
+                                <i class="fas fa-arrow-right"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger btn-remover-banner ms-auto" data-id="<?= (int) $b['id'] ?>"
                                     aria-label="Remover banner <?= $i + 1 ?>: <?= e($b['alt']) ?>" title="Remover" data-testid="btn-remover-banner">

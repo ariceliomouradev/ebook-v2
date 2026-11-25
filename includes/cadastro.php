@@ -1,6 +1,6 @@
 <?php
 /**
- * Cadastro público (nome, e-mail, WhatsApp e senha). Quem se cadastra vira Assinante.
+ * Cadastro público (nome, e-mail, WhatsApp e senha). Quem se cadastra vira Grátis.
  * CADASTRO_ABERTO=false no .env fecha o cadastro (só o administrador cria contas).
  */
 

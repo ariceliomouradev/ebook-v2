@@ -1,9 +1,9 @@
 <?php
 /**
  * Modais dos perfis comerciais (carregam por AJAX ao abrir, como os outros):
- *   #modalAprovacoes  administrador  fila de livros enviados por Família/Assinantes (e sem autor).
- *   #modalEnvios      Família (titular) e Assinante  seus envios e o pedido de publicação.
- *   #modalFamilia     Família (titular)  acessos extras para quem mora junto.
+ *   #modalAprovacoes  administrador  fila de livros enviados por Pro/Grátis (e sem autor).
+ *   #modalEnvios      Pro (titular) e Grátis  seus envios e o pedido de publicação.
+ *   #modalFamilia     Pro (titular)  acessos extras para quem mora junto.
  */
 if (!defined('ACESSO_PERMITIDO')) {
     define('ACESSO_PERMITIDO', true);
@@ -22,7 +22,7 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar" data-testid="btn-fechar-modal-aprovacoes"></button>
             </div>
             <div class="modal-body">
-                <p class="text-muted small">Livros enviados por Família e Assinantes, e livros sem autor identificado (ficam só com você até serem aprovados). Corrija o autor se precisar e aprove, ou negue.</p>
+                <p class="text-muted small">Livros enviados por Pro e Grátis, e livros sem autor identificado (ficam só com você até serem aprovados). Corrija o autor se precisar e aprove, ou negue.</p>
                 <div id="perfisAviso-aprovacoes" class="alert d-none py-2 small" role="status" aria-live="polite"></div>
                 <div id="listaAprovacoes" data-testid="lista-aprovacoes" aria-live="polite"></div>
             </div>
@@ -76,8 +76,8 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
                     <fieldset class="col-12 vis-campo mt-2" data-testid="previa-visibilidade">
                         <legend class="text-muted small mb-1">Liberar para</legend>
                         <div class="d-flex flex-wrap align-items-center gap-3">
-                            <div class="form-check"><input class="form-check-input" type="checkbox" id="previaVisContribuidor" data-testid="check-previa-familia" checked><label class="form-check-label" for="previaVisContribuidor">Família</label></div>
-                            <div class="form-check"><input class="form-check-input" type="checkbox" id="previaVisLeitor" data-testid="check-previa-assinante" checked><label class="form-check-label" for="previaVisLeitor">Assinantes</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" id="previaVisContribuidor" data-testid="check-previa-familia" checked><label class="form-check-label" for="previaVisContribuidor">Pro</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" id="previaVisLeitor" data-testid="check-previa-assinante" checked><label class="form-check-label" for="previaVisLeitor">Grátis</label></div>
                             <div class="form-check"><input class="form-check-input" type="checkbox" id="previaVisAdmin" checked disabled><label class="form-check-label" for="previaVisAdmin">Administrador</label></div>
                             <div class="d-flex align-items-center gap-2 ms-md-auto">
                                 <label class="text-muted small mb-0" for="previaLiberarEm">Liberar em (opcional)</label>
@@ -141,7 +141,7 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content bg-dark border-secondary">
             <div class="modal-header border-secondary">
-                <h5 class="modal-title" id="tituloModalFamilia"><i class="fas fa-people-roof me-2 text-info"></i>Minha família</h5>
+                <h5 class="modal-title" id="tituloModalFamilia"><i class="fas fa-people-roof me-2 text-info"></i>Acessos do Pro</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar" data-testid="btn-fechar-modal-familia"></button>
             </div>
             <div class="modal-body">

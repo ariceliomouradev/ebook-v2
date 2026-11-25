@@ -6,15 +6,15 @@
  * vê são os nomes comerciais abaixo. Para renomear um perfil, mude só aqui.
  *
  *   admin         Administrador  gestor do sistema: vê tudo, aprova envios, define a visibilidade.
- *   contribuidor  Família        titular + até LIMITE_DEPENDENTES contas extras (titular_id). Só o titular
+ *   contribuidor  Pro            titular + até LIMITE_DEPENDENTES contas extras (titular_id). Só o titular
  *                                envia livros; a família enxerga o que o titular enviou, sem aprovação.
- *   leitor        Assinante      1 acesso simultâneo; pode enviar PDFs (até LIMITE_ENVIOS_ASSINANTE).
+ *   leitor        Grátis         1 acesso simultâneo; pode enviar PDFs (até LIMITE_ENVIOS_ASSINANTE).
  */
 
 const ROTULOS_PERFIL = [
     'admin'        => 'Administrador',
-    'contribuidor' => 'Família',
-    'leitor'       => 'Assinante',
+    'contribuidor' => 'Pro',
+    'leitor'       => 'Grátis',
 ];
 
 function rotuloPerfil(string $perfil): string
@@ -23,9 +23,9 @@ function rotuloPerfil(string $perfil): string
 }
 
 /**
- * Troca 1 por 1 do Assinante (ASSINANTE_TROCA=true no .env). Ligada, o Assinante deixa de ver o acervo
+ * Troca 1 por 1 do Grátis (ASSINANTE_TROCA=true no .env). Ligada, o Grátis deixa de ver o acervo
  * inteiro: lê os livros que enviou e os que escolheu em "Explorar acervo", usando as vagas dele.
- * Desligada (padrão), o Assinante vê tudo o que foi liberado para o perfil dele.
+ * Desligada (padrão), o Grátis vê tudo o que foi liberado para o perfil dele.
  */
 function trocaAtiva(): bool
 {
@@ -33,7 +33,7 @@ function trocaAtiva(): bool
 }
 
 /**
- * Vagas do Assinante: ASSINANTE_LIVROS_INICIAIS (padrão 3) + 1 por livro enviado por ele e aprovado.
+ * Vagas do Grátis: ASSINANTE_LIVROS_INICIAIS (padrão 3) + 1 por livro enviado por ele e aprovado.
  * @return array{total:int, usadas:int, livres:int, aprovados:int}
  */
 function vagasDoAssinante(PDO $pdo, int $usuarioId): array
@@ -55,7 +55,7 @@ function ehDependente(): bool
     return !empty($_SESSION['titular_id']);
 }
 
-/** Pode enviar PDFs? Admin, titular de Família e assinante. Dependente não. */
+/** Pode enviar livros? Admin, titular do Pro e Grátis. Dependente não. */
 function podeEnviarLivros(): bool
 {
     return in_array($_SESSION['usuario_perfil'] ?? '', ['admin', 'contribuidor', 'leitor'], true) && !ehDependente();

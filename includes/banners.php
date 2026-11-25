@@ -1,13 +1,21 @@
 <?php
 /**
- * Banners do carrossel (tabela `banners`): vários por formato.
- *   h = faixa horizontal (celular/tablet, acima do acervo)
- *   v = lateral vertical (telas largas)
+ * Banners de divulgação (tabela `banners`).
+ *   q = quadrado: abre sobre a tela (components/anuncio_modal.php), sempre com botão de fechar.
+ *   h / v (faixa e lateral) ficam no banco por histórico, mas não são mais exibidos nem gerenciados.
  * As peças padrão ficam em assets/promo/; as enviadas pelo admin, em banners/.
+ *
+ * Quem vê os anúncios: ANUNCIOS_PERFIS (config/app.php) = Administrador (para ver como fica) e Grátis.
  */
 
-const BANNER_FORMATOS = ['h', 'v'];
-const BANNER_LIMITE_POR_FORMATO = 12; // evita um carrossel interminável (e páginas pesadas)
+const BANNER_FORMATOS = ['q'];
+const BANNER_LIMITE_POR_FORMATO = 12; // evita uma fila interminável (e páginas pesadas)
+
+/** O perfil da sessão vê anúncios? (Administrador e Grátis; o plano Pro não.) */
+function perfilVeAnuncios(?string $perfil = null): bool
+{
+    return in_array($perfil ?? ($_SESSION['usuario_perfil'] ?? ''), ANUNCIOS_PERFIS, true);
+}
 
 function listarBanners(PDO $pdo, string $formato): array
 {

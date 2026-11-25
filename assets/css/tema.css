@@ -1,0 +1,138 @@
+/* Temas: escuro (padrão, em style.css), claro e papel. Carregado depois de style.css; assets/js/tema.js define
+   html[data-tema] e data-bs-theme (dark/light) antes da primeira pintura. */
+
+/* ---------- botão de tema na barra superior ---------- */
+.btn-tema {
+    width: 40px;
+    height: 40px;
+    display: inline-grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--ml-border-strong);
+    background: transparent;
+    color: var(--ml-text);
+    transition: background var(--ml-fast) var(--ml-ease);
+}
+.btn-tema::after { display: none; }
+.btn-tema:hover, .btn-tema[aria-expanded='true'] { background: var(--ml-surface-3); }
+.menu-tema { min-width: 170px; }
+.menu-tema .dropdown-item { display: flex; align-items: center; }
+.menu-tema .tema-ok { visibility: hidden; color: var(--ml-accent); font-size: 0.8rem; }
+.menu-tema .dropdown-item.is-ativo .tema-ok { visibility: visible; }
+
+/* ---------- claro ---------- */
+[data-tema='claro'] {
+    --ml-bg: #f5f6f8;
+    --ml-surface: #ffffff;
+    --ml-surface-2: #f1f3f7;
+    --ml-surface-3: #e4e8ef;
+    --ml-border: rgba(20, 28, 45, 0.1);
+    --ml-border-strong: rgba(20, 28, 45, 0.2);
+    --ml-accent: #b86e00;
+    --ml-accent-hover: #a56200;
+    --ml-accent-press: #8f5400;
+    --ml-accent-ink: #ffffff;
+    --ml-accent-soft: rgba(184, 110, 0, 0.12);
+    --ml-accent-glow: rgba(184, 110, 0, 0.28);
+    --ml-success: #15803d;
+    --ml-danger: #c62828;
+    --ml-text: #1b1f2a;
+    --ml-text-dim: #465063;
+    --ml-text-faint: #5c677a;
+    --ml-shadow-sm: 0 2px 8px rgba(20, 28, 45, 0.1);
+    --ml-shadow: 0 10px 30px rgba(20, 28, 45, 0.14);
+    --ml-shadow-lg: 0 24px 60px rgba(20, 28, 45, 0.22);
+    --ml-shadow-accent: 0 8px 24px rgba(184, 110, 0, 0.2);
+}
+
+/* ---------- papel (sépia) ---------- */
+[data-tema='papel'] {
+    --ml-bg: #f4ecd8;
+    --ml-surface: #fbf5e6;
+    --ml-surface-2: #efe5cc;
+    --ml-surface-3: #e3d6b4;
+    --ml-border: rgba(70, 48, 12, 0.14);
+    --ml-border-strong: rgba(70, 48, 12, 0.26);
+    --ml-accent: #8a4b08;
+    --ml-accent-hover: #763f05;
+    --ml-accent-press: #633404;
+    --ml-accent-ink: #fffaf0;
+    --ml-accent-soft: rgba(138, 75, 8, 0.12);
+    --ml-accent-glow: rgba(138, 75, 8, 0.28);
+    --ml-success: #2f6b2f;
+    --ml-danger: #a8321f;
+    --ml-text: #3b3126;
+    --ml-text-dim: #5b4d3a;
+    --ml-text-faint: #6f6048;
+    --ml-shadow-sm: 0 2px 8px rgba(70, 48, 12, 0.12);
+    --ml-shadow: 0 10px 30px rgba(70, 48, 12, 0.16);
+    --ml-shadow-lg: 0 24px 60px rgba(70, 48, 12, 0.24);
+    --ml-shadow-accent: 0 8px 24px rgba(138, 75, 8, 0.2);
+}
+
+/* ---------- ajustes comuns aos dois temas claros ---------- */
+[data-tema='claro'],
+[data-tema='papel'] {
+    --bs-emphasis-color: var(--ml-text);
+    --bs-info: var(--ml-accent);
+    --bs-info-rgb: 138, 75, 8;
+    --bs-info-text-emphasis: var(--ml-accent-press);
+    --bs-info-bg-subtle: var(--ml-accent-soft);
+    --bs-info-border-subtle: var(--ml-accent-glow);
+    --bs-link-color: var(--ml-accent);
+    --bs-link-hover-color: var(--ml-accent-hover);
+    --bs-secondary-color: var(--ml-text-dim);
+}
+[data-tema='claro'] { --bs-link-color-rgb: 184, 110, 0; --bs-link-hover-color-rgb: 165, 98, 0; }
+[data-tema='papel'] { --bs-link-color-rgb: 138, 75, 8; --bs-link-hover-color-rgb: 118, 63, 5; }
+
+[data-tema='claro'] body,
+[data-tema='papel'] body {
+    background:
+        radial-gradient(1100px 520px at 12% -8%, var(--ml-accent-soft), transparent 60%),
+        var(--ml-bg);
+    background-attachment: fixed;
+}
+
+/* classes de cor dos templates (pensadas para o escuro) passam a seguir o tema */
+[data-tema='claro'] .text-light, [data-tema='papel'] .text-light,
+[data-tema='claro'] .text-white, [data-tema='papel'] .text-white { color: var(--ml-text) !important; }
+[data-tema='claro'] .text-muted, [data-tema='papel'] .text-muted,
+[data-tema='claro'] .text-secondary, [data-tema='papel'] .text-secondary { color: var(--ml-text-dim) !important; }
+[data-tema='claro'] .btn-close-white, [data-tema='papel'] .btn-close-white { filter: none; }
+[data-tema='claro'] .border-secondary, [data-tema='papel'] .border-secondary { border-color: var(--ml-border-strong) !important; }
+[data-tema='claro'] .bg-dark:not(.form-control):not(.form-select):not(.modal-content):not(.input-group-text),
+[data-tema='papel'] .bg-dark:not(.form-control):not(.form-select):not(.modal-content):not(.input-group-text),
+[data-tema='claro'] .bg-secondary:not(.form-control):not(.form-select):not(.input-group-text),
+[data-tema='papel'] .bg-secondary:not(.form-control):not(.form-select):not(.input-group-text) { background-color: var(--ml-surface-2) !important; color: var(--ml-text) !important; }
+[data-tema='claro'] .btn-secondary, [data-tema='papel'] .btn-secondary {
+    --bs-btn-color: var(--ml-text); --bs-btn-bg: var(--ml-surface-3); --bs-btn-border-color: var(--ml-border-strong);
+    --bs-btn-hover-color: var(--ml-text); --bs-btn-hover-bg: var(--ml-surface-2); --bs-btn-hover-border-color: var(--ml-border-strong);
+}
+
+/* textos que o escuro pinta de branco puro */
+[data-tema='claro'] .btn-edit:hover, [data-tema='papel'] .btn-edit:hover,
+[data-tema='claro'] .btn-edit:focus-visible, [data-tema='papel'] .btn-edit:focus-visible,
+[data-tema='claro'] .menu-usuario:hover, [data-tema='papel'] .menu-usuario:hover,
+[data-tema='claro'] .menu-usuario[aria-expanded='true'], [data-tema='papel'] .menu-usuario[aria-expanded='true'] { color: var(--ml-text); }
+[data-tema='claro'] .btn-edit, [data-tema='papel'] .btn-edit,
+[data-tema='claro'] .btn-outline-secondary, [data-tema='papel'] .btn-outline-secondary,
+[data-tema='claro'] .btn-outline-light, [data-tema='papel'] .btn-outline-light {
+    --bs-btn-hover-color: var(--ml-text);
+    --bs-btn-active-color: var(--ml-text);
+}
+[data-tema='claro'] .dropdown-menu, [data-tema='papel'] .dropdown-menu { --bs-dropdown-link-hover-color: var(--ml-text); }
+[data-tema='claro'] ::selection, [data-tema='papel'] ::selection { color: var(--ml-text); }
+
+/* barra superior */
+[data-tema='claro'] .app-bar { background: rgba(245, 246, 248, 0.82); }
+[data-tema='papel'] .app-bar { background: rgba(244, 236, 216, 0.85); }
+[data-tema='claro'] .menu-usuario, [data-tema='papel'] .menu-usuario { background: var(--ml-surface); }
+[data-tema='claro'] .avatar, [data-tema='papel'] .avatar { box-shadow: 0 0 0 2px var(--ml-bg), 0 0 0 3px var(--ml-accent-glow); }
+
+/* carregando e erro de tempo esgotado (cobrem a tela inteira) */
+[data-tema='claro'] .loader-overlay, [data-tema='papel'] .loader-overlay { background: var(--ml-bg) !important; }
+[data-tema='claro'] #errorTimeout, [data-tema='papel'] #errorTimeout { background: var(--ml-bg) !important; }
+
+/* barra de rolagem e modais */
+[data-tema='claro'] .modal-backdrop, [data-tema='papel'] .modal-backdrop { --bs-backdrop-bg: #1b1f2a; --bs-backdrop-opacity: 0.5; }
