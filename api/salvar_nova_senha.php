@@ -22,13 +22,16 @@ if (!validarSenhaForte($novaSenha)) {
 }
 
 $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE reset_token = ? AND reset_expires > NOW()");
-$stmt->execute([$token]);
+$stmt->execute([hash('sha256', (string) $token)]);
 $user = $stmt->fetch();
 
 if ($user) {
     $hashNovo = password_hash($novaSenha, PASSWORD_DEFAULT);
     $pdo->prepare("UPDATE usuarios SET senha = ?, reset_token = NULL, reset_expires = NULL WHERE id = ?")
         ->execute([$hashNovo, $user['id']]);
+
+    // quem estava logado com a senha antiga (inclusive um invasor) é desconectado
+    encerrarOutrosAcessos($pdo, (int) $user['id']);
 
     redirecionar('login.php?msg=pwd_recovered');
 }

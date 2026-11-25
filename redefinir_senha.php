@@ -8,7 +8,7 @@ $tokenValido = false;
 
 if (!empty($token)) {
     $stmt = $pdo->prepare("SELECT id FROM usuarios WHERE reset_token = ? AND reset_expires > NOW()");
-    $stmt->execute([$token]);
+    $stmt->execute([hash('sha256', (string) $token)]);
     $tokenValido = (bool) $stmt->fetch();
 }
 

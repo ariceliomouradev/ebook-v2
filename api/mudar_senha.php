@@ -29,6 +29,8 @@ if ($user && password_verify($senhaAtual, $user['senha'])) {
 
     // Renova o ID de sessão após troca de senha (evita reaproveitamento em caso de sessão comprometida).
     renovarIdDaSessao($pdo);
+    // as outras sessões abertas desta conta (outro aparelho, sessão roubada) deixam de valer
+    encerrarOutrosAcessos($pdo, (int) $usuario_id, session_id());
 
     redirecionar('index.php?msg=pwd_changed');
 } else {

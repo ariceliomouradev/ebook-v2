@@ -59,6 +59,11 @@ if (isset($_SESSION['usuario_id'])) {
 }
 
 // Headers de segurança (aplicados a toda página e endpoint).
+header_remove('X-Powered-By'); // não anuncia a versão do PHP
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    header('Strict-Transport-Security: max-age=31536000'); // o navegador só volta por HTTPS (sem includeSubDomains de propósito)
+}
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: strict-origin-when-cross-origin');

@@ -11,6 +11,8 @@ before(() => {
   // bloqueio por IP e derrubariam os specs seguintes: o histórico dos usuários
   // de teste é zerado no início de cada arquivo.
   cy.sql("DELETE FROM tentativas_login WHERE email LIKE '%@e2e.test'");
+  // marcas dos limites de cadastro e de pedidos de redefinição (por IP/e-mail, 1 hora): zeradas a cada arquivo
+  cy.sql("DELETE FROM tentativas_login WHERE email LIKE '\\_\\_%'");
 });
 
 /**

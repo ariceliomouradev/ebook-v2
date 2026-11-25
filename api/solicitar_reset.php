@@ -11,6 +11,12 @@ if (empty($email)) {
     redirecionar('login.php');
 }
 
+// Limite por IP e por e-mail (evita encher a caixa de alguém e gastar a cota de envio). A resposta é sempre a mesma.
+if (resetBloqueado($pdo, ipCliente(), $email)) {
+    redirecionar('login.php?msg=reset_link_sent');
+}
+registrarPedidoReset($pdo, ipCliente(), $email);
+
 $stmt = $pdo->prepare("SELECT id, nome FROM usuarios WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch();
@@ -24,10 +30,16 @@ if ($user) {
     // (`reset_expires > NOW()` em redefinir_senha.php e api/salvar_nova_senha.php). Calcular
     // com date()/strtotime() do PHP dava validade errada sempre que o fuso do PHP e o do
     // banco divergiam (ex.: date.timezone=Europe/Berlin contra MySQL em UTC-3 = 6h, não 1h).
+    // No banco vai só o hash (sha256) do token: quem lê o banco ou um backup não consegue usá-lo no link.
     $pdo->prepare("UPDATE usuarios SET reset_token = ?, reset_expires = DATE_ADD(NOW(), INTERVAL " . (int) RESET_TOKEN_VALIDADE_HORAS . " HOUR) WHERE id = ?")
-        ->execute([$token, $user['id']]);
+        ->execute([hash('sha256', $token), $user['id']]);
 
-    $urlBase = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . "://{$_SERVER['HTTP_HOST']}" . dirname($_SERVER['PHP_SELF'], 2);
+    // A base do link vem do APP_URL (.env), nunca do cabeçalho Host da requisição.
+    $urlBase = urlBaseDoSistema();
+    if ($urlBase === null) {
+        error_log('[RESET-SENHA] APP_URL não configurado no .env: link de redefinição NÃO enviado.');
+        redirecionar('login.php?msg=reset_link_sent');
+    }
     $linkRecuperacao = $urlBase . '/redefinir-senha?token=' . $token;
 
     $assunto = 'Redefinição de Senha - Meus Livros';

@@ -214,12 +214,21 @@ function csrf_verify(bool $json = false): void
  */
 function loginBloqueado(PDO $pdo, string $email, string $ip): bool
 {
+    // Três contadores independentes (só falhas reais; as marcas "__cadastro__"/"__reset__" não entram):
+    //  1) o par e-mail + IP: quem erra a senha da própria conta trava só a si mesmo, e um terceiro, de outro IP,
+    //     não consegue trancar o dono da conta (antes qualquer pessoa travava o login de qualquer e-mail);
+    //  2) o e-mail vindo de qualquer IP: freia ataque distribuído (limite bem mais alto);
+    //  3) o IP contra qualquer e-mail: freia quem testa uma senha em muitos usuários.
+    $janela = "criado_em > (NOW() - INTERVAL " . LOGIN_BLOQUEIO_SEGUNDOS . " SECOND)";
     $stmt = $pdo->prepare(
-        "SELECT COUNT(*) FROM tentativas_login
-         WHERE (email = ? OR ip = ?) AND sucesso = 0 AND criado_em > (NOW() - INTERVAL " . LOGIN_BLOQUEIO_SEGUNDOS . " SECOND)"
+        "SELECT SUM(email = ? AND ip = ?) AS par, SUM(email = ?) AS por_email, SUM(ip = ?) AS por_ip
+         FROM tentativas_login WHERE sucesso = 0 AND email NOT LIKE '\\_\\_%' AND $janela"
     );
-    $stmt->execute([$email, $ip]);
-    return (int) $stmt->fetchColumn() >= LOGIN_MAX_TENTATIVAS;
+    $stmt->execute([$email, $ip, $email, $ip]);
+    $c = $stmt->fetch() ?: [];
+    return (int) ($c['par'] ?? 0) >= LOGIN_MAX_TENTATIVAS
+        || (int) ($c['por_email'] ?? 0) >= LOGIN_MAX_POR_EMAIL
+        || (int) ($c['por_ip'] ?? 0) >= LOGIN_MAX_POR_IP;
 }
 
 function registrarTentativaLogin(PDO $pdo, string $email, string $ip, bool $sucesso): void
@@ -228,8 +237,61 @@ function registrarTentativaLogin(PDO $pdo, string $email, string $ip, bool $suce
     $stmt->execute([$email, $ip, $sucesso ? 1 : 0]);
 
     if ($sucesso) {
-        // Limpa o histórico de falhas deste e-mail/IP após um login bem-sucedido.
-        $pdo->prepare("DELETE FROM tentativas_login WHERE email = ? OR ip = ?")->execute([$email, $ip]);
+        // Limpa só as falhas DESTE e-mail vindas DESTE IP. Apagar também as do IP (ou as do e-mail) deixava
+        // quem tem uma conta própria zerar o contador a cada login e testar senhas sem limite.
+        $pdo->prepare("DELETE FROM tentativas_login WHERE email = ? AND ip = ?")->execute([$email, $ip]);
+    }
+}
+
+/**
+ * URL base pública do sistema (ex.: https://meuslivros.ariceliomoura.com.br), usada em links enviados por e-mail.
+ * Vem do APP_URL do .env e NUNCA do cabeçalho Host da requisição: o Host é escolhido por quem faz o pedido
+ * (envenenamento do link de redefinição de senha). Sem APP_URL só vale em localhost; senão devolve null.
+ */
+function urlBaseDoSistema(): ?string
+{
+    $url = trim((string) env('APP_URL', ''));
+    if ($url !== '' && preg_match('#^https?://[A-Za-z0-9.-]+(:\d+)?(/[A-Za-z0-9._~/-]*)?$#', $url)) {
+        return rtrim($url, '/');
+    }
+    $host = strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')));
+    if ($host === 'localhost' || $host === '127.0.0.1') {
+        $https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+        return ($https ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF'], 2), '/\\');
+    }
+    return null;
+}
+
+/** Marca de pedido de redefinição na tabela tentativas_login (sucesso = 0; não mistura com falhas de login). */
+function resetMarcaIp(string $ip): string { return '__reset__:' . substr(sha1($ip), 0, 16); }
+function resetMarcaEmail(string $email): string { return '__resetem__:' . substr(sha1(strtolower($email)), 0, 16); }
+
+function resetBloqueado(PDO $pdo, string $ip, string $email): bool
+{
+    $stmt = $pdo->prepare("SELECT SUM(email = ?) AS por_ip, SUM(email = ?) AS por_email FROM tentativas_login WHERE sucesso = 0 AND criado_em > (NOW() - INTERVAL 1 HOUR) AND (email = ? OR email = ?)");
+    $stmt->execute([resetMarcaIp($ip), resetMarcaEmail($email), resetMarcaIp($ip), resetMarcaEmail($email)]);
+    $c = $stmt->fetch() ?: [];
+    return (int) ($c['por_ip'] ?? 0) >= RESET_MAX_POR_IP_HORA || (int) ($c['por_email'] ?? 0) >= RESET_MAX_POR_EMAIL_HORA;
+}
+
+function registrarPedidoReset(PDO $pdo, string $ip, string $email): void
+{
+    $ins = $pdo->prepare('INSERT INTO tentativas_login (email, ip, sucesso) VALUES (?, ?, 0)');
+    $ins->execute([resetMarcaIp($ip), $ip]);
+    $ins->execute([resetMarcaEmail($email), $ip]);
+}
+
+/** Derruba os acessos abertos de um usuário (depois de redefinir/trocar a senha). $manter = sessão que continua. */
+function encerrarOutrosAcessos(PDO $pdo, int $usuarioId, ?string $manter = null): void
+{
+    try {
+        if ($manter !== null) {
+            $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ? AND session_id <> ?')->execute([$usuarioId, $manter]);
+        } else {
+            $pdo->prepare('DELETE FROM sessoes_ativas WHERE usuario_id = ?')->execute([$usuarioId]);
+        }
+    } catch (PDOException $e) {
+        // banco sem a migração v1.5
     }
 }
 

@@ -95,11 +95,18 @@ function infantilSinaisDoEpub(string $caminho): array
         $sinais['editora'] = $p[1];
     }
     $sinais['fixo'] = stripos($opf, 'pre-paginated') !== false;
+    // Só importa saber se o texto passa de ~20 mil caracteres. Um EPUB malicioso (ZIP muito compressível, milhares
+    // de XHTML cheios de espaços) não pode prender o servidor: orçamento total de bytes lidos e de arquivos vistos.
     $texto = 0;
-    for ($i = 0; $i < $z->numFiles; $i++) {
+    $lidos = 0;
+    $vistos = 0;
+    for ($i = 0; $i < $z->numFiles && $texto < 20000 && $lidos < 4_000_000 && $vistos < 400; $i++) {
         $nome = (string) $z->getNameIndex($i);
         if (preg_match('~\.(x?html?)$~i', $nome) && !preg_match('~(^|/)(toc|nav)\.x?html?$~i', $nome)) {
-            $texto += mb_strlen(trim(strip_tags((string) $z->getFromIndex($i, 400000))));
+            $bruto = (string) $z->getFromIndex($i, 200000);
+            $lidos += strlen($bruto);
+            $vistos++;
+            $texto += mb_strlen(trim(strip_tags($bruto)));
         }
     }
     $sinais['texto'] = $texto;

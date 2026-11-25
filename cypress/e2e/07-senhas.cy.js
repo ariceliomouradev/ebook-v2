@@ -12,12 +12,24 @@ const { USUARIOS, SENHA_PADRAO } = require('../support/dados');
 
 const SENHA = () => SENHA_PADRAO;
 
-/** Lê o token de reset diretamente do banco (o e-mail vai para o log em ambiente local). */
+/** Lê o que o banco guarda do token de reset: desde a v1.19 é só o HASH (sha256) do token enviado por e-mail. */
 function tokenDeReset(email) {
   return cy.sql('SELECT reset_token, reset_expires FROM usuarios WHERE email = ?', [email]);
 }
 
+/**
+ * O e-mail (e o link) só existem no log do servidor, e o banco guarda apenas o hash. Para exercitar a tela de
+ * redefinição, o teste troca o hash gravado pelo hash de um token conhecido, como se aquele token tivesse
+ * chegado por e-mail.
+ */
+function usarTokenConhecido(email, token) {
+  return cy.sql("UPDATE usuarios SET reset_token = SHA2(?, 256) WHERE email = ? AND email LIKE '%@e2e.test'", [token, email]);
+}
+const TOKEN_CONHECIDO = 'ab'.repeat(32);
+
 function solicitarReset(email) {
+  // o limite de pedidos por IP/e-mail (marcas em tentativas_login) não pode acumular entre testes
+  cy.sql("DELETE FROM tentativas_login WHERE email LIKE '\\_\\_reset%'");
   cy.visit('login');
   cy.tid('link-esqueci-senha').click();
   cy.tid('input-email-recuperacao').type(email);
@@ -129,7 +141,7 @@ describe('Senhas', () => {
       solicitarReset(email());
 
       tokenDeReset(email()).then((linhas) => {
-        expect(linhas[0].reset_token, 'token gerado').to.match(/^[a-f0-9]{64}$/);
+        expect(linhas[0].reset_token, 'hash do token gerado (sha256, 64 hex)').to.match(/^[a-f0-9]{64}$/);
       });
 
       // A validade é medida pelo relógio do MySQL, que é o mesmo usado na
@@ -158,8 +170,8 @@ describe('Senhas', () => {
     it('permite criar a nova senha e entrar com ela', () => {
       solicitarReset(email());
 
-      tokenDeReset(email()).then((linhas) => {
-        const token = linhas[0].reset_token;
+      usarTokenConhecido(email(), TOKEN_CONHECIDO).then(() => {
+        const token = TOKEN_CONHECIDO;
         cy.visit(`redefinir-senha?token=${token}`);
         cy.tid('redefinir-container').should('be.visible');
         cy.tid('input-redefinir-senha').type(nova, { log: false });
@@ -182,8 +194,8 @@ describe('Senhas', () => {
     it('recusa reutilização do mesmo token', () => {
       solicitarReset(email());
 
-      tokenDeReset(email()).then((linhas) => {
-        const token = linhas[0].reset_token;
+      usarTokenConhecido(email(), TOKEN_CONHECIDO).then(() => {
+        const token = TOKEN_CONHECIDO;
         cy.visit(`redefinir-senha?token=${token}`);
         cy.tid('input-redefinir-senha').type(nova, { log: false });
         cy.tid('input-redefinir-confirma').type(nova, { log: false });
@@ -206,16 +218,16 @@ describe('Senhas', () => {
       // O filtro fica literal no SQL de propósito: a guarda das tasks só libera
       // escritas que declarem o escopo de teste no próprio comando.
       cy.sql("UPDATE usuarios SET reset_expires = DATE_SUB(NOW(), INTERVAL 1 HOUR) WHERE email LIKE '%@e2e.test'");
-      tokenDeReset(email()).then((linhas) => {
-        cy.visit(`redefinir-senha?token=${linhas[0].reset_token}`);
+      usarTokenConhecido(email(), TOKEN_CONHECIDO).then(() => {
+        cy.visit(`redefinir-senha?token=${TOKEN_CONHECIDO}`);
         cy.tid('msg-token-invalido').should('be.visible');
       });
     });
 
     it('avisa quando a confirmação não coincide e mantém o formulário', () => {
       solicitarReset(email());
-      tokenDeReset(email()).then((linhas) => {
-        cy.visit(`redefinir-senha?token=${linhas[0].reset_token}`);
+      usarTokenConhecido(email(), TOKEN_CONHECIDO).then(() => {
+        cy.visit(`redefinir-senha?token=${TOKEN_CONHECIDO}`);
         cy.tid('input-redefinir-senha').type(nova, { log: false });
         cy.tid('input-redefinir-confirma').type('Diferente@2026', { log: false });
         cy.get('[data-testid="form-salvar-nova-senha"]').submit();

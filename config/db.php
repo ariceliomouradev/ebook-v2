@@ -19,7 +19,7 @@ try {
     // livros (liberar_em) é digitada em horário de Brasília e comparada com NOW() no banco; sem isto
     // a hospedagem (MySQL geralmente em UTC) liberaria o livro com horas de diferença.
     $fuso = (string) env('DB_TIMEZONE', '-03:00');
-    if (preg_match('/^[+-]d{2}:d{2}$/', $fuso)) {
+    if (preg_match('/^[+-]\d{2}:\d{2}$/', $fuso)) { // (antes faltava a barra: "d{2}" casava a letra d e o fuso nunca era aplicado)
         $pdo->exec("SET time_zone = '$fuso'");
     }
 } catch (PDOException $e) {

@@ -15,6 +15,11 @@ if (!$livroId) {
     responderJson(['success' => false, 'error' => 'Livro inválido.'], 422);
 }
 
+require_once '../includes/repositorios.php';
+if (!usuarioPodeVerLivro($pdo, (int) $livroId, (string) $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], titularDaSessao())) {
+    responderJson(['success' => false, 'error' => 'Livro não encontrado.'], 404);
+}
+
 $dados = json_decode(file_get_contents('php://input'), true);
 $pagina = filter_var($dados['pagina'] ?? null, FILTER_VALIDATE_INT);
 $total = filter_var($dados['total'] ?? null, FILTER_VALIDATE_INT);

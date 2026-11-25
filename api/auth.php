@@ -21,6 +21,11 @@ $stmt = $pdo->prepare("SELECT id, nome, senha, perfil, titular_id FROM usuarios 
 $stmt->execute([$email]);
 $usuario = $stmt->fetch();
 
+// Sem usuário, ainda assim gasta o mesmo tempo do bcrypt: o tempo de resposta não revela quais e-mails existem.
+if (!$usuario) {
+    password_verify($senha, '$2y$10$15cHAc6.oNxp0SHRvadsXuR2rSUfr7KhUrp2t5QFEwbzTEDWEzgma'); // hash falso com o mesmo custo (10) das senhas reais
+}
+
 if ($usuario && password_verify($senha, $usuario['senha'])) {
     registrarTentativaLogin($pdo, $email, $ip, true);
 

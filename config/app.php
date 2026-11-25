@@ -6,7 +6,11 @@ const ITENS_POR_PAGINA = 10;              // grade da biblioteca (10 = 2 linhas 
 const ITENS_POR_PAGINA_GERENCIADOR = 20;  // lista do modal "Gerenciar Biblioteca" (carregada por AJAX)
 const RESET_TOKEN_VALIDADE_HORAS = 1;
 const SESSAO_INATIVIDADE_MAX_SEGUNDOS = 14400; // 4 horas sem ação (o logout também pode ser manual)
-const LOGIN_MAX_TENTATIVAS = 5;
+const LOGIN_MAX_TENTATIVAS = 5;       // falhas do MESMO e-mail vindas do MESMO IP antes de travar (5 min)
+const LOGIN_MAX_POR_EMAIL = 20;       // falhas de um e-mail vindas de qualquer IP (ataque distribuído)
+const LOGIN_MAX_POR_IP = 20;          // falhas de um IP contra qualquer e-mail (chute em vários e-mails)
+const RESET_MAX_POR_IP_HORA = 5;      // pedidos de redefinição de senha por IP em 1 hora
+const RESET_MAX_POR_EMAIL_HORA = 3;   // pedidos de redefinição para o mesmo e-mail em 1 hora
 const LOGIN_BLOQUEIO_SEGUNDOS = 300; // 5 minutos
 const UPLOAD_PDF_TAMANHO_MAX = 100 * 1024 * 1024; // 100MB
 const UPLOAD_IMG_TAMANHO_MAX = 5 * 1024 * 1024;   // 5MB

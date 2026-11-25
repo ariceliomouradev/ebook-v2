@@ -7,6 +7,11 @@
 
 Options -Indexes
 
+# A pasta .git inteira (config, HEAD, objects…): o bloqueio acima só vale para arquivos CHAMADOS .git*.
+<IfModule mod_alias.c>
+    RedirectMatch 404 "(^|/)\.git(/|$)"
+</IfModule>
+
 # Manifesto do aplicativo (PWA): alguns Apache não conhecem a extensão e serviriam como texto.
 <IfModule mod_mime.c>
     AddType application/manifest+json .webmanifest
