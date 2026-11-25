@@ -263,6 +263,28 @@ function listarEmAndamento(PDO $pdo, int $usuarioId, int $limite = 8, string $pe
     return $stmt->fetchAll();
 }
 
+/** Favoritos do usuário para a prateleira do painel (o último favoritado primeiro), com a mesma visibilidade da grade. */
+function listarFavoritos(PDO $pdo, int $usuarioId, string $perfil = 'leitor', int $titularId = 0, int $limite = 60): array
+{
+    [$condVis, $paramsVis] = condicaoVisibilidade($perfil, $usuarioId, 'l.', $titularId);
+    $stmt = $pdo->prepare(
+        'SELECT l.id, l.titulo, l.autor, l.capa_arquivo, l.formato
+           FROM favoritos f
+           JOIN livros l ON l.id = f.livro_id
+          WHERE f.usuario_id = :fav_u'
+        . ($condVis !== '' ? ' AND ' . $condVis : ($perfil === 'admin' ? " AND l.publicacao = 'aprovado'" : '')) . '
+          ORDER BY f.criado_em DESC, l.id DESC
+          LIMIT :lim'
+    );
+    foreach ($paramsVis as $chave => $valor) {
+        $stmt->bindValue($chave, $valor);
+    }
+    $stmt->bindValue(':fav_u', $usuarioId, PDO::PARAM_INT);
+    $stmt->bindValue(':lim', $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
 /**
  * Quantos livros favoritos o usuário tem entre os que ele ainda pode ver (um favorito que ficou oculto
  * ou repetido não conta). Mesma regra da grade do painel.

@@ -40,4 +40,11 @@ if ($quer && !$jaFavorito) {
     $pdo->prepare('DELETE FROM favoritos WHERE usuario_id = ? AND livro_id = ?')->execute([$meuId, $livroId]);
 }
 
-responderJson(['success' => true, 'favorito' => $quer, 'total' => contarFavoritos($pdo, $meuId, $perfil, titularDaSessao())]);
+// A prateleira "Favoritos" do painel é refeita com a lista nova (mesmo componente do index.php).
+$favoritosPrateleira = listarFavoritos($pdo, $meuId, $perfil, titularDaSessao());
+$raiz = '../';
+ob_start();
+include '../components/favoritos_prateleira.php';
+$prateleiraHtml = (string) ob_get_clean();
+
+responderJson(['success' => true, 'favorito' => $quer, 'total' => contarFavoritos($pdo, $meuId, $perfil, titularDaSessao()), 'prateleiraHtml' => $prateleiraHtml]);

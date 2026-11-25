@@ -141,7 +141,10 @@ function atualizarCabecalhoAcervo(total, estado) {
     }
     if (tituloEl) tituloEl.textContent = estado && estado.favoritos ? 'Favoritos' : (estado && (estado.busca || estado.categoria) ? 'Resultados' : 'Acervo');
     // O atalho só faz sentido na vitrine; durante busca ou em outra página ele some.
-    if (faixa) faixa.hidden = !!(estado && (estado.busca || estado.categoria || estado.favoritos || String(estado.pagina) !== '1'));
+    const vitrineEscondida = !!(estado && (estado.busca || estado.categoria || estado.favoritos || String(estado.pagina) !== '1'));
+    if (faixa) faixa.hidden = vitrineEscondida;
+    const prateleira = document.getElementById('prateleiraFavoritos');
+    if (prateleira) prateleira.hidden = vitrineEscondida; // o ResizeObserver da prateleira refaz as setas ao reaparecer
 }
 
 /** Botão "Favoritos" da barra do acervo: aceso quando só os favoritos estão sendo mostrados. */
@@ -184,6 +187,7 @@ function alternarFavorito(botao) {
                 return;
             }
             atualizarContagemFavoritos(data.total);
+            atualizarPrateleiraFavoritos(data.prateleiraHtml);
             if (!data.favorito && estadoAtualDaUrl().favoritos === '1') {
                 // na lista de favoritos, tirar o coração tira o livro da lista
                 carregarLivros({}, { semHistorico: true });
@@ -242,6 +246,47 @@ function habilitarArrastar(trilho) {
     }, true);
 }
 document.querySelectorAll('[data-arrastar], .continuar-trilho').forEach(habilitarArrastar);
+
+/**
+ * Prateleira "Favoritos": as setas (só no computador, por CSS) rolam o trilho; a da esquerda só aparece depois que
+ * houve rolagem e a da direita só enquanto ainda há livros para o lado. No celular o toque/arraste já resolve.
+ */
+function iniciarPrateleira(secao) {
+    const trilho = secao && secao.querySelector('.prateleira__trilho');
+    if (!trilho) return;
+    const esq = secao.querySelector('.prateleira__seta--esq');
+    const dir = secao.querySelector('.prateleira__seta--dir');
+    const atualizar = () => {
+        const maximo = trilho.scrollWidth - trilho.clientWidth;
+        if (esq) esq.hidden = trilho.scrollLeft <= 2;
+        if (dir) dir.hidden = maximo <= 2 || trilho.scrollLeft >= maximo - 2;
+    };
+    trilho.addEventListener('scroll', atualizar, { passive: true });
+    if (typeof ResizeObserver === 'function') new ResizeObserver(atualizar).observe(trilho);
+    trilho.querySelectorAll('img').forEach((img) => img.addEventListener('load', atualizar, { once: true }));
+    [esq, dir].forEach((botao) => {
+        if (!botao) return;
+        botao.addEventListener('click', () => {
+            trilho.scrollBy({ left: Number(botao.dataset.seta) * Math.max(200, trilho.clientWidth * 0.8), behavior: 'smooth' });
+        });
+    });
+    habilitarArrastar(trilho);
+    atualizar();
+}
+iniciarPrateleira(document.getElementById('prateleiraFavoritos'));
+
+/** Troca a prateleira pelo HTML novo (depois de favoritar/desfavoritar), mantendo-a oculta se estava oculta. */
+function atualizarPrateleiraFavoritos(html) {
+    const atual = document.getElementById('prateleiraFavoritos');
+    if (!atual || typeof html !== 'string' || html === '') return;
+    const modelo = document.createElement('template');
+    modelo.innerHTML = html.trim();
+    const nova = modelo.content.firstElementChild;
+    if (!nova) return;
+    nova.hidden = atual.hidden;
+    atual.replaceWith(nova);
+    iniciarPrateleira(nova);
+}
 
 /** Tecla '/' leva o foco para a busca (como em GitHub e YouTube), sem atrapalhar quem digita. */
 document.addEventListener('keydown', function (e) {

@@ -730,19 +730,77 @@ input[type='password']::-ms-clear {
 .toolbar__select:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
 .toolbar__select option { background: var(--ml-surface); color: var(--ml-text); }
 
-/* Filtros: Favoritos fica fixo à esquerda, junto das categorias (os dois são filtros da lista). */
-.filtros {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: -2px 0 2px;
+/* Prateleira "Favoritos": linha de capas com rolagem horizontal; setas só com mouse (no toque, arrastar basta). */
+.prateleira { margin-bottom: 10px; }
+.prateleira.is-vazia { display: none; }
+.prateleira__contagem {
+    color: var(--ml-text-faint);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
 }
-.filtros .chips { flex: 1 1 auto; min-width: 0; margin: 0; }
-.filtros__divisor {
-    flex: none;
-    width: 1px;
-    height: 22px;
-    background: var(--ml-border-strong);
+.prateleira__corpo { position: relative; }
+.prateleira__trilho {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    cursor: grab;
+}
+.prateleira__trilho::-webkit-scrollbar { display: none; }
+.prateleira__trilho.is-arrastando { cursor: grabbing; user-select: none; }
+.prateleira__item {
+    position: relative;
+    flex: 0 0 auto;
+    width: 118px;
+    aspect-ratio: 2 / 3;
+    border-radius: var(--ml-radius, 12px);
+    overflow: hidden;
+    border: 1px solid var(--ml-border);
+    background: var(--ml-surface);
+    transition: transform var(--ml-fast) var(--ml-ease), border-color var(--ml-fast) var(--ml-ease);
+}
+.prateleira__item img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; }
+.prateleira__item:hover { transform: translateY(-3px); border-color: var(--ml-border-strong); }
+.prateleira__item:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
+.prateleira__sem-capa {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ml-text-dim);
+}
+.prateleira__seta {
+    position: absolute;
+    top: calc(50% - 4px);
+    transform: translateY(-50%);
+    z-index: 3;
+    display: none; /* só no computador (abaixo) */
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--ml-border-strong);
+    background: var(--ml-surface-3);
+    color: var(--ml-text);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition: background-color var(--ml-fast) var(--ml-ease), transform var(--ml-fast) var(--ml-ease);
+}
+.prateleira__seta:hover { background: var(--ml-accent); color: var(--ml-accent-ink); border-color: var(--ml-accent); }
+.prateleira__seta:focus-visible { outline: 2px solid var(--ml-accent); outline-offset: 2px; }
+.prateleira__seta--esq { left: -8px; }
+.prateleira__seta--dir { right: -8px; }
+@media (hover: hover) and (pointer: fine) {
+    .prateleira__seta:not([hidden]) { display: grid; }
+}
+@media (max-width: 575px) {
+    .prateleira__item { width: 100px; }
 }
 
 /* Carrossel de divulgação: troca sozinho, sem setas nem indicadores. */

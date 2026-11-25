@@ -82,7 +82,12 @@ $tituloPagina = 'Meus Livros';
                 <?php if ($paginaAtual === 1 && $busca === '' && $categoriaAtual === '') {
                     $emAndamento = listarEmAndamento($pdo, (int) $_SESSION['usuario_id'], 8, $_SESSION['usuario_perfil'], titularDaSessao());
                     include 'components/continuar_lendo.php';
-                } ?>
+                }
+                // Prateleira de favoritos: só na vitrine (1ª página, sem busca nem categoria); o JS a esconde ao filtrar.
+                $favoritosPrateleira = listarFavoritos($pdo, (int) $_SESSION['usuario_id'], $_SESSION['usuario_perfil'], titularDaSessao());
+                $raiz = '';
+                $prateleiraOculta = !($paginaAtual === 1 && $busca === '' && $categoriaAtual === '' && !$soFavoritos);
+                include 'components/favoritos_prateleira.php'; ?>
 
                 <div class="toolbar">
                     <div class="toolbar__titulo">
@@ -107,13 +112,7 @@ $tituloPagina = 'Meus Livros';
                     </label>
                 </div>
 
-                <div class="filtros">
-                    <button type="button" class="btn-favoritos-filtro<?= $soFavoritos ? ' is-ativo' : '' ?>" id="btnFavoritosFiltro" aria-pressed="<?= $soFavoritos ? 'true' : 'false' ?>" data-testid="btn-favoritos-filtro" title="Mostrar só os meus favoritos">
-                        <i class="fas fa-heart" aria-hidden="true"></i> Favoritos <span class="chip__n" id="totalFavoritos" data-testid="total-favoritos"><?= (int) $totalFavoritos ?></span>
-                    </button>
-                    <span class="filtros__divisor" aria-hidden="true"></span>
-                    <?php include 'components/categorias_chips.php'; ?>
-                </div>
+                <?php include 'components/categorias_chips.php'; ?>
 
                 <div id="areaLivros">
                     <?php include 'components/book_list.php'; ?>
