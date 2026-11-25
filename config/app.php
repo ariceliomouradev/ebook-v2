@@ -21,6 +21,8 @@ const ANUNCIOS_PERFIS = ['admin', 'leitor']; // quem vê o banner de anúncio: A
 const FOTO_PERFIL_MAX_BYTES = 2 * 1024 * 1024; // foto de perfil: até 2 MB no envio (vira WebP de 256 px, ~20 KB)
 const FOTO_PERFIL_MAX_PIXELS = 12000000;      // 12 megapixels: acima disso a decodificação estoura a memória do PHP
 const FOTO_PERFIL_LADO = 256;                 // lado da foto salva (quadrada)
+const DOWNLOAD_LIMITE_DIA = ['admin' => 0, 'contribuidor' => 100, 'leitor' => 40]; // livros DIFERENTES abertos por usuário por dia (0 = sem limite); contra raspagem do acervo
+const CONFIRMACAO_EMAIL_HORAS = 24;      // validade do link de confirmação de e-mail do cadastro
 const LIMITE_DEPENDENTES = 2;          // contas extras que o titular do Pro pode criar (titular + 2 = 3 acessos)
 const ACERVO_POR_PAGINA = 10;            // livros por página em "Explorar acervo" (troca do Grátis)
 // Teste grátis e mensalidade (ver includes/assinatura.php). Pagamento por PIX, combinado com o suporte no WhatsApp.

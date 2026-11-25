@@ -28,11 +28,11 @@ $posicaoAtual = $posicaoAtual ?? null;
     <link rel="icon" href="assets/icons/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous">
 
     <!-- epub.js 0.3 não está no cdnjs (só a 0.2, API antiga): vem do jsDelivr, já liberado na CSP -->
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js" integrity="sha384-ZqmkDa/1AGF4SKdSmXgEG+3G+Gsb6yNqUSq2Mqp0jDf1GWk+UY5eNbEd7hgwiywI" crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="<?= asset('assets/css/leitor.css') ?>">
     <link rel="stylesheet" href="<?= asset('assets/css/leitor-epub.css') ?>">

@@ -120,7 +120,7 @@ $mostrarBusca = $mostrarBusca ?? false;
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalTrocarSenha" data-testid="btn-menu-trocar-senha"><i class="fas fa-key me-2"></i>Trocar Senha</a></li>
 
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="<?= url('logout.php') ?>" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</a></li>
+                    <li><form method="POST" action="<?= url('logout.php') ?>" class="m-0"><?= csrf_field() ?><button type="submit" class="dropdown-item text-danger" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</button></form></li>
                 </ul>
             </div>
         </div>

@@ -23,6 +23,12 @@ if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int
     die('Livro não encontrado.');
 }
 
+// Limite diário de livros diferentes (includes/limites.php): o 1º acesso do dia ao livro conta aqui; o download seguinte já passa.
+require_once '../includes/limites.php';
+if (!registrarAberturaDeLivro($pdo, (string) $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], (int) $id)) {
+    paginaLimiteDeLivros((string) $_SESSION['usuario_perfil'], url('index.php'));
+}
+
 $stmtProgresso = $pdo->prepare("SELECT progresso, posicao FROM leituras WHERE usuario_id = ? AND livro_id = ?");
 $stmtProgresso->execute([$_SESSION['usuario_id'], $id]);
 $leitura = $stmtProgresso->fetch() ?: [];
@@ -66,9 +72,9 @@ if (($livro['formato'] ?? 'pdf') === 'epub') {
     <link rel="icon" href="assets/icons/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous">
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" integrity="sha384-uLiAv4VcjM5H2Jsqzl8EajEaxPugj1CIzQaCjQ8c5//vC+elhxO5pZfXGxoLQi1W" crossorigin="anonymous"></script>
 
     <link rel="stylesheet" href="<?= asset('assets/css/leitor.css') ?>">
 </head>

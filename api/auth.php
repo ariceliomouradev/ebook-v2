@@ -17,6 +17,8 @@ if (loginBloqueado($pdo, $email, $ip)) {
     redirecionar('login.php?erro=bloqueado');
 }
 
+require_once '../includes/cadastro.php';
+
 $stmt = $pdo->prepare("SELECT id, nome, senha, perfil, titular_id FROM usuarios WHERE email = ? LIMIT 1");
 $stmt->execute([$email]);
 $usuario = $stmt->fetch();
@@ -31,6 +33,10 @@ if ($usuario && password_verify($senha, $usuario['senha'])) {
 
     if (contaBloqueada($pdo, (int) $usuario['id'])) {
         redirecionar('login.php?erro=conta_bloqueada');
+    }
+
+    if (emailPendenteDeConfirmacao($pdo, (int) $usuario['id'])) {
+        redirecionar('login.php?erro=confirmar_email');
     }
 
     abrirSessaoDoUsuario($pdo, $usuario);

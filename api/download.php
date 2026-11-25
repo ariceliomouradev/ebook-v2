@@ -21,6 +21,14 @@ if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int
     die('Livro não encontrado.');
 }
 
+// Limite diário de livros DIFERENTES abertos (contra raspagem do acervo). Reabrir o mesmo livro não gasta o limite.
+require_once '../includes/limites.php';
+if (!registrarAberturaDeLivro($pdo, (string) $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], $id)) {
+    http_response_code(429);
+    header('Retry-After: 3600');
+    die('Limite diário de livros atingido.');
+}
+
 $caminho = __DIR__ . '/../uploads/' . $livro['nome_arquivo'];
 if (!is_file($caminho)) {
     http_response_code(404);

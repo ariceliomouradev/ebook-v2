@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `acesso_origem` enum('teste','pago','cortesia') NOT NULL DEFAULT 'cortesia',
   `bloqueado` tinyint(1) NOT NULL DEFAULT 0,
   `trocar_senha` tinyint(1) NOT NULL DEFAULT 0,
+  `email_confirmado` tinyint(1) NOT NULL DEFAULT 1,
+  `confirmacao_token` varchar(64) DEFAULT NULL,
+  `confirmacao_expira` datetime DEFAULT NULL,
   `criado_em` timestamp NOT NULL DEFAULT current_timestamp(),
   `reset_token` varchar(64) DEFAULT NULL,
   `reset_expires` datetime DEFAULT NULL,
@@ -38,6 +41,16 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `email` (`email`),
   KEY `idx_usuarios_titular` (`titular_id`),
   CONSTRAINT `fk_usuario_titular` FOREIGN KEY (`titular_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ---------- Livros abertos por dia (limite contra raspagem do acervo) ------------------
+CREATE TABLE IF NOT EXISTS `livros_abertos` (
+  `usuario_id` int(11) NOT NULL,
+  `livro_id` int(11) NOT NULL,
+  `dia` date NOT NULL,
+  PRIMARY KEY (`usuario_id`,`livro_id`,`dia`),
+  KEY `idx_livros_abertos_dia` (`dia`),
+  CONSTRAINT `fk_livros_abertos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ---------- Categorias do acervo -----------------------------------------------------

@@ -63,7 +63,10 @@ $erro = $_GET['erro'] ?? '';
             <div class="alert alert-danger py-2 small text-center" role="alert" data-testid="cadastro-alerta"><i class="fas fa-exclamation-circle me-1"></i> <?= e($mensagensErro[$erro]) ?></div>
         <?php endif; ?>
 
-        <?php if (!cadastroAberto()): ?>
+        <?php if (($_GET['ok'] ?? '') === 'confirme'): ?>
+            <div class="alert alert-success small text-center" role="status" data-testid="cadastro-confirme"><i class="fas fa-envelope-circle-check me-1"></i> Quase lá! Se o e-mail informado puder receber mensagens, enviamos um link para confirmar a conta (vale <?= (int) CONFIRMACAO_EMAIL_HORAS ?> horas). Confira também a caixa de spam.</div>
+            <p class="text-center small mb-0"><a href="<?= url('login.php') ?>" data-testid="cadastro-voltar-login">Voltar ao login</a></p>
+        <?php elseif (!cadastroAberto()): ?>
             <div class="alert alert-warning small text-center" data-testid="cadastro-fechado">O cadastro está fechado no momento. Peça o seu acesso ao administrador.</div>
         <?php else: ?>
         <form action="api/cadastrar.php" method="POST" data-testid="cadastro-form" novalidate>
@@ -109,7 +112,7 @@ $erro = $_GET['erro'] ?? '';
     </div>
 </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
 </body>
 </html>

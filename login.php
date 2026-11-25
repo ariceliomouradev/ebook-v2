@@ -55,6 +55,10 @@ $tituloPagina = 'Login - Biblioteca';
                 echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-user-lock me-1"></i> Seu acesso está bloqueado. Fale com o suporte pelo WhatsApp para regularizar.</div>';
             } elseif ($_GET['erro'] === 'acesso') {
                 echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-user-lock me-1"></i> Sua conta foi aberta em outro aparelho e este acesso foi encerrado. Entre novamente.</div>';
+            } elseif ($_GET['erro'] === 'confirmar_email') {
+                echo '<div class="alert alert-warning py-2 small text-center" data-testid="login-alerta"><i class="fas fa-envelope me-1"></i> Confirme o seu e-mail: enviamos um link para você. Não chegou? Faça o cadastro de novo com o mesmo e-mail para receber outro.</div>';
+            } elseif ($_GET['erro'] === 'confirmacao_invalida') {
+                echo '<div class="alert alert-danger py-2 small text-center" data-testid="login-alerta"><i class="fas fa-exclamation-circle me-1"></i> Link de confirmação inválido ou expirado. Faça o cadastro de novo para receber outro.</div>';
             } elseif ($_GET['erro'] === 'token_invalido') {
                 echo '<div class="alert alert-danger py-2 small text-center" data-testid="login-alerta"><i class="fas fa-exclamation-circle me-1"></i> Link de redefinição inválido ou expirado.</div>';
             } else {
@@ -63,6 +67,9 @@ $tituloPagina = 'Login - Biblioteca';
         }
         if (isset($_GET['msg']) && $_GET['msg'] === 'reset_link_sent') {
             echo '<div class="alert alert-success py-2 small text-center" data-testid="login-alerta"><i class="fas fa-check-circle me-1"></i> Se o e-mail estiver cadastrado, as instruções foram enviadas.</div>';
+        }
+        if (isset($_GET['msg']) && $_GET['msg'] === 'email_confirmado') {
+            echo '<div class="alert alert-success py-2 small text-center" data-testid="login-alerta"><i class="fas fa-check-circle me-1"></i> E-mail confirmado! Entre com a sua senha.</div>';
         }
         if (isset($_GET['msg']) && $_GET['msg'] === 'pwd_recovered') {
             echo '<div class="alert alert-info py-2 small text-center" data-testid="login-alerta"><i class="fas fa-check-circle me-1"></i> Senha redefinida! Faça login.</div>';
@@ -129,7 +136,7 @@ $tituloPagina = 'Login - Biblioteca';
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
 </body>
 </html>

@@ -7,6 +7,29 @@
 const CADASTRO_MAX_POR_HORA = 5;       // cadastros por IP em 1 hora
 const CADASTRO_MARCA = '__cadastro__'; // marca na tabela tentativas_login (não mistura com as falhas de login)
 
+/**
+ * Confirmação de e-mail no cadastro (CADASTRO_CONFIRMAR_EMAIL=true no .env; desligada por padrão).
+ * Ligada: a conta nasce SEM acesso, o link vai para o e-mail e só depois dele a pessoa entra; a resposta do cadastro
+ * é sempre a mesma exista ou não o e-mail (não revela quem já tem conta) e ninguém cria conta com o e-mail dos outros.
+ * Só ligue depois de testar o envio de e-mail da hospedagem: sem e-mail chegando, ninguém consegue se cadastrar.
+ */
+function cadastroConfirmarEmail(): bool
+{
+    return in_array(strtolower(trim((string) env('CADASTRO_CONFIRMAR_EMAIL', 'false'))), ['1', 'true', 'sim', 'on'], true);
+}
+
+/** A conta ainda espera a confirmação do e-mail? Banco sem a migração v1.20: nunca. */
+function emailPendenteDeConfirmacao(PDO $pdo, int $usuarioId): bool
+{
+    try {
+        $stmt = $pdo->prepare('SELECT email_confirmado FROM usuarios WHERE id = ?');
+        $stmt->execute([$usuarioId]);
+        return (string) $stmt->fetchColumn() === '0';
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 function cadastroAberto(): bool
 {
     return !in_array(strtolower(trim((string) env('CADASTRO_ABERTO', 'true'))), ['0', 'false', 'nao', 'não', 'off'], true);

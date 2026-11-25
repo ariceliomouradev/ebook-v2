@@ -59,7 +59,7 @@ $ano = date('Y');
     <link rel="icon" href="assets/icons/favicon-32.png" type="image/png" sizes="32x32">
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
     <link rel="preload" href="assets/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha384-3B6NwesSXE7YJlcLI9RpRqGf2p/EgVH8BgoKTaUrmKNDkHPStTQ3EyoYjCGXaOTS" crossorigin="anonymous">
     <link rel="stylesheet" href="<?= asset('assets/css/landing.css') ?>">
 </head>
 <body>

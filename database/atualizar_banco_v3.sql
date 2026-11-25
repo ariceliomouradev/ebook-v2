@@ -96,6 +96,20 @@ SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `leituras` ADD COLUMN `posicao`
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `foto` varchar(60) DEFAULT NULL AFTER `whatsapp`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'foto');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `email_confirmado` tinyint(1) NOT NULL DEFAULT 1', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'email_confirmado');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `confirmacao_token` varchar(64) DEFAULT NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'confirmacao_token');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `confirmacao_expira` datetime DEFAULT NULL', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'confirmacao_expira');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+CREATE TABLE IF NOT EXISTS `livros_abertos` (
+  `usuario_id` int(11) NOT NULL,
+  `livro_id` int(11) NOT NULL,
+  `dia` date NOT NULL,
+  PRIMARY KEY (`usuario_id`,`livro_id`,`dia`),
+  KEY `idx_livros_abertos_dia` (`dia`),
+  CONSTRAINT `fk_livros_abertos_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 -- banner quadrado (v1.16): novo formato 'q', começando com as peças verticais já cadastradas
 ALTER TABLE `banners` MODIFY `formato` enum('h','v','q') NOT NULL;
 INSERT INTO `banners` (`formato`, `arquivo`, `alt`, `link`, `ordem`)

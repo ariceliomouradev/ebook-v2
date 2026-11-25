@@ -80,7 +80,8 @@ $primeiroNome = $nome !== '' ? explode(' ', $nome)[0] : '';
             </div>
 
             <button type="submit" class="btn btn-info w-100" data-testid="btn-salvar-definir-senha">Salvar e entrar</button>
-            <a href="<?= url('logout.php') ?>" class="btn btn-link text-secondary w-100 mt-2">Sair</a>
+            <?php /* mesmo formulário (já leva o csrf_token): o botão envia para o logout em vez de salvar a senha */ ?>
+            <button type="submit" class="btn btn-link text-secondary w-100 mt-2" formaction="<?= url('logout.php') ?>" formmethod="post" formnovalidate data-testid="definir-senha-sair">Sair</button>
         </form>
     </div>
     </div>

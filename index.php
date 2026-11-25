@@ -44,7 +44,7 @@ $tituloPagina = 'Meus Livros';
 
 <head>
     <?php include 'components/head.php'; ?>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" integrity="sha384-uLiAv4VcjM5H2Jsqzl8EajEaxPugj1CIzQaCjQ8c5//vC+elhxO5pZfXGxoLQi1W" crossorigin="anonymous"></script>
 </head>
 
 <body class="d-flex flex-column">
@@ -160,7 +160,7 @@ $tituloPagina = 'Meus Livros';
     'baseUrl'   => $raiz,
 ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
     <script src="<?= asset('assets/js/app.js') ?>"></script>
     <script src="<?= asset('assets/js/foto-perfil.js') ?>"></script>

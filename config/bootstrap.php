@@ -21,13 +21,27 @@ if (session_status() === PHP_SESSION_NONE) {
     // O PHP apaga o arquivo da sessão após session.gc_maxlifetime (padrão ~24 min) e a hospedagem
     // compartilhada limpa a pasta temporária com o valor dela: quem lia um livro longo voltava ao login.
     // Por isso a sessão fica numa pasta própria, com a vida igual à inatividade permitida.
-    $pastaSessoes = __DIR__ . '/../sessoes';
-    if (!is_dir($pastaSessoes)) {
-        @mkdir($pastaSessoes, 0700, true);
-        @file_put_contents($pastaSessoes . '/.htaccess', "Require all denied\n");
+    // Onde guardar: 1) SESSAO_PASTA do .env; 2) uma pasta IRMÃ da pasta pública (fora do que o site serve: nenhum
+    // erro de .htaccess expõe as sessões); 3) sessoes/ dentro do projeto (com .htaccess que nega tudo), quando a
+    // hospedagem não deixa gravar fora (open_basedir); 4) a pasta padrão do PHP.
+    $candidatas = [];
+    if (($daEnv = trim((string) env('SESSAO_PASTA', ''))) !== '') {
+        $candidatas[] = [$daEnv, false];
     }
-    if (is_dir($pastaSessoes) && is_writable($pastaSessoes)) {
-        ini_set('session.save_path', $pastaSessoes);
+    $raizProjeto = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
+    $candidatas[] = [dirname($raizProjeto) . DIRECTORY_SEPARATOR . 'sessoes_' . preg_replace('/[^A-Za-z0-9_-]/', '', basename($raizProjeto)), false];
+    $candidatas[] = [$raizProjeto . DIRECTORY_SEPARATOR . 'sessoes', true];
+    foreach ($candidatas as [$pastaSessoes, $dentroDoSite]) {
+        if (!is_dir($pastaSessoes)) {
+            @mkdir($pastaSessoes, 0700, true);
+        }
+        if ($dentroDoSite && is_dir($pastaSessoes) && !is_file($pastaSessoes . '/.htaccess')) {
+            @file_put_contents($pastaSessoes . '/.htaccess', "Require all denied\n");
+        }
+        if (is_dir($pastaSessoes) && is_writable($pastaSessoes)) {
+            ini_set('session.save_path', $pastaSessoes);
+            break;
+        }
     }
     ini_set('session.gc_maxlifetime', (string) (SESSAO_INATIVIDADE_MAX_SEGUNDOS + 3600));
     ini_set('session.gc_probability', '1');
