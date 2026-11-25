@@ -97,7 +97,9 @@ header(
     // PDF.js carrega o worker de um CDN de origem diferente da página: internamente ele faz
     // fetch() do script e o reempacota como Blob antes de instanciar o Worker — essa busca é
     // regida por connect-src (não por worker-src), então o CDN precisa estar aqui também.
-    "connect-src 'self' https://cdnjs.cloudflare.com; " .
+    // cdn.jsdelivr.net: o DevTools do navegador busca os arquivos .map do Bootstrap/epub.js ao ser aberto; sem isto o
+    // console enche de "violates Content Security Policy" (inofensivo, mas assusta). É só leitura, no mesmo CDN já usado para scripts.
+    "connect-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; " .
     "worker-src 'self' blob: https://cdnjs.cloudflare.com; " .
     "frame-ancestors 'none'; " .
     "base-uri 'self'"
