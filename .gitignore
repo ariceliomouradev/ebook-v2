@@ -60,3 +60,9 @@ database/.duplicados/
 
 # Sessões do PHP (pasta própria, criada em runtime)
 /sessoes/
+
+# Arquivos temporários dos scripts de segurança (cookies, relatórios)
+scripts/seguranca/jar*.txt
+scripts/seguranca/achados_*.json
+scripts/seguranca/carga.json
+scripts/seguranca/*.out
