@@ -71,7 +71,12 @@
     function aplicarTema() {
         document.body.dataset.tema = tema;
         document.querySelector('meta[name="theme-color"]')?.setAttribute('content', TEMAS[tema].fundo);
-        if (rendition) rendition.themes.select(tema);
+        // Um único tema ("ativo") reescrito a cada troca: registrar um tema por cor deixava as folhas de estilo
+        // antigas no livro e a mais recente na ordem do documento vencia, então a cor da página não voltava.
+        if (rendition) {
+            rendition.themes.register('ativo', regrasDoTema(tema));
+            rendition.themes.select('ativo');
+        }
         const b = $('btnTema');
         if (b) {
             b.title = 'Tema: ' + TEMAS[tema].nome + ' (tocar para trocar)';
@@ -316,6 +321,31 @@
             if (!abriu) mostrarErro();
         });
 
+    // Livro de layout fixo: desloca o quadro para que o conteúdo (união dos elementos visíveis do corpo) fique no meio
+    function centralizarPagina(visao) {
+        try {
+            const quadro = visao && visao.iframe;
+            const doc = quadro && quadro.contentDocument;
+            if (!doc || !doc.body) return;
+            let esq = Infinity, dir = -Infinity;
+            Array.prototype.forEach.call(doc.body.children, (el) => {
+                const r = el.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0 && getComputedStyle(el).display !== 'none') {
+                    esq = Math.min(esq, r.left); dir = Math.max(dir, r.right);
+                }
+            });
+            if (!isFinite(esq) || dir <= esq) return;
+            const area = $('epubViewer').getBoundingClientRect();
+            const q = quadro.getBoundingClientRect();
+            const centroConteudo = q.left + (esq + dir) / 2;       // posição atual do meio do conteúdo
+            const alvo = area.left + area.width / 2;
+            const atual = parseFloat(quadro.dataset.desloc || '0');
+            const novo = atual + (alvo - centroConteudo);
+            quadro.dataset.desloc = String(novo);
+            quadro.style.transform = 'translateX(' + Math.round(novo) + 'px)';
+        } catch (e) { /* sem centralizar: o livro continua legível */ }
+    }
+
     function abrirLivro() {
         {
             layoutFixo = !!(book.packaging && book.packaging.metadata && book.packaging.metadata.layout === 'pre-paginated');
@@ -326,8 +356,13 @@
                 spread: 'none',
                 allowScriptedContent: false, // o conteúdo do livro nunca executa script
             });
-            Object.keys(TEMAS).forEach((t) => rendition.themes.register(t, regrasDoTema(t)));
             aplicarTema();
+            if (layoutFixo) {
+                // página-imagem: o epub.js a encosta na esquerda; centraliza o conteúdo na coluna de leitura
+                rendition.on('rendered', (secao, visao) => {
+                    [0, 250, 900].forEach((ms) => setTimeout(() => centralizarPagina(visao), ms));
+                });
+            }
             aplicarFonte();
 
             rendition.on('relocated', aoMudarLocal);
