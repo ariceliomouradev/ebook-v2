@@ -65,4 +65,14 @@ function achado(sev, id, titulo, evidencia, correcao) {
 }
 const ok = (msg) => console.log(`  ok  ${msg}`);
 
-module.exports = { Client, BASE, SENHA, sql, achados, achado, ok };
+/** Limites diários de livros diferentes por plano, lidos de config/app.php (DOWNLOAD_LIMITE_DIA). */
+function limitesDiarios() {
+  const fs = require('fs');
+  const cfg = fs.readFileSync(require('path').join(__dirname, '..', '..', 'config', 'app.php'), 'utf8');
+  const m = cfg.match(/DOWNLOAD_LIMITE_DIA = \[([^\]]+)\]/);
+  const o = {};
+  for (const [, k, v] of m[1].matchAll(/'(\w+)'\s*=>\s*(\d+)/g)) o[k] = Number(v);
+  return o;
+}
+
+module.exports = { limitesDiarios, Client, BASE, SENHA, sql, achados, achado, ok };

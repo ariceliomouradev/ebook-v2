@@ -96,7 +96,7 @@ Sempre `{"erro": {"codigo": "…", "mensagem": "…"}}`:
 
 ## Limites e regras
 
-- **Livros diferentes abertos por dia** (rota `/arquivo`): Grátis 40, Pro 100, Administrador sem limite. Reabrir o mesmo livro no mesmo dia não gasta o limite. É o mesmo contador do site.
+- **Livros diferentes abertos por dia** (rota `/arquivo`): Grátis 100, Pro 300, Administrador sem limite. Reabrir o mesmo livro no mesmo dia não gasta o limite. É o mesmo contador do site.
 - **Login**: 5 senhas erradas do mesmo e-mail e IP travam por 5 minutos (e há limites por e-mail e por IP).
 - **Visibilidade**: Grátis e Pro veem só o que o administrador liberou para o plano (e os próprios envios); o administrador vê o acervo aprovado.
 - A API **não usa cookie nem sessão** e, por isso, não precisa de CSRF; o cookie do site não autentica na API.

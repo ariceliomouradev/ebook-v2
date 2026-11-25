@@ -1,7 +1,8 @@
 // T9: API REST v1 — funcional (login, listas, capa, arquivo, favorito, progresso) e de segurança (token, visibilidade, SQLi, limites)
 const fs = require('fs');
 const path = require('path');
-const { Client, sql, ok, BASE, SENHA } = require('./lib');
+const { Client, sql, ok, BASE, SENHA, limitesDiarios } = require('./lib');
+const LIM = limitesDiarios();
 
 const API = BASE + 'api/v1';
 const falhas = [];
@@ -65,7 +66,7 @@ async function entrar(email, senha = SENHA) {
 
   console.log('== /me ==');
   const me = J(await chamar('GET', '/me', { token: L.token }));
-  ver(me.usuario?.email === 'leitor@e2e.test' && me.limite_diario_de_livros === 40, '/me mostra o usuário e o limite diário (40 no Grátis)');
+  ver(me.usuario?.email === 'leitor@e2e.test' && me.limite_diario_de_livros === LIM.leitor, `/me mostra o usuário e o limite diário (${LIM.leitor} no Grátis)`);
   const meA = J(await chamar('GET', '/me', { token: A.token }));
   ver(meA.limite_diario_de_livros === null, 'administrador sem limite diário');
 
@@ -135,9 +136,9 @@ async function entrar(email, senha = SENHA) {
 
   console.log('== limite diário de livros (igual ao site) ==');
   sql(`DELETE FROM livros_abertos WHERE usuario_id=${uid.leitor}`);
-  sql(`INSERT INTO livros_abertos (usuario_id, livro_id, dia) SELECT ${uid.leitor}, id, CURDATE() FROM livros WHERE id NOT IN (${pub}, ${semCapa}) LIMIT 40`);
+  sql(`INSERT INTO livros_abertos (usuario_id, livro_id, dia) SELECT ${uid.leitor}, id, CURDATE() FROM livros WHERE id NOT IN (${pub}, ${semCapa}) LIMIT ${LIM.leitor}`);
   const passou = await chamar('GET', `/livros/${pub}/arquivo`, { token: L.token, headers: { range: 'bytes=0-9' } });
-  ver(passou.status === 429 && J(passou).erro?.codigo === 'limite_diario', 'Grátis com 40 livros abertos hoje: o 41º novo recebe 429');
+  ver(passou.status === 429 && J(passou).erro?.codigo === 'limite_diario', `Grátis com ${LIM.leitor} livros abertos hoje: o seguinte novo recebe 429`);
   sql(`INSERT INTO livros_abertos (usuario_id, livro_id, dia) VALUES (${uid.leitor}, ${pub}, CURDATE())`);
   ver((await chamar('GET', `/livros/${pub}/arquivo`, { token: L.token, headers: { range: 'bytes=0-9' } })).status === 206, 'livro já aberto hoje continua liberado');
   sql(`DELETE FROM livros_abertos WHERE usuario_id=${uid.leitor}`);

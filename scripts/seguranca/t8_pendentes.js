@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
-const { Client, sql, ok } = require('./lib');
+const { Client, sql, ok, limitesDiarios } = require('./lib');
+const LIM = limitesDiarios();
 
 const RAIZ = path.resolve(__dirname, '..', '..');
 const ENV = path.join(RAIZ, '.env');
@@ -24,7 +25,7 @@ const csrfDe = (html) => (html.match(/name="csrf_token" value="([a-f0-9]{64})"/)
   const base = sql("SELECT nome_arquivo FROM livros WHERE publicacao='aprovado' AND formato='pdf' LIMIT 1")[0][0];
   sql("DELETE FROM livros WHERE titulo LIKE '[E2E] PT8%'");
   const criarLivro = (n) => { sql(`INSERT INTO livros (titulo, autor, nome_arquivo, formato, usuario_id, visivel_para, publicacao) VALUES ('[E2E] PT8 ${n}', 'a', '${base}', 'pdf', ${uid.admin}, 'contribuidor,leitor', 'aprovado')`); return Number(sql('SELECT MAX(id) FROM livros')[0][0]); };
-  const lote = Array.from({ length: 42 }, (_, i) => criarLivro(i));
+  const lote = Array.from({ length: LIM.leitor + 2 }, (_, i) => criarLivro(i));
   sql(`DELETE FROM livros_abertos WHERE usuario_id IN (${uid.leitor}, ${uid.contribuidor})`);
   const L = new Client('L'); await L.login('leitor@e2e.test');
   let aceitos = 0, negado = null;
@@ -32,22 +33,22 @@ const csrfDe = (html) => (html.match(/name="csrf_token" value="([a-f0-9]{64})"/)
     const r = await L.req(`api/download.php?id=${id}`, { headers: { range: 'bytes=0-9' } });
     if (r.status === 200 || r.status === 206) aceitos++; else if (r.status === 429) { negado = id; break; }
   }
-  ver(aceitos === 40 && negado === lote[40], 'Grátis abre 40 livros diferentes e o 41º recebe 429', `(aceitos ${aceitos}, negado ${negado})`);
+  ver(aceitos === LIM.leitor && negado === lote[LIM.leitor], `Grátis abre ${LIM.leitor} livros diferentes e o seguinte recebe 429`, `(aceitos ${aceitos}, negado ${negado})`);
   const reab = await L.req(`api/download.php?id=${lote[0]}`, { headers: { range: 'bytes=0-9' } });
   ver(reab.status === 206 || reab.status === 200, 'reabrir um livro já aberto hoje continua liberado', `(status ${reab.status})`);
-  const pag = await L.req(`leitor?id=${lote[41]}`);
+  const pag = await L.req(`leitor?id=${lote[LIM.leitor + 1]}`);
   ver(pag.status === 429 && /limite-livros/.test(pag.text), 'a página do leitor mostra o aviso amigável (429) para livro novo');
   const pagVelho = await L.req(`leitor?id=${lote[1]}`);
   ver(pagVelho.status === 200, 'a página de um livro já aberto hoje carrega normalmente');
   const A = new Client('A'); await A.login('admin@e2e.test');
-  const ra = await A.req(`api/download.php?id=${lote[41]}`, { headers: { range: 'bytes=0-9' } });
+  const ra = await A.req(`api/download.php?id=${lote[LIM.leitor + 1]}`, { headers: { range: 'bytes=0-9' } });
   ver(ra.status === 206 || ra.status === 200, 'administrador não tem limite');
   sql(`DELETE FROM livros_abertos WHERE usuario_id IN (${uid.leitor}, ${uid.contribuidor})`);
   const C = new Client('C'); await C.login('contribuidor@e2e.test');
-  sql(`INSERT INTO livros_abertos (usuario_id, livro_id, dia) SELECT ${uid.contribuidor}, id, CURDATE() FROM livros LIMIT 100`);
+  sql(`INSERT INTO livros_abertos (usuario_id, livro_id, dia) SELECT ${uid.contribuidor}, id, CURDATE() FROM livros LIMIT ${LIM.contribuidor}`);
   const livroNovo = Number(sql(`SELECT id FROM livros WHERE id NOT IN (SELECT livro_id FROM livros_abertos WHERE usuario_id=${uid.contribuidor}) AND publicacao='aprovado' AND visivel_para LIKE '%contribuidor%' AND duplicado_de IS NULL LIMIT 1`)[0][0]);
   const rc = await C.req(`api/download.php?id=${livroNovo}`, { headers: { range: 'bytes=0-9' } });
-  ver(rc.status === 429, 'Pro tem limite de 100 por dia', `(status ${rc.status})`);
+  ver(rc.status === 429, `Pro tem limite de ${LIM.contribuidor} por dia`, `(status ${rc.status})`);
   sql(`DELETE FROM livros_abertos WHERE usuario_id IN (${uid.leitor}, ${uid.contribuidor})`);
   sql("DELETE FROM livros WHERE titulo LIKE '[E2E] PT8%'");
 
