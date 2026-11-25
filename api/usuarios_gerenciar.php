@@ -218,6 +218,8 @@ if ($action === 'excluir') {
     if ($id === (int) $_SESSION['usuario_id']) {
         falhar('Operação bloqueada: você não pode excluir a sua própria conta.', 403);
     }
+    require_once __DIR__ . '/../includes/avatar.php';
+    apagarFotosDoUsuario($pdo, $id); // as fotos de perfil saem do disco junto com a conta
     try {
         $pdo->prepare('DELETE FROM usuarios WHERE id = ?')->execute([$id]);
     } catch (PDOException $e) {

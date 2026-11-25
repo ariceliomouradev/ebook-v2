@@ -9,6 +9,18 @@ $sitAcesso = isset($pdo) ? situacaoAcesso($pdo, (int) ($_SESSION['usuario_id'] ?
 $nomeCompleto = $_SESSION['usuario_nome'] ?? 'Usuário';
 $primeiroNome = explode(' ', $nomeCompleto)[0];
 $inicial = mb_strtoupper(mb_substr($primeiroNome, 0, 1));
+// foto de perfil (arquivo em avatares/, só o nome fica no banco); banco sem a migração v1.18: mostra a inicial
+require_once __DIR__ . '/../includes/avatar.php';
+$fotoUrl = '';
+if (isset($pdo)) {
+    try {
+        $stmtFoto = $pdo->prepare('SELECT foto FROM usuarios WHERE id = ?');
+        $stmtFoto->execute([(int) ($_SESSION['usuario_id'] ?? 0)]);
+        $fotoUrl = urlDaFoto($stmtFoto->fetchColumn() ?: null, caminhoRaiz());
+    } catch (PDOException $e) {
+        $fotoUrl = '';
+    }
+}
 $busca = $busca ?? ($_GET['busca'] ?? '');
 $mostrarBusca = $mostrarBusca ?? false;
 ?>
@@ -62,7 +74,7 @@ $mostrarBusca = $mostrarBusca ?? false;
             <div class="dropdown">
                 <button class="menu-usuario dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
                         aria-label="Menu da conta de <?= e($primeiroNome) ?>" data-testid="btn-user-menu">
-                    <span class="avatar" aria-hidden="true"><?= e($inicial) ?></span>
+                    <span class="avatar" aria-hidden="true" data-avatar data-inicial="<?= e($inicial) ?>"><?php if ($fotoUrl !== ''): ?><img src="<?= e($fotoUrl) ?>" alt="" width="38" height="38"><?php else: ?><?= e($inicial) ?><?php endif; ?></span>
                     <span class="menu-usuario__nome"><?= e($primeiroNome) ?></span>
                     <i class="fas fa-chevron-down" aria-hidden="true"></i>
                 </button>
@@ -102,6 +114,9 @@ $mostrarBusca = $mostrarBusca ?? false;
                     <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalUsuarios" data-testid="btn-menu-usuarios"><i class="fas fa-users me-2"></i>Gerenciar usuários</button></li>
                     <?php endif; ?>
 
+                    <?php if (!empty($mostrarBusca)): ?>
+                    <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#modalFotoPerfil" data-testid="btn-menu-foto"><i class="fas fa-camera me-2"></i>Foto do perfil</button></li>
+                    <?php endif; ?>
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalTrocarSenha" data-testid="btn-menu-trocar-senha"><i class="fas fa-key me-2"></i>Trocar Senha</a></li>
 
                     <li><hr class="dropdown-divider"></li>
@@ -124,6 +139,32 @@ $mostrarBusca = $mostrarBusca ?? false;
         <?php endif; ?>
     </span>
     <a class="btn btn-sm btn-neon" href="<?= e(linkSuporte($msgSuporte)) ?>" target="_blank" rel="noopener" data-testid="aviso-plano-suporte"><i class="fab fa-whatsapp me-1" aria-hidden="true"></i>Falar com o suporte</a>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($mostrarBusca)): ?>
+<div class="modal fade" id="modalFotoPerfil" tabindex="-1" aria-labelledby="tituloFotoPerfil" data-testid="modal-foto-perfil">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="tituloFotoPerfil"><i class="fas fa-camera me-2 text-info"></i>Foto do perfil</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="foto-previa mx-auto mb-3" id="fotoPrevia" data-testid="foto-previa" data-inicial="<?= e($inicial) ?>">
+                    <?php if ($fotoUrl !== ''): ?><img src="<?= e($fotoUrl) ?>" alt="Sua foto atual"><?php else: ?><span><?= e($inicial) ?></span><?php endif; ?>
+                </div>
+                <input type="file" id="fotoArquivo" class="d-none" accept=".jpg,.jpeg,.png,image/jpeg,image/png" data-testid="input-foto-arquivo">
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" id="btnEscolherFoto" data-testid="btn-escolher-foto"><i class="fas fa-image me-2"></i><span id="rotuloEscolherFoto"><?= $fotoUrl !== '' ? 'Escolher outra foto' : 'Escolher foto' ?></span></button>
+                <small class="text-muted d-block mb-2">JPG, JPEG ou PNG, até <?= (int) (FOTO_PERFIL_MAX_BYTES / 1048576) ?> MB. A foto é cortada em quadrado e reduzida automaticamente.</small>
+                <div class="small text-danger d-none" id="fotoErro" role="alert" data-testid="foto-erro"></div>
+            </div>
+            <div class="modal-footer p-2 gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger<?= $fotoUrl !== '' ? '' : ' d-none' ?>" id="btnRemoverFoto" data-testid="btn-remover-foto"><i class="fas fa-trash me-1"></i>Remover</button>
+                <button type="button" class="btn btn-sm btn-info fw-bold ms-auto" id="btnSalvarFoto" data-testid="btn-salvar-foto" disabled><i class="fas fa-check me-1"></i>Salvar foto</button>
+            </div>
+        </div>
+    </div>
 </div>
 <?php endif; ?>
 

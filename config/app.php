@@ -14,6 +14,9 @@ const UPLOAD_IMG_TAMANHO_MAX = 5 * 1024 * 1024;   // 5MB
 // Perfis comerciais (os nomes internos continuam leitor/contribuidor/admin; ver includes/perfis.php).
 const LIMITE_ACESSOS = ['admin' => 0, 'contribuidor' => 3, 'leitor' => 1]; // acessos simultâneos (0 = sem limite); família = o grupo todo
 const ANUNCIOS_PERFIS = ['admin', 'leitor']; // quem vê o banner de anúncio: Administrador (prévia) e Grátis (leitor); Pro não
+const FOTO_PERFIL_MAX_BYTES = 2 * 1024 * 1024; // foto de perfil: até 2 MB no envio (vira WebP de 256 px, ~20 KB)
+const FOTO_PERFIL_MAX_PIXELS = 12000000;      // 12 megapixels: acima disso a decodificação estoura a memória do PHP
+const FOTO_PERFIL_LADO = 256;                 // lado da foto salva (quadrada)
 const LIMITE_DEPENDENTES = 2;          // contas extras que o titular do Pro pode criar (titular + 2 = 3 acessos)
 const ACERVO_POR_PAGINA = 10;            // livros por página em "Explorar acervo" (troca do Grátis)
 // Teste grátis e mensalidade (ver includes/assinatura.php). Pagamento por PIX, combinado com o suporte no WhatsApp.

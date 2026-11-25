@@ -94,6 +94,8 @@ SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `livros` ADD COLUMN `formato` e
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `leituras` ADD COLUMN `posicao` varchar(500) DEFAULT NULL AFTER `porcentagem`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'leituras' AND COLUMN_NAME = 'posicao');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `foto` varchar(60) DEFAULT NULL AFTER `whatsapp`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'foto');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 -- banner quadrado (v1.16): novo formato 'q', começando com as peças verticais já cadastradas
 ALTER TABLE `banners` MODIFY `formato` enum('h','v','q') NOT NULL;
 INSERT INTO `banners` (`formato`, `arquivo`, `alt`, `link`, `ordem`)

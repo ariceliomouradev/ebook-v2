@@ -163,6 +163,7 @@ $tituloPagina = 'Meus Livros';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="<?= asset('assets/js/auth-ui.js') ?>"></script>
     <script src="<?= asset('assets/js/app.js') ?>"></script>
+    <script src="<?= asset('assets/js/foto-perfil.js') ?>"></script>
     <script src="<?= asset('assets/js/sessao.js') ?>"></script>
     <?php $momento = 'biblioteca'; include 'components/anuncio_modal.php'; ?>
 

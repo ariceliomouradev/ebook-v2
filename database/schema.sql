@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `nome` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `whatsapp` varchar(20) DEFAULT NULL,
+  `foto` varchar(60) DEFAULT NULL,
   `senha` varchar(255) NOT NULL,
   `perfil` enum('leitor','contribuidor','admin') DEFAULT 'leitor',
   `titular_id` int(11) DEFAULT NULL,

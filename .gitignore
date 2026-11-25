@@ -12,6 +12,9 @@
 /uploads/*
 !/uploads/.htaccess
 !/uploads/.gitkeep
+/avatares/*
+!/avatares/.htaccess
+!/avatares/.gitkeep
 /capas/*
 !/capas/.htaccess
 !/capas/.gitkeep

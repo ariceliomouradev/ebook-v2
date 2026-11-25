@@ -65,6 +65,9 @@ if ($acao === 'adicionar') {
 
 if ($acao === 'remover') {
     $id = filter_var($_POST['usuario_id'] ?? null, FILTER_VALIDATE_INT);
+    require_once __DIR__ . '/../includes/avatar.php';
+    $stmtFoto = $pdo->prepare('SELECT foto FROM usuarios WHERE id = ? AND titular_id = ?');
+    try { $stmtFoto->execute([$id ?: 0, $titularId]); apagarArquivoDeFoto($stmtFoto->fetchColumn() ?: null); } catch (PDOException $e) { /* sem a coluna foto */ }
     $stmt = $pdo->prepare('DELETE FROM usuarios WHERE id = ? AND titular_id = ?');
     $stmt->execute([$id ?: 0, $titularId]);
     if (!$stmt->rowCount()) {
