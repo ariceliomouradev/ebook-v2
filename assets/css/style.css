@@ -923,7 +923,7 @@ input[type='password']::-ms-clear {
 /* ---------- 7. Cards de livro ------------------------------------------- */
 #gradeLivros {
     --bs-gutter-x: 1.25rem;
-    --bs-gutter-y: 1.9rem;
+    --bs-gutter-y: 1.25rem; /* o cartão é só a capa: sem a faixa de texto embaixo, o espaço entre linhas encolhe */
 }
 
 .card-livro {
@@ -973,7 +973,15 @@ input[type='password']::-ms-clear {
     color: #fff;
     font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.15s var(--ml-ease), background-color 0.15s var(--ml-ease), color 0.15s var(--ml-ease);
+    /* Em repouso o coração some junto com o painel do cartão (mesmo comportamento): passa o mouse, foca ou, no toque, 1º toque */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--ml-base) var(--ml-ease), transform 0.15s var(--ml-ease), background-color 0.15s var(--ml-ease), color 0.15s var(--ml-ease);
+}
+.card-livro:focus-within .btn-favorito,
+.card-livro.is-aberto .btn-favorito {
+    opacity: 1;
+    pointer-events: auto;
 }
 .btn-favorito:hover { background: rgba(13, 15, 20, 0.85); transform: scale(1.08); }
 .btn-favorito:active { transform: scale(0.92); }
@@ -1003,8 +1011,8 @@ input[type='password']::-ms-clear {
 /* Etiqueta do formato (só EPUB; PDF é o padrão e não leva etiqueta) */
 .selo-formato {
     position: absolute;
-    left: 9px;
-    bottom: 9px;
+    right: 9px; /* canto superior direito; se o livro também estiver "Lido", este selo desce (ver abaixo) */
+    top: 9px;
     z-index: 3;
     padding: 2px 7px;
     border-radius: 6px;
@@ -1035,6 +1043,7 @@ input[type='password']::-ms-clear {
     background: rgba(74, 222, 128, 0.95);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
+.selo-formato ~ .selo-concluido { top: 36px; }
 .card-progress {
     position: absolute;
     left: 0;
@@ -1046,19 +1055,27 @@ input[type='password']::-ms-clear {
     background: rgba(0, 0, 0, 0.6);
 }
 
-/* "Ler agora": aparece ao passar o mouse (só em dispositivos com mouse) */
-.card-cta {
+/* Painel sobre a capa: "Ler agora" + título, autor e progresso. Em repouso o cartão é só a capa.
+   Aparece com o mouse em cima (dispositivos com mouse), com o foco do teclado e, no toque, no 1º toque (.is-aberto). */
+.card-overlay {
     position: absolute;
     inset: 0;
     z-index: 2;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding-bottom: 22px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 48px 12px 14px;
     opacity: 0;
-    background: linear-gradient(to top, rgba(8, 10, 15, 0.82) 0%, rgba(8, 10, 15, 0.1) 55%, transparent 100%);
+    background: linear-gradient(to top, rgba(8, 10, 15, 0.97) 0%, rgba(8, 10, 15, 0.9) 45%, rgba(8, 10, 15, 0.45) 80%, rgba(8, 10, 15, 0.2) 100%);
     transition: opacity var(--ml-base) var(--ml-ease);
     pointer-events: none;
+}
+.card-info {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
 }
 .card-cta span {
     display: inline-flex;
@@ -1082,19 +1099,35 @@ input[type='password']::-ms-clear {
     .card-livro:hover .capa-img {
         transform: scale(1.05);
     }
-    .card-livro:hover .card-cta {
+    .card-livro:hover .card-overlay,
+    .card-livro:hover .btn-favorito {
         opacity: 1;
     }
+    .card-livro:hover .btn-favorito {
+        pointer-events: auto;
+        transform: translateY(-6px); /* acompanha a capa, que sobe 6px */
+    }
+    .card-livro:hover .btn-favorito:hover { transform: translateY(-6px) scale(1.08); }
+    .card-livro:hover .btn-favorito:active { transform: translateY(-6px) scale(0.92); }
     .card-livro:hover .card-cta span {
         transform: translateY(0);
     }
+}
+/* No toque o 1º toque abre o painel (app.js marca .is-aberto); o 2º toque abre o livro. */
+.card-livro.is-aberto .card-overlay,
+.card-livro:focus-within .card-overlay {
+    opacity: 1;
+}
+.card-livro.is-aberto .card-cta span,
+.card-livro:focus-within .card-cta span {
+    transform: translateY(0);
 }
 /* O link cobre o card inteiro: o foco do teclado precisa aparecer na capa. */
 .card-livro:has(.stretched-link:focus-visible) .img-container {
     outline: 2px solid var(--ml-accent);
     outline-offset: 3px;
 }
-.card-livro:has(.stretched-link:focus-visible) .card-cta {
+.card-livro:has(.stretched-link:focus-visible) .card-overlay {
     opacity: 1;
 }
 .stretched-link:focus-visible {
@@ -1130,38 +1163,36 @@ input[type='password']::-ms-clear {
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
-.card-body {
-    padding: 13px 2px 0;
-}
+/* Texto do painel sobre a capa (o fundo é o degradê escuro de .card-overlay: contraste alto de propósito) */
 .card-title {
-    font-size: 0.93rem;
+    font-size: 0.9rem;
     font-weight: 650;
-    line-height: 1.32;
+    line-height: 1.3;
     margin: 0 0 3px;
-    min-height: 2.64em;
-    color: var(--ml-text);
+    color: #fff;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 .autor-text {
     display: block;
-    font-size: 0.8rem;
-    color: var(--ml-text-dim);
-    margin-bottom: 6px;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.78);
+    margin-bottom: 8px;
 }
 .progress-info {
     display: flex;
     justify-content: space-between;
-    font-size: 0.74rem;
+    margin-bottom: 4px;
+    font-size: 0.72rem;
     font-weight: 500;
-    color: var(--ml-text-faint);
+    color: rgba(255, 255, 255, 0.7);
     font-variant-numeric: tabular-nums;
 }
 .progress-info span:last-child {
-    color: var(--ml-text-dim);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .progress {

@@ -53,19 +53,20 @@ $soFavoritos = $soFavoritos ?? false;
                     <?php if ($concluido): ?>
                         <span class="selo-concluido" data-testid="book-selo-concluido"><i class="fas fa-check"></i> Lido</span>
                     <?php endif; ?>
-                    <div class="card-cta" aria-hidden="true"><span><i class="fas fa-book-open"></i> <?= ($progresso > 0 && !$concluido) ? 'Continuar' : 'Ler agora' ?></span></div>
-
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h6 data-testid="book-title" class="card-title" title="<?= e($livro['titulo']) ?>"><?= e($livro['titulo']) ?></h6>
-                    <span data-testid="book-author" class="autor-text text-truncate"><?= e($livro['autor'] ?? '') ?></span>
-                    <div class="mt-auto">
-                        <div data-testid="book-progress-text" class="progress-info"><span><?= $progresso > 0 ? 'Lido' : 'Não iniciado' ?></span><span><?= $progresso > 0 ? $progresso . '%' : '' ?></span></div>
-                        <div data-testid="book-progress-bar" class="progress" role="progressbar" aria-label="Progresso de leitura de <?= e($livro['titulo']) ?>" aria-valuenow="<?= $progresso ?>" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar <?= $corBarra ?>" style="width: <?= $progresso ?>%"></div></div>
-
-                        <a data-testid="book-read-link" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>&origem=<?= (int) $paginaAtual ?>&ordem=<?= e($ordemAtual) ?>&busca=<?= urlencode($busca) ?>" class="stretched-link" aria-label="Ler <?= e($livro['titulo']) ?><?= !empty($livro['autor']) ? ', de ' . e($livro['autor']) : '' ?>"></a>
+                    <?php /* Em repouso o cartão é só a capa. O painel abaixo (botão, título, autor e progresso) aparece sobre
+                             a capa ao passar o mouse, ao focar com o teclado ou, no toque, no 1º toque (.is-aberto, app.js);
+                             o 2º toque no cartão abre o livro. */ ?>
+                    <div class="card-overlay">
+                        <span class="card-cta" aria-hidden="true"><span><i class="fas fa-book-open"></i> <?= ($progresso > 0 && !$concluido) ? 'Continuar' : 'Ler agora' ?></span></span>
+                        <div class="card-info">
+                            <h6 data-testid="book-title" class="card-title" title="<?= e($livro['titulo']) ?>"><?= e($livro['titulo']) ?></h6>
+                            <span data-testid="book-author" class="autor-text text-truncate"><?= e($livro['autor'] ?? '') ?></span>
+                            <div data-testid="book-progress-text" class="progress-info"><span><?= $progresso > 0 ? 'Lido' : 'Não iniciado' ?></span><span><?= $progresso > 0 ? $progresso . '%' : '' ?></span></div>
+                            <div data-testid="book-progress-bar" class="progress" role="progressbar" aria-label="Progresso de leitura de <?= e($livro['titulo']) ?>" aria-valuenow="<?= $progresso ?>" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar <?= $corBarra ?>" style="width: <?= $progresso ?>%"></div></div>
+                        </div>
                     </div>
                 </div>
+                <a data-testid="book-read-link" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>&origem=<?= (int) $paginaAtual ?>&ordem=<?= e($ordemAtual) ?>&busca=<?= urlencode($busca) ?>" class="stretched-link" aria-label="Ler <?= e($livro['titulo']) ?><?= !empty($livro['autor']) ? ', de ' . e($livro['autor']) : '' ?>"></a>
             </div>
         </div>
     <?php endforeach; ?>

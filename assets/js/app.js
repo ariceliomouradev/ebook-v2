@@ -289,6 +289,21 @@ document.addEventListener('click', function (e) {
         return;
     }
 
+    // Toque (sem mouse): o 1º toque no cartão só abre o painel sobre a capa ("Ler agora", título, progresso e o
+    // coração); o 2º toque abre o livro. Tocar fora (ou noutro cartão) fecha o painel. Com mouse nada muda: o painel
+    // aparece no hover e o clique abre o livro direto.
+    const cartaoToque = e.target.closest('.card-livro');
+    if (window.matchMedia('(hover: none)').matches) {
+        const abertoAntes = document.querySelectorAll('.card-livro.is-aberto');
+        if (cartaoToque && e.target.closest('.stretched-link') && !cartaoToque.classList.contains('is-aberto')) {
+            e.preventDefault();
+            abertoAntes.forEach((c) => c.classList.remove('is-aberto'));
+            cartaoToque.classList.add('is-aberto');
+            return;
+        }
+        if (!cartaoToque) abertoAntes.forEach((c) => c.classList.remove('is-aberto'));
+    }
+
     const coracao = e.target.closest('.btn-favorito');
     if (coracao) {
         e.preventDefault(); // o cartão inteiro é um link para o leitor
