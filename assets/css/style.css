@@ -733,9 +733,13 @@ input[type='password']::-ms-clear {
 /* Prateleira "Favoritos": linha de capas com rolagem horizontal; setas só com mouse (no toque, arrastar basta). */
 .prateleira { margin-bottom: 10px; }
 .prateleira.is-vazia { display: none; }
+/* Número pequeno colado no alto da palavra "Favoritos" (expoente). */
 .prateleira__contagem {
+    margin-left: 4px;
     color: var(--ml-text-faint);
-    font-size: 0.85rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 0;
     font-variant-numeric: tabular-nums;
 }
 .prateleira__corpo { position: relative; }

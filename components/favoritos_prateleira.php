@@ -14,8 +14,7 @@ $raiz = $raiz ?? '';
 ?>
 <section class="prateleira<?= $favoritosPrateleira ? '' : ' is-vazia' ?>" id="prateleiraFavoritos" aria-labelledby="tituloPrateleiraFav" data-testid="prateleira-favoritos"<?= !empty($prateleiraOculta) ? ' hidden' : '' ?>>
     <div class="secao-cabecalho">
-        <h2 class="secao-titulo" id="tituloPrateleiraFav">Favoritos</h2>
-        <span class="prateleira__contagem" data-testid="total-favoritos"><?= count($favoritosPrateleira) ?></span>
+        <h2 class="secao-titulo" id="tituloPrateleiraFav">Favoritos<sup class="prateleira__contagem" data-testid="total-favoritos"><?= count($favoritosPrateleira) ?></sup></h2>
     </div>
     <div class="prateleira__corpo">
         <button type="button" class="prateleira__seta prateleira__seta--esq" data-seta="-1" aria-label="Ver favoritos anteriores" hidden>
