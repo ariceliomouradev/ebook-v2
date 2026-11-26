@@ -15,7 +15,7 @@ $raiz = '';
 ?>
 <div class="item-aprovacao gl-item gl-item--aprov" data-testid="item-aprovacao" data-id="<?= (int) $p['id'] ?>">
     <?php if ($ehEpub): ?>
-    <a class="gl-capa" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+    <a class="gl-capa" data-analise="aprovacoes" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" tabindex="-1" aria-hidden="true">
     <?php else: ?>
     <button type="button" class="gl-capa btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" tabindex="-1" aria-hidden="true">
     <?php endif; ?>
@@ -46,7 +46,7 @@ $raiz = '';
 
     <div class="gl-acoes">
         <?php if ($ehEpub): ?>
-            <a class="gl-btn" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" data-testid="btn-aprov-ver-epub" aria-label="Abrir <?= e($p['titulo']) ?> para analisar (nova aba)" title="Abrir em nova aba para analisar">
+            <a class="gl-btn" data-analise="aprovacoes" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" data-testid="btn-aprov-ver-epub" aria-label="Abrir <?= e($p['titulo']) ?> para analisar" title="Abrir para analisar (não conta como leitura); o Voltar traz você de volta às Aprovações">
                 <i class="fas fa-book-open" aria-hidden="true"></i> <span>Abrir</span>
             </a>
         <?php else: ?>

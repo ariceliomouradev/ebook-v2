@@ -498,3 +498,7 @@ body.marcando-texto .camada-texto, body.marcando-texto .camada-texto > span { us
 
 .btn-hud--topo[aria-pressed='true'] { background: var(--lt-acento); color: #1a1204; border-color: transparent; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Modo análise (administrador abriu o livro pelo Gerenciar/Aprovações): aviso discreto de que não conta como leitura */
+.hud-analise { display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; padding: 1px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; color: var(--lt-acento, #f6b445); background: rgba(246, 180, 69, 0.12); border: 1px solid rgba(246, 180, 69, 0.35); white-space: nowrap; }
+@media (max-width: 599px) { .hud-analise { font-size: 0.68rem; padding: 1px 8px; } }

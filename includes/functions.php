@@ -407,3 +407,27 @@ function imagemUploadEhValida(string $caminhoTemporario, array $extensoesPermiti
 
     return @getimagesize($caminhoTemporario) !== false;
 }
+
+/**
+ * Data de publicação digitada ou lida do arquivo -> 'YYYY-MM-DD', ou null se vazia/inválida/implausível.
+ * Aceita 2018, 2018-05, 2018-05-14, 2018-05-14T10:00:00Z e 14/05/2018. Só o ano vira 1º de janeiro (e só ano+mês, dia 1).
+ */
+function normalizarDataPublicacao(?string $texto): ?string
+{
+    $t = trim((string) $texto);
+    if ($t === '') {
+        return null;
+    }
+    if (preg_match('#^(\d{1,2})/(\d{1,2})/(\d{4})$#', $t, $m)) {
+        [$ano, $mes, $dia] = [(int) $m[3], (int) $m[2], (int) $m[1]];
+    } elseif (preg_match('/^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?(?:[T\s].*)?$/', $t, $m)) {
+        [$ano, $mes, $dia] = [(int) $m[1], (int) ($m[2] ?? 1) ?: 1, (int) ($m[3] ?? 1) ?: 1];
+    } else {
+        return null;
+    }
+    // livros do século XV em diante; no máximo 1 ano à frente (lançamento anunciado)
+    if ($ano < 1450 || $ano > (int) date('Y') + 1 || !checkdate($mes, $dia, $ano)) {
+        return null;
+    }
+    return sprintf('%04d-%02d-%02d', $ano, $mes, $dia);
+}

@@ -42,13 +42,14 @@ $posicaoAtual = $posicaoAtual ?? null;
 <div class="leitor-progresso" aria-hidden="true"><span id="barraProgresso" data-testid="leitor-barra-progresso"></span></div>
 
 <header class="hud-topo" id="hudTopo" data-testid="hud-topo">
-    <a data-testid="btn-back-library" href="<?= url('index.php') ?>?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-voltar" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
-        <i class="fas fa-chevron-left" aria-hidden="true"></i><span class="btn-voltar__texto">Biblioteca</span>
+    <a data-testid="btn-back-library" href="<?= e($urlVoltar) ?>" class="btn-voltar" title="Voltar: <?= e($rotuloVoltar) ?>" aria-label="Voltar: <?= e($rotuloVoltar) ?>">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i><span class="btn-voltar__texto"><?= e($rotuloVoltar) ?></span>
     </a>
 
     <div class="hud-titulo">
         <h1 class="hud-titulo__nome" data-testid="leitor-titulo"><?= e($livro['titulo']) ?></h1>
         <span class="hud-titulo__info" id="progressoTexto" data-testid="leitor-progresso-texto" aria-live="polite">Abrindo…</span>
+        <?php if ($analise !== ''): ?><span class="hud-analise" data-testid="leitor-modo-analise"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> Modo análise: não conta como leitura</span><?php endif; ?>
     </div>
 
     <button data-testid="btn-favorito-leitor" class="btn-hud btn-hud--topo btn-hud--favorito<?= $ehFavorito ? ' is-ativo' : '' ?>" id="btnFavoritoLeitor" type="button"
@@ -114,7 +115,8 @@ $posicaoAtual = $posicaoAtual ?? null;
 <?= json_encode([
     'id'            => (int) $id,
     'url'           => caminhoRaiz() . 'api/download.php?id=' . $id,
-    'progressoUrl'  => caminhoRaiz() . 'api/progresso.php?id=' . $id,
+    'progressoUrl'  => $analise === '' ? caminhoRaiz() . 'api/progresso.php?id=' . $id : '', // vazio = não grava progresso
+    'analise'       => $analise !== '',
     'favoritosUrl'  => caminhoRaiz() . 'api/favoritos.php',
     'posicao'       => $posicaoAtual,
     'csrfToken'     => csrf_token(),
@@ -122,7 +124,7 @@ $posicaoAtual = $posicaoAtual ?? null;
 </script>
 
 <script src="<?= asset('assets/js/sessao.js') ?>"></script>
-<?php $momento = 'leitor'; include __DIR__ . '/../components/anuncio_modal.php'; ?>
+<?php if ($analise === '') { $momento = 'leitor'; include __DIR__ . '/../components/anuncio_modal.php'; } /* análise: sem anúncio */ ?>
 <script src="<?= asset('assets/js/leitor-epub.js') ?>"></script>
 
 </body>

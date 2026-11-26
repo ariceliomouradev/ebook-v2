@@ -81,6 +81,11 @@ if (!defined('ACESSO_PERMITIDO')) {
                             <textarea data-testid="input-editar-sinopse" name="sinopse" id="editSinopse" rows="4" maxlength="4000"
                                 class="form-control bg-secondary text-light border-0" placeholder="Resumo do livro (opcional)"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label class="text-muted small" for="editDataPublicacao">Data de publicação <span class="text-secondary">(define a ordem de Mais recentes e Mais antigos)</span></label>
+                            <input data-testid="input-editar-publicacao" type="date" name="data_publicacao" id="editDataPublicacao" class="form-control bg-secondary text-light border-0" max="<?= (int) date('Y') + 1 ?>-12-31">
+                            <div class="form-text text-muted">Deixe em branco se não souber: o livro fica no fim da lista por data.</div>
+                        </div>
                         <div class="mb-4">
                             <label class="text-muted small" for="editCategoria">Categoria</label>
                             <select data-testid="select-editar-categoria" name="categoria" id="editCategoria" class="form-select bg-secondary text-light border-0">

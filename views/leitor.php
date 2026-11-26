@@ -23,14 +23,31 @@ if (!$livro || !usuarioPodeVerLivro($pdo, $id, $_SESSION['usuario_perfil'], (int
     die('Livro não encontrado.');
 }
 
+// Modo análise (só administrador): o livro foi aberto pelo Gerenciar biblioteca ou pelas Aprovações para ser conferido.
+// Não é leitura: não conta no limite diário, não grava progresso nem entra em "Continue lendo", e o botão Voltar leva de volta
+// ao modal de onde veio, na mesma busca e página.
+$analise = '';
+if (($_SESSION['usuario_perfil'] ?? '') === 'admin' && in_array((string) ($_GET['analise'] ?? ''), ['gerenciar', 'aprovacoes'], true)) {
+    $analise = (string) $_GET['analise'];
+}
+$urlVoltar = url('index.php') . '?pagina=' . (int) $paginaVoltar . '&ordem=' . urlencode((string) $ordemVoltar) . '&busca=' . urlencode((string) $buscaVoltar);
+$rotuloVoltar = 'Biblioteca';
+if ($analise === 'gerenciar') {
+    $urlVoltar = url('index.php') . '?abrir=gerenciar&gb=' . urlencode((string) ($_GET['gb'] ?? '')) . '&gp=' . max(1, (int) ($_GET['gp'] ?? 1));
+    $rotuloVoltar = 'Gerenciar';
+} elseif ($analise === 'aprovacoes') {
+    $urlVoltar = url('index.php') . '?abrir=aprovacoes&ap=' . max(1, (int) ($_GET['ap'] ?? 1));
+    $rotuloVoltar = 'Aprovações';
+}
+
 // Limite diário de livros diferentes (includes/limites.php): o 1º acesso do dia ao livro conta aqui; o download seguinte já passa.
 require_once '../includes/limites.php';
-if (!registrarAberturaDeLivro($pdo, (string) $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], (int) $id)) {
+if ($analise === '' && !registrarAberturaDeLivro($pdo, (string) $_SESSION['usuario_perfil'], (int) $_SESSION['usuario_id'], (int) $id)) {
     paginaLimiteDeLivros((string) $_SESSION['usuario_perfil'], url('index.php'));
 }
 
 $stmtProgresso = $pdo->prepare("SELECT progresso, posicao FROM leituras WHERE usuario_id = ? AND livro_id = ?");
-$stmtProgresso->execute([$_SESSION['usuario_id'], $id]);
+$stmtProgresso->execute([$analise === '' ? $_SESSION['usuario_id'] : 0, $id]); // análise: começa do início, sem retomar a leitura de ninguém
 $leitura = $stmtProgresso->fetch() ?: [];
 $progressoAtual = (int) ($leitura['progresso'] ?? 0) ?: 1;
 $posicaoAtual = $leitura['posicao'] ?? null; // EPUB: onde a pessoa parou (CFI)
@@ -84,13 +101,14 @@ if (($livro['formato'] ?? 'pdf') === 'epub') {
 <div class="leitor-progresso" aria-hidden="true"><span id="barraProgresso" data-testid="leitor-barra-progresso"></span></div>
 
 <header class="hud-topo" id="hudTopo" data-testid="hud-topo">
-    <a data-testid="btn-back-library" href="<?= url('index.php') ?>?pagina=<?= (int) $paginaVoltar ?>&ordem=<?= e($ordemVoltar) ?>&busca=<?= urlencode($buscaVoltar) ?>" class="btn-voltar" title="Voltar à Biblioteca" aria-label="Voltar à biblioteca">
-        <i class="fas fa-chevron-left" aria-hidden="true"></i><span class="btn-voltar__texto">Biblioteca</span>
+    <a data-testid="btn-back-library" href="<?= e($urlVoltar) ?>" class="btn-voltar" title="Voltar: <?= e($rotuloVoltar) ?>" aria-label="Voltar: <?= e($rotuloVoltar) ?>">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i><span class="btn-voltar__texto"><?= e($rotuloVoltar) ?></span>
     </a>
 
     <div class="hud-titulo">
         <h1 class="hud-titulo__nome" data-testid="leitor-titulo"><?= e($livro['titulo']) ?></h1>
         <span class="hud-titulo__info" id="progressoTexto" data-testid="leitor-progresso-texto" aria-live="polite">Abrindo…</span>
+        <?php if ($analise !== ''): ?><span class="hud-analise" data-testid="leitor-modo-analise"><i class="fas fa-magnifying-glass" aria-hidden="true"></i> Modo análise: não conta como leitura</span><?php endif; ?>
     </div>
 
     <button data-testid="btn-favorito-leitor" class="btn-hud btn-hud--topo btn-hud--favorito<?= $ehFavorito ? ' is-ativo' : '' ?>" id="btnFavoritoLeitor" type="button"
@@ -238,7 +256,8 @@ if (($livro['formato'] ?? 'pdf') === 'epub') {
 <?= json_encode([
     'id'            => (int) $id,
     'url'           => caminhoRaiz() . 'api/download.php?id=' . $id,
-    'progressoUrl'  => caminhoRaiz() . 'api/progresso.php?id=' . $id,
+    'progressoUrl'  => $analise === '' ? caminhoRaiz() . 'api/progresso.php?id=' . $id : '', // vazio = não grava progresso
+    'analise'       => $analise !== '',
     'anotacoesUrl'  => caminhoRaiz() . 'api/anotacoes.php',
     'favoritosUrl'  => caminhoRaiz() . 'api/favoritos.php',
     'pagInicial'    => $progressoAtual > 0 ? (int) $progressoAtual : 1,
@@ -247,7 +266,7 @@ if (($livro['formato'] ?? 'pdf') === 'epub') {
 </script>
 
 <script src="<?= asset('assets/js/sessao.js') ?>"></script>
-<?php $momento = 'leitor'; include __DIR__ . '/../components/anuncio_modal.php'; ?>
+<?php if ($analise === '') { $momento = 'leitor'; include __DIR__ . '/../components/anuncio_modal.php'; } /* análise: sem anúncio */ ?>
 <script src="<?= asset('assets/js/leitor.js') ?>"></script>
 <script src="<?= asset('assets/js/anotacoes.js') ?>"></script>
 

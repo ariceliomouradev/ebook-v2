@@ -459,6 +459,7 @@ document.addEventListener('click', function (e) {
  * modal pede ao servidor uma página por vez (api/gerenciar_lista.php), já filtrada pela busca.
  */
 const estadoGerenciador = { busca: '', pagina: 1, totalPaginas: 1, sequencia: 0 };
+let retomarGerenciador = null; // {busca, pagina} ao voltar do modo análise
 let temporizadorGerenciador;
 
 function carregarGerenciador({ busca, pagina } = {}) {
@@ -565,19 +566,48 @@ document.getElementById('modalGerenciar')?.addEventListener('show.bs.modal', fun
     } else {
         voltarParaLista();
     }
+    // Voltando do modo análise (leitor aberto pelo gerenciador) retoma a mesma busca e a mesma página.
+    const retomar = retomarGerenciador;
+    retomarGerenciador = null;
+    const buscaInicial = retomar ? retomar.busca : '';
     const input = document.getElementById('buscaGerenciador');
-    if (input) input.value = '';
+    if (input) input.value = buscaInicial;
     const btnLimpar = document.getElementById('btnLimparGerenciador');
-    if (btnLimpar) btnLimpar.style.display = 'none';
-    carregarGerenciador({ busca: '', pagina: 1 });
+    if (btnLimpar) btnLimpar.style.display = buscaInicial ? '' : 'none';
+    carregarGerenciador({ busca: buscaInicial, pagina: retomar ? retomar.pagina : 1 });
 });
+
+// Abrir um livro pelo gerenciador é ANÁLISE, não leitura (o leitor não grava progresso); o link leva a busca e a página
+// atuais para o botão Voltar do leitor trazer você de volta ao mesmo ponto da lista.
+document.addEventListener('click', function (e) {
+    const link = e.target.closest('a[data-analise="gerenciar"]');
+    if (!link) return;
+    const url = new URL(link.getAttribute('href'), window.location.href);
+    url.searchParams.set('analise', 'gerenciar');
+    url.searchParams.set('gb', estadoGerenciador.busca || '');
+    url.searchParams.set('gp', String(estadoGerenciador.pagina || 1));
+    link.href = url.href;
+}, true);
+
+// Endereço de volta do modo análise: ?abrir=gerenciar&gb=busca&gp=pagina abre o modal já no ponto onde estava.
+(function () {
+    const p = new URLSearchParams(window.location.search);
+    const modalEl = document.getElementById('modalGerenciar');
+    if (p.get('abrir') === 'gerenciar' && modalEl && window.bootstrap) {
+        retomarGerenciador = { busca: p.get('gb') || '', pagina: Math.max(1, Number(p.get('gp')) || 1) };
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        window.history.replaceState({}, '', window.location.pathname); // tira o ?abrir= do endereço
+    }
+})();
 /**
  * ============================================================================
  * 5. OPERAÇÕES CRUD (EDIÇÃO E EXCLUSÃO VIA AJAX)
  * ============================================================================
  */
-function abrirEdicao(id, titulo, autor, categoria, vis, sinopse) {
+function abrirEdicao(id, titulo, autor, categoria, vis, sinopse, dataPublicacao) {
     document.getElementById('editId').value = id;
+    const campoData = document.getElementById('editDataPublicacao');
+    if (campoData) campoData.value = dataPublicacao || '';
     const campoSinopse = document.getElementById('editSinopse');
     if (campoSinopse) campoSinopse.value = sinopse || '';
     document.getElementById('editTitulo').value = titulo;
@@ -608,7 +638,7 @@ document.addEventListener('click', function (e) {
             contribuidor: item.dataset.visContribuidor === '1',
             leitor: item.dataset.visLeitor === '1',
             liberarEm: item.dataset.liberarEm || '',
-        }, item.dataset.sinopse || '');
+        }, item.dataset.sinopse || '', item.dataset.dataPublicacao || '');
         return;
     }
 
@@ -666,6 +696,12 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
                 itemGerenciador.setAttribute('data-autor', data.autor);
                 itemGerenciador.setAttribute('data-sinopse', data.sinopse || '');
                 itemGerenciador.setAttribute('data-categoria', data.categoria || '');
+                itemGerenciador.setAttribute('data-data-publicacao', data.data_publicacao || '');
+                const chipData = itemGerenciador.querySelector('[data-testid="item-publicacao"]');
+                if (chipData) {
+                    chipData.classList.toggle('gl-chip--aviso', !data.data_publicacao);
+                    chipData.querySelector('.gl-chip__texto').textContent = data.data_publicacao_br || 'Sem data de publicação';
+                }
                 const perfisVis = (data.visivel_para || '').split(',');
                 itemGerenciador.setAttribute('data-vis-contribuidor', perfisVis.includes('contribuidor') ? '1' : '0');
                 itemGerenciador.setAttribute('data-vis-leitor', perfisVis.includes('leitor') ? '1' : '0');
@@ -1294,6 +1330,7 @@ document.addEventListener('submit', function (e) {
     }
 
     // --- Aprovações (administrador) ---
+    const modalFilaAbrir = document.getElementById('modalAprovacoes');
     const emblema = (n) => {
         document.querySelectorAll('[data-testid="badge-aprovacoes"]').forEach((b) => {
             b.textContent = n;
@@ -1344,6 +1381,26 @@ document.addEventListener('submit', function (e) {
                 executarFila({ action: 'negar', id: item.dataset.id }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
             }
         });
+    }
+
+    // Abrir um EPUB da fila é análise (não conta como leitura): o link leva a página da fila e o Voltar do leitor reabre o
+    // modal de Aprovações na mesma página.
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-analise="aprovacoes"]');
+        if (!link) return;
+        const url = new URL(link.getAttribute('href'), window.location.href);
+        url.searchParams.set('analise', 'aprovacoes');
+        url.searchParams.set('ap', String(aprovPagina));
+        link.href = url.href;
+    }, true);
+    if (modalFilaAbrir && new URLSearchParams(window.location.search).get('abrir') === 'aprovacoes' && window.bootstrap) {
+        const paginaVolta = Math.max(1, Number(new URLSearchParams(window.location.search).get('ap')) || 1);
+        window.history.replaceState({}, '', window.location.pathname);
+        modalFilaAbrir.addEventListener('shown.bs.modal', function ir() {
+            modalFilaAbrir.removeEventListener('shown.bs.modal', ir);
+            if (paginaVolta > 1) executarFila({ action: 'listar', pagina: paginaVolta });
+        });
+        bootstrap.Modal.getOrCreateInstance(modalFilaAbrir).show();
     }
 
     // --- Prévia do PDF (dentro de um modal, sem nova aba e sem download) ---

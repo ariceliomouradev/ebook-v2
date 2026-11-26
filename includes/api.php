@@ -242,8 +242,8 @@ function apiUsuarioPorAssinatura(PDO $pdo, string $tipo, int $livroId): ?array
 /* ------------------------------- livros ------------------------------- */
 
 const API_ORDENS = [
-    'recentes' => 'l.id DESC',
-    'antigos'  => 'l.id ASC',
+    'recentes' => '(l.data_publicacao IS NULL) ASC, l.data_publicacao DESC, l.id DESC',
+    'antigos'  => '(l.data_publicacao IS NULL) ASC, l.data_publicacao ASC, l.id ASC',
     'az'       => 'l.titulo ASC, l.id ASC',
     'za'       => 'l.titulo DESC, l.id DESC',
 ];
@@ -267,6 +267,7 @@ function apiLivroParaJson(array $r, array $u): array
         'titulo'          => (string) $r['titulo'],
         'autor'           => (string) ($r['autor'] ?? ''),
         'sinopse'         => ($r['sinopse'] ?? '') !== '' ? (string) $r['sinopse'] : null,
+        'data_publicacao' => !empty($r['data_publicacao']) ? (string) $r['data_publicacao'] : null,
         'formato'         => $ehEpub ? 'epub' : 'pdf',
         'categoria'       => $r['cat_slug'] ? ['slug' => (string) $r['cat_slug'], 'nome' => (string) $r['cat_nome']] : null,
         'enviado_em'      => $r['data_upload'] ? date('c', strtotime((string) $r['data_upload'])) : null,
@@ -331,7 +332,7 @@ function apiConsultarLivros(PDO $pdo, array $u, array $filtros): array
     $pagina = max(1, (int) ($filtros['pagina'] ?? 1));
     $ordem = API_ORDENS[$filtros['ordem'] ?? 'recentes'] ?? API_ORDENS['recentes'];
 
-    $sql = "SELECT l.id, l.titulo, l.autor, l.sinopse, l.formato, l.nome_arquivo, l.capa_arquivo, l.data_upload,
+    $sql = "SELECT l.id, l.titulo, l.autor, l.sinopse, l.data_publicacao, l.formato, l.nome_arquivo, l.capa_arquivo, l.data_upload,
                    c.slug AS cat_slug, c.nome AS cat_nome,
                    le.porcentagem AS le_porcentagem, le.progresso AS le_progresso, le.total_paginas AS le_total, le.posicao AS le_posicao,
                    EXISTS (SELECT 1 FROM favoritos f WHERE f.usuario_id = :u_fav AND f.livro_id = l.id) AS fav

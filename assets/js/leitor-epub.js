@@ -107,7 +107,7 @@
     }
 
     function salvarProgresso() {
-        if (fracao === null || !cfiAtual) return;
+        if (fracao === null || !cfiAtual || !cfg.progressoUrl) return; // sem URL = modo análise: não grava
         const pagina = Math.min(TOTAL, Math.max(1, Math.round(fracao * TOTAL)));
         const chave = pagina + '|' + cfiAtual;
         if (chave === ultimoSalvo) return;

@@ -60,6 +60,7 @@ curl -s -X POST "$BASE/auth/refresh" -H "Content-Type: application/json" -d '{"r
   "titulo": "Dom Quixote das Crianças",
   "autor": "Monteiro Lobato",
   "sinopse": "…ou null",
+  "data_publicacao": "2018-05-14 (ou null se não informada)",
   "formato": "epub",
   "categoria": {"slug": "infantil", "nome": "Infantojuvenil"},
   "enviado_em": "2026-11-24T18:03:11-03:00",

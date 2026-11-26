@@ -114,7 +114,7 @@ function epubLimparSinopse(string $bruto): string
 /** @return array{titulo: string, autor: string, idioma: string, assuntos: string, sinopse: string} vazios quando não há. */
 function epubMetadados(string $caminho): array
 {
-    $vazio = ['titulo' => '', 'autor' => '', 'idioma' => '', 'assuntos' => '', 'sinopse' => ''];
+    $vazio = ['titulo' => '', 'autor' => '', 'idioma' => '', 'assuntos' => '', 'sinopse' => '', 'publicado' => null];
     $z = new ZipArchive();
     if ($z->open($caminho) !== true) {
         return $vazio;
@@ -130,6 +130,8 @@ function epubMetadados(string $caminho): array
         'idioma' => strtolower(substr(epubDc($pacote['xml'], 'language'), 0, 12)),
         'assuntos' => mb_substr(epubDc($pacote['xml'], 'subject', true), 0, 500),
         'sinopse' => epubLimparSinopse(epubDc($pacote['xml'], 'description')),
+        // dc:date (pode vir só o ano ou com hora): vira YYYY-MM-DD, ou null se não for uma data plausível
+        'publicado' => normalizarDataPublicacao(epubDc($pacote['xml'], 'date')),
     ];
 }
 

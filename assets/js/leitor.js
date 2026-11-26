@@ -293,7 +293,7 @@ function agendarSalvar() {
 
 // Salva o progresso via AJAX, autenticado por sessão + token CSRF. Só quando a página realmente mudou.
 function salvarProgresso(pag) {
-    if (!pdfDoc || pag === ultimaPaginaSalva) return;
+    if (!pdfDoc || pag === ultimaPaginaSalva || !livroConfig.progressoUrl) return; // sem URL = modo análise: não grava
     ultimaPaginaSalva = pag;
     fetch(livroConfig.progressoUrl, {
         method: 'POST',

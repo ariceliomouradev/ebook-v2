@@ -24,12 +24,13 @@ foreach ($livros as $livro):
     data-titulo="<?= e($livro['titulo']) ?>"
     data-autor="<?= e($livro['autor'] ?? '') ?>"
     data-sinopse="<?= e($livro['sinopse'] ?? '') ?>"
+    data-data-publicacao="<?= e((string) ($livro['data_publicacao'] ?? '')) ?>"
     data-categoria="<?= e($livro['categoria'] ?? '') ?>"
     data-vis-contribuidor="<?= in_array('contribuidor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
     data-vis-leitor="<?= in_array('leitor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
     data-liberar-em="<?= $livro['liberar_em'] ? e(date('Y-m-d\TH:i', strtotime($livro['liberar_em']))) : '' ?>">
 
-    <a class="gl-capa" data-testid="item-capa" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+    <a class="gl-capa" data-testid="item-capa" data-analise="gerenciar" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" tabindex="-1" aria-hidden="true">
         <?php if (!empty($livro['capa_arquivo'])): ?>
             <img src="<?= $raiz ?>capas/<?= e($livro['capa_arquivo']) ?>" alt="" loading="lazy">
         <?php else: ?>
@@ -44,6 +45,7 @@ foreach ($livros as $livro):
         <div class="gl-chips">
             <?php if (!empty($livro['categoria_nome'])): ?><span class="gl-chip"><i class="fas fa-tag" aria-hidden="true"></i> <?= e($livro['categoria_nome']) ?></span><?php endif; ?>
             <span class="gl-chip"><?= $ehEpub ? 'EPUB' : 'PDF' ?></span>
+            <span class="gl-chip gl-chip--data<?= empty($livro['data_publicacao']) ? ' gl-chip--aviso' : '' ?>" data-testid="item-publicacao"><i class="far fa-calendar" aria-hidden="true"></i> <span class="gl-chip__texto"><?= !empty($livro['data_publicacao']) ? e(date('d/m/Y', strtotime($livro['data_publicacao']))) : 'Sem data de publicação' ?></span></span>
             <?php if (($livro['publicacao'] ?? 'aprovado') !== 'aprovado'): ?><span class="gl-chip gl-chip--aviso"><?= e($rotulosPublicacao[$livro['publicacao']] ?? $livro['publicacao']) ?></span><?php endif; ?>
             <span data-testid="item-visibilidade" class="vis-selo <?= e($selo['classe']) ?>"><i class="fas fa-eye" aria-hidden="true"></i> <span class="vis-selo__texto"><?= e($selo['texto']) ?></span></span>
         </div>
@@ -56,7 +58,7 @@ foreach ($livros as $livro):
     </div>
 
     <div class="gl-acoes">
-        <a data-testid="btn-abrir-item" class="gl-btn gl-btn--abrir" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" target="_blank" rel="noopener" aria-label="Abrir <?= e($livro['titulo']) ?> para analisar (nova aba)" title="Abrir em nova aba para analisar">
+        <a data-testid="btn-abrir-item" class="gl-btn gl-btn--abrir" data-analise="gerenciar" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" aria-label="Abrir <?= e($livro['titulo']) ?> para analisar" title="Abrir para analisar (não conta como leitura); o Voltar traz você de volta aqui">
             <i class="fas fa-book-open" aria-hidden="true"></i> <span>Abrir</span>
         </a>
         <button data-testid="btn-editar-item" type="button" class="gl-btn gl-btn--editar btn-editar-livro" aria-label="Editar <?= e($livro['titulo']) ?>">
