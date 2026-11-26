@@ -2,39 +2,62 @@
 if (!defined('ACESSO_PERMITIDO')) {
     define('ACESSO_PERMITIDO', true);
 }
-// Fragmento da fila de aprovação. Entrada: $pendentes (id, titulo, autor, enviado_por, perfil_envio, data_upload, duplicado[exato|provavel]).
+// Fragmento da fila de aprovação (mesmo desenho da lista do Gerenciar livros: capa, campos editáveis, chips e ações).
+// Entrada: $pendentes (id, titulo, autor, formato, capa_arquivo, enviado_por, perfil_envio, data_upload, duplicado[exato|provavel]).
+// Exibido dentro de index.php (como book_list.php): capas e links são relativos à raiz do site.
 $pendentes = $pendentes ?? [];
 $totalPendentes = $totalPendentes ?? count($pendentes);
+$raiz = '';
 ?>
-<?php foreach ($pendentes as $p): $dup = $p['duplicado']; ?>
-<div class="item-aprovacao d-flex flex-column gap-2 py-3 border-bottom border-secondary" data-testid="item-aprovacao" data-id="<?= (int) $p['id'] ?>">
-    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
-        <div style="min-width: 0;">
-            <div class="fw-semibold text-light" style="word-wrap: break-word;"><?= e($p['titulo']) ?></div>
-            <div class="mt-1"><input type="text" class="form-control form-control-sm bg-secondary text-light border-0 aprov-autor" value="<?= e($p['autor'] ?? '') ?>" maxlength="255" aria-label="Autor de <?= e($p['titulo']) ?>" data-testid="input-aprov-autor"></div>
-            <div class="text-secondary small mt-1">
-                Enviado por <strong><?= e($p['enviado_por'] ?? 'usuário removido') ?></strong>
-                (<?= e(rotuloPerfil((string) $p['perfil_envio'])) ?>) em <?= e(date('d/m/Y H:i', strtotime($p['data_upload']))) ?>
-                <?php if (($p['formato'] ?? 'pdf') === 'epub'): ?>
-                    · <a class="btn btn-link btn-sm p-0 align-baseline" href="leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" data-testid="btn-aprov-ver-epub"><i class="fas fa-eye me-1" aria-hidden="true"></i>ler EPUB</a>
-                <?php else: ?>
-                    · <button type="button" class="btn btn-link btn-sm p-0 align-baseline btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" data-testid="btn-aprov-ver"><i class="fas fa-eye me-1" aria-hidden="true"></i>ver PDF</button>
-                <?php endif; ?>
-            </div>
+<?php foreach ($pendentes as $p):
+    $dup = $p['duplicado'];
+    $ehEpub = ($p['formato'] ?? 'pdf') === 'epub';
+?>
+<div class="item-aprovacao gl-item gl-item--aprov" data-testid="item-aprovacao" data-id="<?= (int) $p['id'] ?>">
+    <?php if ($ehEpub): ?>
+    <a class="gl-capa" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+    <?php else: ?>
+    <button type="button" class="gl-capa btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" tabindex="-1" aria-hidden="true">
+    <?php endif; ?>
+        <?php if (!empty($p['capa_arquivo'])): ?>
+            <img src="<?= $raiz ?>capas/<?= e($p['capa_arquivo']) ?>" alt="" loading="lazy">
+        <?php else: ?>
+            <span class="gl-capa__vazia capa-v<?= ((int) $p['id'] % 4) + 1 ?>"><i class="fas fa-book"></i></span>
+        <?php endif; ?>
+        <?php if ($ehEpub): ?><span class="selo-formato">EPUB</span><?php endif; ?>
+    <?php if ($ehEpub): ?></a><?php else: ?></button><?php endif; ?>
+
+    <div class="gl-info">
+        <input type="text" class="gl-input gl-input--titulo aprov-titulo" value="<?= e($p['titulo']) ?>" maxlength="255" aria-label="Título do livro enviado" data-testid="input-aprov-titulo">
+        <input type="text" class="gl-input aprov-autor" value="<?= e($p['autor'] ?? '') ?>" maxlength="255" placeholder="Autor" aria-label="Autor de <?= e($p['titulo']) ?>" data-testid="input-aprov-autor">
+        <div class="gl-chips">
+            <span class="gl-chip"><i class="fas fa-user" aria-hidden="true"></i> <?= e($p['enviado_por'] ?? 'usuário removido') ?> (<?= e(rotuloPerfil((string) $p['perfil_envio'])) ?>)</span>
+            <span class="gl-chip"><i class="far fa-calendar" aria-hidden="true"></i> <?= e(date('d/m/Y H:i', strtotime($p['data_upload']))) ?></span>
+            <span class="gl-chip"><?= $ehEpub ? 'EPUB' : 'PDF' ?></span>
             <?php if ($dup['exato']): ?>
-                <span class="vis-selo vis-selo--oculto mt-2" data-testid="aprovacao-duplicado"><i class="fas fa-clone" aria-hidden="true"></i> Mesmo arquivo de “<?= e($dup['exato']['titulo']) ?>”</span>
+                <span class="vis-selo vis-selo--oculto" data-testid="aprovacao-duplicado"><i class="fas fa-clone" aria-hidden="true"></i> Mesmo arquivo de “<?= e($dup['exato']['titulo']) ?>”</span>
             <?php elseif ($dup['provavel']): ?>
-                <span class="vis-selo vis-selo--agendado mt-2" data-testid="aprovacao-duplicado"><i class="fas fa-clone" aria-hidden="true"></i> Parece repetido: já existe “<?= e($dup['provavel']['titulo']) ?>”</span>
+                <span class="vis-selo vis-selo--agendado" data-testid="aprovacao-duplicado"><i class="fas fa-clone" aria-hidden="true"></i> Parece repetido: já existe “<?= e($dup['provavel']['titulo']) ?>”</span>
             <?php else: ?>
-                <span class="vis-selo vis-selo--publico mt-2"><i class="fas fa-circle-check" aria-hidden="true"></i> Livro novo</span>
+                <span class="vis-selo vis-selo--publico"><i class="fas fa-circle-check" aria-hidden="true"></i> Livro novo</span>
             <?php endif; ?>
         </div>
-        <div class="d-flex gap-2 align-self-md-center justify-content-end">
-            <button type="button" class="btn btn-sm btn-outline-danger btn-aprov-negar" data-id="<?= (int) $p['id'] ?>" data-testid="btn-aprov-negar"><i class="fas fa-xmark me-1" aria-hidden="true"></i>Negar</button>
-            <?php if (!$dup['exato']): ?>
-            <button type="button" class="btn btn-sm btn-neon btn-aprov-aprovar" data-id="<?= (int) $p['id'] ?>" data-testid="btn-aprov-aprovar"><i class="fas fa-check me-1" aria-hidden="true"></i>Aprovar</button>
-            <?php endif; ?>
-        </div>
+    </div>
+
+    <div class="gl-acoes">
+        <?php if ($ehEpub): ?>
+            <a class="gl-btn" href="<?= $raiz ?>leitor?id=<?= (int) $p['id'] ?>" target="_blank" rel="noopener" data-testid="btn-aprov-ver-epub" aria-label="Abrir <?= e($p['titulo']) ?> para analisar (nova aba)" title="Abrir em nova aba para analisar">
+                <i class="fas fa-book-open" aria-hidden="true"></i> <span>Abrir</span>
+            </a>
+        <?php else: ?>
+            <button type="button" class="gl-btn btn-aprov-ver" data-id="<?= (int) $p['id'] ?>" data-titulo="<?= e($p['titulo']) ?>" data-testid="btn-aprov-ver" aria-label="Abrir <?= e($p['titulo']) ?> para analisar" title="Abrir para analisar, editar e escolher quem vê">
+                <i class="fas fa-book-open" aria-hidden="true"></i> <span>Abrir</span>
+            </button>
+        <?php endif; ?>
+        <button type="button" class="gl-btn gl-btn--negar btn-aprov-negar" data-id="<?= (int) $p['id'] ?>" data-testid="btn-aprov-negar"><i class="fas fa-xmark" aria-hidden="true"></i> <span>Negar</span></button>
+        <?php if (!$dup['exato']): ?>
+        <button type="button" class="gl-btn gl-btn--primario btn-aprov-aprovar" data-id="<?= (int) $p['id'] ?>" data-testid="btn-aprov-aprovar"><i class="fas fa-check" aria-hidden="true"></i> <span>Aprovar</span></button>
+        <?php endif; ?>
     </div>
 </div>
 <?php endforeach; ?>

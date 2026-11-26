@@ -10,10 +10,10 @@ if (!defined('ACESSO_PERMITIDO')) {
 
 <div data-testid="modal-manager" class="modal fade" id="modalGerenciar" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary">
+        <div class="modal-content bg-dark border-secondary modal-gerenciar">
 
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-info" id="tituloModalGerenciar" data-testid="title-modal-manager">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="tituloModalGerenciar" data-testid="title-modal-manager">
                     <i class="fas fa-sliders-h me-2"></i>Gerenciar Biblioteca
                 </h5>
                 <button data-testid="btn-close-modal-manager" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
@@ -21,21 +21,17 @@ if (!defined('ACESSO_PERMITIDO')) {
 
             <div class="modal-body p-0">
 
-                <div id="viewLista" class="p-3" data-testid="view-lista-gerenciador">
-                    <div class="input-group mb-3">
-                        <span class="input-group-text bg-secondary border-0 text-light">
-                            <i class="fas fa-search"></i>
-                        </span>
-
+                <div id="viewLista" class="p-3 p-md-4" data-testid="view-lista-gerenciador">
+                    <div class="gl-busca">
+                        <i class="fas fa-search" aria-hidden="true"></i>
                         <input data-testid="input-busca-gerenciador" type="text" id="buscaGerenciador"
-                            class="form-control bg-secondary text-light border-0"
-                            placeholder="Pesquisar para editar...">
-
-                        <button data-testid="btn-limpar-busca-gerenciador" class="btn btn-secondary text-light border-0"
+                            class="gl-busca__campo" autocomplete="off" aria-label="Pesquisar livros por título ou autor"
+                            placeholder="Pesquisar por título ou autor">
+                        <button data-testid="btn-limpar-busca-gerenciador" class="gl-busca__limpar"
                                 type="button"
                                 id="btnLimparGerenciador"
                                 style="display: none;" aria-label="Limpar pesquisa">
-                            <i class="fas fa-times"></i>
+                            <i class="fas fa-times" aria-hidden="true"></i>
                         </button>
                     </div>
 
@@ -45,14 +41,10 @@ if (!defined('ACESSO_PERMITIDO')) {
                         </div>
                     </div>
 
-                    <div id="paginacaoGerenciador" class="d-flex d-none justify-content-between align-items-center mt-3 gap-2" data-testid="gerenciador-paginacao">
-                        <button data-testid="btn-gerenciador-anterior" id="btnGerenciadorAnterior" type="button" class="btn btn-sm btn-outline-secondary" aria-label="Página anterior" disabled>
-                            <i class="fas fa-chevron-left"></i> Anterior
-                        </button>
-                        <small class="text-muted text-center" data-testid="gerenciador-pagina-info" id="infoPaginaGerenciador"></small>
-                        <button data-testid="btn-gerenciador-proxima" id="btnGerenciadorProxima" type="button" class="btn btn-sm btn-outline-secondary" aria-label="Próxima página" disabled>
-                            Próxima <i class="fas fa-chevron-right"></i>
-                        </button>
+                    <div id="paginacaoGerenciador" class="pager d-none" data-testid="gerenciador-paginacao">
+                        <button type="button" class="pager__btn" id="btnGerenciadorAnterior" aria-label="Página anterior" data-testid="btn-gerenciador-anterior" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                        <span class="pager__info" data-testid="gerenciador-pagina-info" id="infoPaginaGerenciador" aria-live="polite"></span>
+                        <button type="button" class="pager__btn" id="btnGerenciadorProxima" aria-label="Próxima página" data-testid="btn-gerenciador-proxima" disabled><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
                     </div>
 
                     <div class="mt-3 pt-2 border-top border-secondary">

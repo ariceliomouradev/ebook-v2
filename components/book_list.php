@@ -58,6 +58,11 @@ $soFavoritos = $soFavoritos ?? false;
                              o 2º toque no cartão abre o livro. */ ?>
                     <div class="card-overlay">
                         <span class="card-cta" aria-hidden="true"><span><i class="fas fa-book-open"></i> <?= ($progresso > 0 && !$concluido) ? 'Continuar' : 'Ler agora' ?></span></span>
+                        <?php if (($_SESSION['usuario_perfil'] ?? '') === 'admin'): /* só o administrador exclui; a confirmação é um modal (app.js) e api/excluir.php confere o perfil de novo */ ?>
+                        <button type="button" class="btn-excluir-card" data-testid="btn-excluir-card" data-id="<?= (int) $livro['id'] ?>" data-titulo="<?= e($livro['titulo']) ?>" aria-label="Excluir o livro <?= e($livro['titulo']) ?>">
+                            <i class="fas fa-trash-can" aria-hidden="true"></i> Excluir
+                        </button>
+                        <?php endif; ?>
                         <div class="card-info">
                             <h6 data-testid="book-title" class="card-title" title="<?= e($livro['titulo']) ?>"><?= e($livro['titulo']) ?></h6>
                             <span data-testid="book-author" class="autor-text text-truncate"><?= e($livro['autor'] ?? '') ?></span>

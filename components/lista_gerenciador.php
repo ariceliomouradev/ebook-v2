@@ -11,8 +11,15 @@ if (!defined('ACESSO_PERMITIDO')) {
 $livros = $livros ?? [];
 $busca = $busca ?? '';
 ?>
-<?php foreach ($livros as $livro): ?>
-<div data-testid="item-gerenciador" class="item-lista item-gerenciador d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between py-3 border-bottom border-secondary gap-3"
+<?php
+// Capas e links são relativos à raiz do site: este fragmento é sempre exibido dentro de index.php (como book_list.php).
+$raiz = '';
+$rotulosPublicacao = ['pendente' => 'Aguardando aprovação', 'privado' => 'Privado do dono', 'negado' => 'Negado'];
+foreach ($livros as $livro):
+    $ehEpub = ($livro['formato'] ?? 'pdf') === 'epub';
+    $selo = resumoVisibilidade((string) $livro['visivel_para'], $livro['liberar_em']);
+?>
+<div data-testid="item-gerenciador" class="item-lista item-gerenciador gl-item"
     data-id="<?= (int) $livro['id'] ?>"
     data-titulo="<?= e($livro['titulo']) ?>"
     data-autor="<?= e($livro['autor'] ?? '') ?>"
@@ -22,29 +29,41 @@ $busca = $busca ?? '';
     data-vis-leitor="<?= in_array('leitor', explode(',', (string) $livro['visivel_para']), true) ? '1' : '0' ?>"
     data-liberar-em="<?= $livro['liberar_em'] ? e(date('Y-m-d\TH:i', strtotime($livro['liberar_em']))) : '' ?>">
 
-    <div class="flex-grow-1 w-100" style="min-width: 0;">
-        <div data-testid="item-titulo-livro" class="fw-bold text-light fs-5 lh-sm mb-1" style="word-wrap: break-word;">
-            <?= e($livro['titulo']) ?>
-        </div>
-        <div data-testid="item-autor-livro" class="text-muted small">
-            <?= e($livro['autor'] ?? '') ?>
+    <a class="gl-capa" data-testid="item-capa" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">
+        <?php if (!empty($livro['capa_arquivo'])): ?>
+            <img src="<?= $raiz ?>capas/<?= e($livro['capa_arquivo']) ?>" alt="" loading="lazy">
+        <?php else: ?>
+            <span class="gl-capa__vazia capa-v<?= ((int) $livro['id'] % 4) + 1 ?>"><i class="fas fa-book"></i></span>
+        <?php endif; ?>
+        <?php if ($ehEpub): ?><span class="selo-formato">EPUB</span><?php endif; ?>
+    </a>
+
+    <div class="gl-info">
+        <div data-testid="item-titulo-livro" class="gl-titulo"><?= e($livro['titulo']) ?></div>
+        <div data-testid="item-autor-livro" class="gl-autor"><?= e($livro['autor'] ?? '') ?></div>
+        <div class="gl-chips">
+            <?php if (!empty($livro['categoria_nome'])): ?><span class="gl-chip"><i class="fas fa-tag" aria-hidden="true"></i> <?= e($livro['categoria_nome']) ?></span><?php endif; ?>
+            <span class="gl-chip"><?= $ehEpub ? 'EPUB' : 'PDF' ?></span>
+            <?php if (($livro['publicacao'] ?? 'aprovado') !== 'aprovado'): ?><span class="gl-chip gl-chip--aviso"><?= e($rotulosPublicacao[$livro['publicacao']] ?? $livro['publicacao']) ?></span><?php endif; ?>
+            <span data-testid="item-visibilidade" class="vis-selo <?= e($selo['classe']) ?>"><i class="fas fa-eye" aria-hidden="true"></i> <span class="vis-selo__texto"><?= e($selo['texto']) ?></span></span>
         </div>
         <?php if (!empty($livro['duplicado_de'])): ?>
-        <div class="mt-1" data-testid="item-repetido">
+        <div class="gl-repetido" data-testid="item-repetido">
             <span class="vis-selo vis-selo--oculto"><i class="fas fa-clone" aria-hidden="true"></i> Repetido de #<?= (int) $livro['duplicado_de'] ?> «<?= e($livro['original_titulo'] ?? '') ?>» · escondido de Pro e Grátis</span>
             <button type="button" class="btn btn-link btn-sm p-0 ms-2 btn-nao-repetido" data-id="<?= (int) $livro['id'] ?>" data-testid="btn-nao-repetido">Não é repetido</button>
         </div>
         <?php endif; ?>
-        <?php $selo = resumoVisibilidade((string) $livro['visivel_para'], $livro['liberar_em']); ?>
-        <span data-testid="item-visibilidade" class="vis-selo <?= e($selo['classe']) ?> mt-1"><i class="fas fa-eye" aria-hidden="true"></i> <span class="vis-selo__texto"><?= e($selo['texto']) ?></span></span>
     </div>
 
-    <div class="d-flex gap-2 w-100 w-md-auto justify-content-end align-self-end align-self-md-center">
-        <button data-testid="btn-excluir-item" type="button" class="btn btn-sm btn-outline-danger btn-icone btn-excluir-livro" aria-label="Excluir <?= e($livro['titulo']) ?>" title="Excluir">
-            <i class="fas fa-trash" aria-hidden="true"></i>
+    <div class="gl-acoes">
+        <a data-testid="btn-abrir-item" class="gl-btn gl-btn--abrir" href="<?= $raiz ?>leitor?id=<?= (int) $livro['id'] ?>" target="_blank" rel="noopener" aria-label="Abrir <?= e($livro['titulo']) ?> para analisar (nova aba)" title="Abrir em nova aba para analisar">
+            <i class="fas fa-book-open" aria-hidden="true"></i> <span>Abrir</span>
+        </a>
+        <button data-testid="btn-editar-item" type="button" class="gl-btn gl-btn--editar btn-editar-livro" aria-label="Editar <?= e($livro['titulo']) ?>">
+            <i class="fas fa-pen" aria-hidden="true"></i> <span>Editar</span>
         </button>
-        <button data-testid="btn-editar-item" type="button" class="btn btn-sm btn-outline-warning flex-fill flex-md-grow-0 btn-editar-livro" aria-label="Editar <?= e($livro['titulo']) ?>">
-            <i class="fas fa-pen"></i> Editar
+        <button data-testid="btn-excluir-item" type="button" class="gl-btn gl-btn--excluir btn-excluir-livro" aria-label="Excluir <?= e($livro['titulo']) ?>" title="Excluir">
+            <i class="fas fa-trash" aria-hidden="true"></i>
         </button>
     </div>
 </div>

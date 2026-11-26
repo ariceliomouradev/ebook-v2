@@ -702,6 +702,53 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
         });
 });
 
+/**
+ * Excluir pelo cartão (só administrador): abre o mesmo modal de confirmação do Gerenciar livros e, ao confirmar, tira o
+ * cartão da tela (e das faixas Favoritos/Continue lendo) e atualiza as contagens.
+ */
+function excluirLivroDoCartao(botao) {
+    const id = botao.dataset.id;
+    const modalEl = document.getElementById('modalConfirmarExcluir');
+    if (!id || !modalEl || !window.bootstrap) return;
+    document.getElementById('nomeLivroExcluir').innerText = botao.dataset.titulo || '';
+    const antigo = document.getElementById('btnConfirmarExcluir');
+    const confirmar = antigo.cloneNode(true); // descarta o clique ligado a outro livro
+    antigo.parentNode.replaceChild(confirmar, antigo);
+    confirmar.onclick = function () {
+        confirmar.disabled = true;
+        showLoader('Excluindo livro...');
+        fetch(`${BASE_URL}api/excluir.php`, { method: 'POST', headers: headersComCsrf(), body: new URLSearchParams({ id }) })
+            .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.success) {
+                    mostrarErro((data && data.error) || 'Não foi possível excluir o livro.');
+                    return;
+                }
+                bibliotecaAlterada = true;
+                bootstrap.Modal.getInstance(modalEl)?.hide();
+                document.querySelector(`.livro-item[data-id="${id}"]`)?.remove();
+                document.querySelectorAll('.prateleira__item, .continuar-card').forEach((a) => {
+                    if (new URL(a.href, window.location.href).searchParams.get('id') === String(id)) a.remove();
+                });
+                const prateleira = document.getElementById('prateleiraFavoritos');
+                if (prateleira && !prateleira.querySelector('.prateleira__item')) prateleira.classList.add('is-vazia');
+                verificarEstadoVazio();
+                carregarLivros({}, { semHistorico: true }); // realinha total, "Você viu N de M" e a lista
+            })
+            .catch(() => mostrarErro('Falha ao comunicar com o servidor.'))
+            .finally(() => { confirmar.disabled = false; hideLoader(); });
+    };
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+document.addEventListener('click', function (e) {
+    const doCartao = e.target.closest('.btn-excluir-card');
+    if (doCartao) {
+        e.preventDefault();
+        e.stopPropagation();
+        excluirLivroDoCartao(doCartao);
+    }
+});
+
 document.addEventListener('click', function (e) {
     const btnExcluir = e.target.closest('.btn-excluir-livro');
     if (!btnExcluir) return;
@@ -1285,12 +1332,14 @@ document.addEventListener('submit', function (e) {
             const ver = e.target.closest('.btn-aprov-ver');
             if (ver) {
                 const campoAutor = item.querySelector('.aprov-autor');
-                abrirPrevia(ver.dataset.id, ver.dataset.titulo, campoAutor ? campoAutor.value : '');
+                const campoTitulo = item.querySelector('.aprov-titulo');
+                abrirPrevia(ver.dataset.id, campoTitulo ? campoTitulo.value : ver.dataset.titulo, campoAutor ? campoAutor.value : '');
                 return;
             }
             if (e.target.closest('.btn-aprov-aprovar')) {
                 const autor = item.querySelector('.aprov-autor');
-                executarFila({ action: 'aprovar', id: item.dataset.id, autor: autor ? autor.value : '' }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
+                const titulo = item.querySelector('.aprov-titulo');
+                executarFila({ action: 'aprovar', id: item.dataset.id, titulo: titulo ? titulo.value : '', autor: autor ? autor.value : '' }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
             } else if (e.target.closest('.btn-aprov-negar')) {
                 executarFila({ action: 'negar', id: item.dataset.id }).then((ok) => { if (ok) { filaAlterada = true; atualizarAcervoAoFundo(); } });
             }

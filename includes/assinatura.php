@@ -192,9 +192,15 @@ function vencimentoDaLinha(array $u): array
 /** Lista para o modal "Gerenciar usuários" (index.php e api/usuarios_gerenciar.php). */
 function listaDeUsuarios(PDO $pdo): array
 {
-    try {
-        return $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, bloqueado, criado_em FROM usuarios ORDER BY id DESC')->fetchAll();
-    } catch (PDOException $e) { // banco sem a migração v1.13
-        return array_map(static fn (array $u) => $u + ['bloqueado' => 0], $pdo->query('SELECT id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em FROM usuarios ORDER BY id DESC')->fetchAll());
+    // Colunas opcionais conforme as migrações aplicadas: v1.18 (foto) e v1.13 (bloqueado). Tenta a mais completa primeiro.
+    $base = 'id, nome, email, whatsapp, perfil, titular_id, acesso_ate, acesso_origem, criado_em';
+    foreach ([[', bloqueado, foto', []], [', bloqueado', ['foto' => null]], [', foto', ['bloqueado' => 0]], ['', ['bloqueado' => 0, 'foto' => null]]] as [$extra, $padrao]) {
+        try {
+            $linhas = $pdo->query("SELECT $base$extra FROM usuarios ORDER BY id DESC")->fetchAll();
+            return $padrao ? array_map(static fn (array $u) => $u + $padrao, $linhas) : $linhas;
+        } catch (PDOException $e) {
+            // coluna ainda não existe neste banco: tenta a próxima combinação
+        }
     }
+    return [];
 }

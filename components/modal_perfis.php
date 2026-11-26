@@ -16,9 +16,9 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
 <?php if ($perfilModais === 'admin'): ?>
 <div class="modal fade" id="modalAprovacoes" tabindex="-1" aria-labelledby="tituloModalAprovacoes" data-testid="modal-aprovacoes">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title" id="tituloModalAprovacoes"><i class="fas fa-clipboard-check me-2 text-info"></i>Aprovações</h5>
+        <div class="modal-content bg-dark border-secondary modal-gerenciar">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="tituloModalAprovacoes"><i class="fas fa-clipboard-check me-2"></i>Aprovações</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar" data-testid="btn-fechar-modal-aprovacoes"></button>
             </div>
             <div class="modal-body">
@@ -26,10 +26,12 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
                 <div id="perfisAviso-aprovacoes" class="alert d-none py-2 small" role="status" aria-live="polite"></div>
                 <div id="listaAprovacoes" data-testid="lista-aprovacoes" aria-live="polite"></div>
             </div>
-            <div class="modal-footer border-secondary justify-content-between" id="aprovPaginacao" data-testid="aprovacoes-paginacao">
-                <button type="button" class="btn btn-sm btn-outline-light" id="aprovAnterior" aria-label="Página anterior" data-testid="btn-aprov-anterior" disabled><i class="fas fa-chevron-left me-1" aria-hidden="true"></i>Anterior</button>
-                <span class="small text-secondary text-center" id="aprovInfo" data-testid="aprovacoes-info" aria-live="polite"></span>
-                <button type="button" class="btn btn-sm btn-outline-light" id="aprovProxima" aria-label="Próxima página" data-testid="btn-aprov-proxima" disabled>Próxima<i class="fas fa-chevron-right ms-1" aria-hidden="true"></i></button>
+            <div class="modal-footer border-0 justify-content-center" id="aprovPaginacao" data-testid="aprovacoes-paginacao">
+                <div class="pager">
+                    <button type="button" class="pager__btn" id="aprovAnterior" aria-label="Página anterior" data-testid="btn-aprov-anterior" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                    <span class="pager__info" id="aprovInfo" data-testid="aprovacoes-info" aria-live="polite"></span>
+                    <button type="button" class="pager__btn" id="aprovProxima" aria-label="Próxima página" data-testid="btn-aprov-proxima" disabled><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -40,8 +42,8 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
 <!-- Prévia do PDF na fila de aprovação: desenhada com PDF.js dentro da página (nada de nova aba nem download). -->
 <div class="modal fade" id="modalPreviaPdf" tabindex="-1" aria-labelledby="tituloPreviaPdf" data-testid="modal-previa-pdf">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary">
-            <div class="modal-header border-secondary">
+        <div class="modal-content bg-dark border-secondary modal-gerenciar">
+            <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title text-truncate" id="tituloPreviaPdf" data-testid="titulo-previa-pdf">Prévia</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar" data-testid="btn-fechar-previa-x"></button>
             </div>
@@ -107,10 +109,12 @@ $dicaSenhaFamilia = 'Mínimo 8 caracteres, com maiúscula, minúscula, número e
                 <div id="perfisAviso-acervo" class="alert d-none py-2 small" role="status" aria-live="polite"></div>
                 <div id="listaAcervo" data-testid="lista-acervo" aria-live="polite"></div>
             </div>
-            <div class="modal-footer border-secondary justify-content-between">
-                <button type="button" class="btn btn-sm btn-outline-light" id="acervoAnterior" aria-label="Página anterior" data-testid="btn-acervo-anterior" disabled><i class="fas fa-chevron-left me-1" aria-hidden="true"></i>Anterior</button>
-                <span class="small text-secondary text-center" id="acervoInfo" data-testid="acervo-info" aria-live="polite"></span>
-                <button type="button" class="btn btn-sm btn-outline-light" id="acervoProxima" aria-label="Próxima página" data-testid="btn-acervo-proxima" disabled>Próxima<i class="fas fa-chevron-right ms-1" aria-hidden="true"></i></button>
+            <div class="modal-footer border-0 justify-content-center">
+                <div class="pager">
+                    <button type="button" class="pager__btn" id="acervoAnterior" aria-label="Página anterior" data-testid="btn-acervo-anterior" disabled><i class="fas fa-chevron-left" aria-hidden="true"></i></button>
+                    <span class="pager__info" id="acervoInfo" data-testid="acervo-info" aria-live="polite"></span>
+                    <button type="button" class="pager__btn" id="acervoProxima" aria-label="Próxima página" data-testid="btn-acervo-proxima" disabled><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
+                </div>
             </div>
         </div>
     </div>

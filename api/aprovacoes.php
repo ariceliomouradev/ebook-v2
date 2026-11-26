@@ -27,7 +27,7 @@ function responderFila(PDO $pdo, string $mensagem = '', array $extra = []): neve
     $pagina = min(max(1, (int) ($_POST['pagina'] ?? 1)), $totalPaginas);
     $deslocamento = ($pagina - 1) * APROVACOES_POR_VEZ;
     $pendentes = $pdo->query(
-        "SELECT l.id, l.titulo, l.autor, l.formato, l.hash_arquivo, l.data_upload, u.nome AS enviado_por, u.perfil AS perfil_envio
+        "SELECT l.id, l.titulo, l.autor, l.formato, l.capa_arquivo, l.hash_arquivo, l.data_upload, u.nome AS enviado_por, u.perfil AS perfil_envio
            FROM livros l LEFT JOIN usuarios u ON u.id = l.usuario_id
           WHERE l.publicacao = 'pendente' ORDER BY l.id ASC LIMIT " . APROVACOES_POR_VEZ . " OFFSET " . $deslocamento
     )->fetchAll();

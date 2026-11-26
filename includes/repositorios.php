@@ -127,7 +127,7 @@ function listarLivrosParaGerenciar(PDO $pdo, string $busca, int $pagina): array
     $totalPaginas = max(1, (int) ceil($total / ITENS_POR_PAGINA_GERENCIADOR));
     $pagina = min(max(1, $pagina), $totalPaginas); // página fora do intervalo cai na última válida
 
-    $stmt = $pdo->prepare("SELECT id, titulo, autor, sinopse, visivel_para, liberar_em, duplicado_de, (SELECT o.titulo FROM livros o WHERE o.id = livros.duplicado_de) AS original_titulo, (liberar_em IS NOT NULL AND liberar_em > NOW()) AS agendado, (SELECT slug FROM categorias c WHERE c.id = livros.categoria_id) AS categoria FROM livros $where ORDER BY titulo ASC, id ASC LIMIT :limite OFFSET :offset");
+    $stmt = $pdo->prepare("SELECT id, titulo, autor, sinopse, capa_arquivo, formato, publicacao, visivel_para, liberar_em, duplicado_de, (SELECT o.titulo FROM livros o WHERE o.id = livros.duplicado_de) AS original_titulo, (liberar_em IS NOT NULL AND liberar_em > NOW()) AS agendado, (SELECT slug FROM categorias c WHERE c.id = livros.categoria_id) AS categoria, (SELECT nome FROM categorias c WHERE c.id = livros.categoria_id) AS categoria_nome FROM livros $where ORDER BY titulo ASC, id ASC LIMIT :limite OFFSET :offset");
     foreach ($parametros as $chave => $valor) {
         $stmt->bindValue($chave, $valor, PDO::PARAM_STR);
     }
