@@ -78,7 +78,7 @@ $slugCategoria = preg_replace('/[^a-z0-9-]/', '', (string) ($_POST['categoria'] 
 require_once __DIR__ . '/../includes/infantil.php';
 $sugerida = $formato === 'epub' ? categoriaSugeridaEpub($titulo, $metaEpub['assuntos'], $autor) : categoriaSugerida($titulo);
 // história para criança (livro ilustrado, fábula, infantojuvenil) vai para Infantojuvenil
-if ($sugerida !== 'infantil' && livroEhInfantil($titulo, $autor, $formato === 'epub' ? infantilSinaisDoEpub($_FILES['arquivo_pdf']['tmp_name']) : []) !== null) {
+if ($sugerida !== 'infantil' && $sugerida !== 'quadrinhos' && livroEhInfantil($titulo, $autor, $formato === 'epub' ? infantilSinaisDoEpub($_FILES['arquivo_pdf']['tmp_name']) : []) !== null) {
     $sugerida = 'infantil';
 }
 $categoriaId = categoriaIdPorSlug($pdo, $slugCategoria)

@@ -122,7 +122,7 @@ function infantilSinaisDoEpub(string $caminho): array
 const INFANTIL_EDITORAS = ['yellowfante', 'editora le', 'compor', 'globinho', 'moderna infantil', 'ciranda cultural', 'turma da monica'];
 
 /** Livros que casam com os sinais acima mas são para adultos (quadrinhos adultos, fantasia, poesia). */
-const INFANTIL_EXCLUIR = ['jodorowsky', 'martin millar', 'mario de andrade', 'papa terrivel', 'boas fadas'];
+const INFANTIL_EXCLUIR = ['em quadrinhos', 'graphic novel', 'jodorowsky', 'martin millar', 'mario de andrade', 'papa terrivel', 'boas fadas'];
 
 function livroEhInfantil(string $titulo, string $autor = '', array $sinais = []): ?string
 {

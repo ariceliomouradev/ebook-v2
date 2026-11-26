@@ -94,6 +94,7 @@ INSERT IGNORE INTO `categorias` (`slug`, `nome`) VALUES
   ('design', 'Design e Criatividade'),
   ('espiritualidade', 'Espiritualidade'),
   ('literatura', 'Literatura'),
+  ('quadrinhos', 'HQ''s, Mangás e Graphic Novels'),
   ('ciencias', 'Ciências e Humanidades'),
   ('geral', 'Geral');
 

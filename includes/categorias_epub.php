@@ -20,6 +20,10 @@ require_once __DIR__ . '/categorias.php';
 
 /** Trechos do nome do autor/editora (normalizados) -> categoria. */
 const CATEGORIA_EPUB_POR_AUTOR = [
+    'quadrinhos' => [
+        'jodorowsky', 'moebius', 'spiegelman', 'satrapi', 'mauricio de sousa', 'laerte', 'angeli', 'quino', 'watterson', 'stan lee',
+        'osamu tezuka', 'eiichiro oda', 'masashi kishimoto', 'akira toriyama', 'hergé', 'herge', 'goscinny', 'uderzo', 'will eisner',
+    ],
     'espiritualidade' => [
         'editora crista evangelica', 'malafaia', 'rodovalho', 'luciano subira', 'espiritos', 'adeilson salles', 'joa caitano',
         'paul jehle', 'josue gomes', 'jonathan ferreira', 'gilmar vieira chaves', 'enivaldo santos',
@@ -52,6 +56,7 @@ const CATEGORIA_EPUB_POR_AUTOR = [
 
 /** Palavras (prefixo ou, se curtas, inteiras) que decidem sozinhas, na ordem das categorias abaixo. */
 const CATEGORIA_EPUB_PALAVRAS_FORTES = [
+    'quadrinhos' => ['quadrinho', 'hq', 'hqs', 'manga', 'mangas', 'graphic novel', 'graphic novels', 'comics', 'comic book', 'tirinha', 'gibi', 'webcomic'],
     'infantil' => ['infantil', 'infantojuvenil', 'maluquinho', 'turma do', 'turma da', 'historinha', 'fabula', 'fadas', 'menininha'],
     'literatura' => ['romance', 'novela', 'conto', 'cronica', 'poesia', 'poema', 'poeminha', 'poetic', 'haiku', 'haique', 'cordel',
         'ficcao', 'fantasia', 'thriller', 'misterio', 'aventura', 'peca teatral', 'pecas teatrais', 'teatro', 'tragedia', 'comedia',
@@ -64,7 +69,7 @@ const CATEGORIA_EPUB_PALAVRAS_FORTES = [
     'educacao' => ['mediacao', 'avaliacao', 'pedagog', 'alfabetiz', 'escola', 'estudante', 'ensino', 'educacao', 'aula'],
     'ciencias' => ['filosof', 'politic', 'direito', 'racismo', 'constitucional', 'justica', 'inquisicao', 'judaismo', 'sociedade', 'sociolog',
         'totalitar', 'fascismo', 'comunis', 'republica', 'historia do', 'interpretacao', 'metodo', 'apologia', 'contrato social', 'cidade'],
-    'design' => ['musica', 'cinema', 'quadrinhos', 'fotografia', 'arquitet', 'banda', 'rock'],
+    'design' => ['musica', 'cinema', 'fotografia', 'arquitet', 'banda', 'rock'],
     'culinaria' => ['receita', 'culinaria', 'salada', 'almoco', 'cozinha'],
 ];
 
@@ -133,6 +138,12 @@ function categoriaSugeridaEpub(string $titulo, string $assuntos = '', string $au
     $texto = normalizarParaCategoria($titulo . ' ' . $assuntos);
     $quem = normalizarParaCategoria($autor);
 
+    // 0. formato quadrinhos (palavras no título/assuntos) vence autor e editora
+    foreach (CATEGORIA_EPUB_PALAVRAS_FORTES['quadrinhos'] as $p) {
+        if (categoriaEpubTemPalavra($texto, $p)) {
+            return 'quadrinhos';
+        }
+    }
     // 1. autor/editora
     foreach (CATEGORIA_EPUB_POR_AUTOR as $slug => $nomes) {
         foreach ($nomes as $n) {

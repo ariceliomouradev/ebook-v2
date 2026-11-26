@@ -75,6 +75,11 @@ const CATEGORIAS_PADRAO = [
             'filosofia', 'sociologia', 'historia', 'politica', 'geopolitica', 'sapiens', 'evolucao', 'borboleta', 'calculava', 'realidade',
             'conexoes', 'teoria', 'america latina', 'seneca'],
     ],
+    // Antes de 'infantil': em empate ("Maluquinho em quadrinhos") o formato HQ vence. 'manga' leva espaços para não casar "Mangabeira".
+    'quadrinhos' => [
+        'nome' => "HQ's, Mangás e Graphic Novels",
+        'palavras' => ['quadrinho', 'quadrinhos', 'hq', 'hqs', ' manga ', ' mangas ', 'graphic novel', 'graphic novels', 'comics', 'comic book', 'tirinha', 'tirinhas', 'gibi', 'gibis', 'webcomic'],
+    ],
     'infantil' => [
         'nome' => 'Infantojuvenil',
         'palavras' => ['infantil', 'infantojuvenil', 'crianca', 'criancas', 'fabula', 'fabulas', 'fadas', 'historinha', 'maluquinho'],
