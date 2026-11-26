@@ -119,6 +119,17 @@ $mostrarBusca = $mostrarBusca ?? false;
                     <?php endif; ?>
                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#modalTrocarSenha" data-testid="btn-menu-trocar-senha"><i class="fas fa-key me-2"></i>Trocar Senha</a></li>
 
+                    <?php if ($perfilUsuario === 'admin' && !empty($mostrarBusca)):
+                        require_once __DIR__ . '/../includes/banners.php';
+                        $anunciosLigados = adminAnunciosAtivos(); ?>
+                    <li class="menu-interruptor" data-testid="menu-anuncios">
+                        <label class="menu-interruptor__rotulo" for="interruptorAnuncios"><i class="fas fa-bullhorn me-2" aria-hidden="true"></i>Propagandas</label>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="interruptorAnuncios" data-testid="interruptor-anuncios" aria-label="Exibir propagandas para o administrador"<?= $anunciosLigados ? ' checked' : '' ?>>
+                        </div>
+                    </li>
+                    <?php endif; ?>
+
                     <li><hr class="dropdown-divider"></li>
                     <li><form method="POST" action="<?= url('logout.php') ?>" class="m-0"><?= csrf_field() ?><button type="submit" class="dropdown-item text-danger" data-testid="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Sair</button></form></li>
                 </ul>

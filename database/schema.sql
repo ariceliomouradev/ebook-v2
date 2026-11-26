@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   `acesso_ate` datetime DEFAULT NULL,
   `acesso_origem` enum('teste','pago','cortesia') NOT NULL DEFAULT 'cortesia',
   `bloqueado` tinyint(1) NOT NULL DEFAULT 0,
+  `anuncios_ativos` tinyint(1) NOT NULL DEFAULT 1,
   `trocar_senha` tinyint(1) NOT NULL DEFAULT 0,
   `email_confirmado` tinyint(1) NOT NULL DEFAULT 1,
   `confirmacao_token` varchar(64) DEFAULT NULL,

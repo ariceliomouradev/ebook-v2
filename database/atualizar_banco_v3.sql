@@ -228,4 +228,8 @@ SELECT * FROM (
 ) AS padrao
 WHERE NOT EXISTS (SELECT 1 FROM `banners`);
 
+-- Interruptor de propagandas do administrador (v1.23)
+SET @sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `usuarios` ADD COLUMN `anuncios_ativos` tinyint(1) NOT NULL DEFAULT 1 AFTER `bloqueado`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = 'anuncios_ativos');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;

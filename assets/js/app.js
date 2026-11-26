@@ -738,6 +738,34 @@ document.getElementById('formEditarLivro')?.addEventListener('submit', function 
         });
 });
 
+// Interruptor de propagandas do administrador (menu do perfil): salva em usuarios.anuncios_ativos.
+(function () {
+    const chave = document.getElementById('interruptorAnuncios');
+    if (!chave) return;
+    chave.closest('li').addEventListener('click', (e) => e.stopPropagation()); // mexer na chave não fecha o menu
+    chave.addEventListener('change', () => {
+        const ligado = chave.checked;
+        chave.disabled = true;
+        fetch(`${BASE_URL}api/preferencias.php`, {
+            method: 'POST',
+            headers: headersComCsrf(),
+            body: new URLSearchParams({ action: 'anuncios', valor: ligado ? '1' : '0', csrf_token: CSRF_TOKEN }),
+        })
+            .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+            .then(({ ok, d }) => {
+                if (!ok || !d.success) {
+                    chave.checked = !ligado;
+                    mostrarErro((d && d.error) || 'Não foi possível salvar a preferência.');
+                }
+            })
+            .catch(() => {
+                chave.checked = !ligado;
+                mostrarErro('Falha ao comunicar com o servidor.');
+            })
+            .finally(() => { chave.disabled = false; });
+    });
+})();
+
 /**
  * Excluir pelo cartão (só administrador): abre o mesmo modal de confirmação do Gerenciar livros e, ao confirmar, tira o
  * cartão da tela (e das faixas Favoritos/Continue lendo) e atualiza as contagens.

@@ -11,10 +11,40 @@
 const BANNER_FORMATOS = ['q'];
 const BANNER_LIMITE_POR_FORMATO = 12; // evita uma fila interminável (e páginas pesadas)
 
-/** O perfil da sessão vê anúncios? (Administrador e Grátis; o plano Pro não.) */
+/**
+ * O perfil da sessão vê anúncios? Grátis sempre; Pro nunca; o Administrador vê (para conferir como ficam) enquanto o
+ * interruptor do menu do perfil estiver ligado (usuarios.anuncios_ativos).
+ */
 function perfilVeAnuncios(?string $perfil = null): bool
 {
-    return in_array($perfil ?? ($_SESSION['usuario_perfil'] ?? ''), ANUNCIOS_PERFIS, true);
+    $perfil ??= (string) ($_SESSION['usuario_perfil'] ?? '');
+    if (!in_array($perfil, ANUNCIOS_PERFIS, true)) {
+        return false;
+    }
+    return $perfil === 'admin' ? adminAnunciosAtivos() : true;
+}
+
+/** Interruptor de propagandas do administrador logado (padrão: ligado; banco sem a v1.23: ligado). */
+function adminAnunciosAtivos(): bool
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    global $pdo;
+    $cache = true;
+    $id = (int) ($_SESSION['usuario_id'] ?? 0);
+    if ($id > 0 && isset($pdo)) {
+        try {
+            $stmt = $pdo->prepare('SELECT anuncios_ativos FROM usuarios WHERE id = ?');
+            $stmt->execute([$id]);
+            $valor = $stmt->fetchColumn();
+            $cache = ($valor === false || $valor === null) ? true : (int) $valor === 1;
+        } catch (PDOException $e) {
+            $cache = true;
+        }
+    }
+    return $cache;
 }
 
 function listarBanners(PDO $pdo, string $formato): array
